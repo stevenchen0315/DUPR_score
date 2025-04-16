@@ -83,8 +83,8 @@ export default function App() {
   };
 
   const exportCSV = () => {
-    //const today = new Date().toISOString().slice(0, 10);
-    
+    const today = new Date().toISOString().slice(0, 10);
+/*    
 const today = (() => {
   const now = new Date();
   const yyyy = now.getFullYear();
@@ -92,7 +92,7 @@ const today = (() => {
   const dd = String(now.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 })();
-    
+    */
     const findUser = (nickname) => userList.find((u) => u.nickname === nickname) || {};
 
     const csvRows = rows.map((row) => {
