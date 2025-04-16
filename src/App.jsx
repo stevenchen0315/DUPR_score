@@ -100,10 +100,13 @@ export default function App() {
         today,                    // F
         a1User.nickname || "",    // G
         a1User.duprid || "",      // H
+        "",                       // I
         a2User.nickname || "",    // J
         a2User.duprid || "",      // K
+        "",                       // L
         b1User.nickname || "",    // M
         b1User.duprid || "",      // N
+        "",                       // O
         b2User.nickname || "",    // P
         b2User.duprid || "",      // Q
         "", "",                    // R, S
