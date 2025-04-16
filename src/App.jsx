@@ -112,10 +112,7 @@ export default function App() {
       ];
     });
 
-    const csvContent = [
-      ["A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "M", "N", "P", "Q", "R", "S", "T", "U"],
-      ...csvRows
-    ]
+    const csvContent = csvRows
       .map((r) => r.map((v) => `"${v}"`).join(","))
       .join("\n");
 
