@@ -1,0 +1,29 @@
+# Node modules
+node_modules/
+
+# Production build
+.next/
+out/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+
+# Env files
+.env.local
+.env.*.local
+
+# Vercel
+.vercel
+
+# Editor-specific
+.vscode/
+.idea/
+
+# Optional: coverage or test output
+coverage/
