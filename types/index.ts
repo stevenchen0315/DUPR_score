@@ -1,9 +1,9 @@
-export type PlayerInfo = {
+export type player_info = {
   dupr_id: string
   name: string
 }
 
-export type Score = {
+export type score = {
   player_a1: string
   player_a2: string
   player_b1: string

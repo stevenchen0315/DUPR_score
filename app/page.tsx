@@ -2,87 +2,114 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { PlayerInfo, Score } from '@/types'
+import { player_info, score } from '@/types'
+import { FiEdit as Pencil, FiTrash2 as Trash2, FiPlus as Plus, FiDownload as Download } from 'react-icons/fi';
 
 export default function App() {
   const [activeSheet] = useState("選手資料");
-  const [userInfo, setUserInfo] = useState({ duprid: "", nickname: "" });
-  const [userList, setUserList] = useState([]);
-  const [editIndex, setEditIndex] = useState(null);
+  const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: "", name: "" });
+  const [userList, setUserList] = useState<player_info[]>([]);
+  const [editIndex, setEditIndex] = useState<number | null>(null);
 
   const [rows, setRows] = useState([
     { values: ["", "", "", ""], sd: "", h: "", i: "", lock: "解鎖" },
   ]);
 
   useEffect(() => {
-    fetch('/api/users')
-      .then(res => res.ok ? res.text() : Promise.reject('fetch error'))
-      .then(text => text ? JSON.parse(text) : [])
-      .then(setUserList)
-      .catch(err => console.error("Error loading users:", err));
+    const fetchUsers = async () => {
+      const { data, error } = await supabase
+        .from<'player_info', player_info>('player_info')
+        .select('dupr_id, name');
+      if (error) {
+        console.error('Error fetching users:', error);
+      } else if (data) {
+        // Supabase 'name' 對應 name
+        const mapped = data.map(({ dupr_id, name }) => ({ dupr_id, name: name }));
+        setUserList(mapped);
+      }
+    }
+    fetchUsers();
   }, []);
 
-  const saveUsersToEdge = (list) => {
-    fetch('/api/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(list),
-    });
+  // 新增或更新選手
+  const saveUserToSupabase = async (list: player_info[]) => {
+    try {
+      // 先刪除全部再新增（簡單策略）
+      // 或用 upsert/update API 實作更精準更新
+      await supabase.from('player_info').delete().neq('dupr_id', ''); // 清空(示範，視情況改)
+      const insertData = list.map(({ dupr_id, name }) => ({ dupr_id, name: name }));
+      await supabase.from('player_info').insert(insertData);
+    } catch (error) {
+      console.error('Supabase save error:', error);
+    }
   };
 
-  const updateUserInfo = (field, value) => {
+  const updateUserInfo = (field: keyof player_info, value: string) => {
     setUserInfo({ ...userInfo, [field]: value });
   };
 
-  const addUser = () => {
-    if (!userInfo.duprid || !userInfo.nickname) return;
-    const updated = [...userList];
+  const addUser = async () => {
+    if (!userInfo.dupr_id || !userInfo.name) return;
+
+    let updated = [...userList];
     if (editIndex !== null) {
       updated[editIndex] = userInfo;
       setEditIndex(null);
     } else {
       updated.push(userInfo);
     }
+
     setUserList(updated);
-    setUserInfo({ duprid: "", nickname: "" });
-    saveUsersToEdge(updated);
+    setUserInfo({ dupr_id: "", name: "" });
+    await saveUserToSupabase(updated);
   };
 
-  const editUser = (index) => {
+  const editUser = (index: number) => {
     setUserInfo(userList[index]);
     setEditIndex(index);
   };
 
-  const deleteUser = (index) => {
+  const deleteUser = async (index: number) => {
     const updated = [...userList];
     updated.splice(index, 1);
     setUserList(updated);
-    saveUsersToEdge(updated);
+    await saveUserToSupabase(updated);
   };
 
-  const updateCell = (rowIndex, field, value) => {
-    const newRows = [...rows];
-    if (["h", "i", "lock", "sd"].includes(field)) {
-      newRows[rowIndex][field] = value;
-    } else {
-      const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field];
-      newRows[rowIndex].values[colIndex] = value;
-    }
+  type CellField = "D" | "E" | "F" | "G";
+  type OtherField = "h" | "i" | "lock" | "sd";
 
-    const [a1, a2, b1, b2] = newRows[rowIndex].values;
-    const teamACount = [a1, a2].filter(Boolean).length;
-    const teamBCount = [b1, b2].filter(Boolean).length;
-    newRows[rowIndex].sd = teamACount === 1 && teamBCount === 1 ? "S" : (teamACount === 2 && teamBCount === 2 ? "D" : "");
+const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
+  const newRows = [...rows];
+  if (["h", "i", "lock", "sd"].includes(field)) {
+    (newRows[rowIndex] as any)[field] = value;
+  } else {
+    const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField];
+    newRows[rowIndex].values[colIndex] = value;
+  }
 
-    setRows(newRows);
-  };
+  const [a1, a2, b1, b2] = newRows[rowIndex].values;
+  const teamACount = [a1, a2].filter(Boolean).length;
+  const teamBCount = [b1, b2].filter(Boolean).length;
+  newRows[rowIndex].sd = teamACount === 1 && teamBCount === 1 ? "S" : (teamACount === 2 && teamBCount === 2 ? "D" : "");
 
-  const getFilteredOptions = (row, currentIndex) => {
-    const selected = row.values.filter((v, i) => v && i !== currentIndex);
-    return userList.map(u => u.nickname).filter(n => !selected.includes(n));
-  };
+  setRows(newRows);
+};
 
-  const isLocked = (row) => row.lock === "鎖定";
+type Row = {
+  values: string[];
+  sd: string;
+  h: string;
+  i: string;
+  lock: string;
+};
+
+const getFilteredOptions = (row: Row, currentIndex: number) => {
+  const selected = row.values.filter((v, i) => v && i !== currentIndex);
+  return userList.map(u => u.name).filter(n => !selected.includes(n));
+};
+
+  const isLocked = (row: Row) => row.lock === "鎖定";
 
   const addRow = () => {
     setRows([...rows, { values: ["", "", "", ""], sd: "", h: "", i: "", lock: "解鎖" }]);
@@ -90,7 +117,8 @@ export default function App() {
 
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10);
-    const findUser = (nickname) => userList.find(u => u.nickname === nickname) || {};
+    const findUser = (name: string): player_info => 
+    userList.find(u => u.name === name) || { dupr_id: "", name: "" };
 
     const csvRows = rows.map((row) => {
       const [a1, a2, b1, b2] = row.values;
@@ -98,10 +126,10 @@ export default function App() {
       const b1User = findUser(b1), b2User = findUser(b2);
       return [
         "", "", "", row.sd, "", today,
-        a1User.nickname || "", a1User.duprid || "", "",
-        a2User.nickname || "", a2User.duprid || "", "",
-        b1User.nickname || "", b1User.duprid || "", "",
-        b2User.nickname || "", b2User.duprid || "", "", "",
+        a1User.name || "", a1User.dupr_id || "", "",
+        a2User.name || "", a2User.dupr_id || "", "",
+        b1User.name || "", b1User.dupr_id || "", "",
+        b2User.name || "", b2User.dupr_id || "", "", "",
         row.h, row.i
       ];
     });
@@ -124,14 +152,14 @@ export default function App() {
         <input
           className="border px-2 py-1 flex-1"
           placeholder="DUPR ID"
-          value={userInfo.duprid}
-          onChange={(e) => updateUserInfo("duprid", e.target.value)}
+          value={userInfo.dupr_id}
+          onChange={(e) => updateUserInfo("dupr_id", e.target.value)}
         />
         <input
           className="border px-2 py-1 flex-1"
           placeholder="暱稱"
-          value={userInfo.nickname}
-          onChange={(e) => updateUserInfo("nickname", e.target.value)}
+          value={userInfo.name}
+          onChange={(e) => updateUserInfo("name", e.target.value)}
         />
         <button
           onClick={addUser}
@@ -144,7 +172,7 @@ export default function App() {
       <ul className="mb-8 space-y-2">
         {userList.map((user, idx) => (
           <li key={idx} className="flex items-center gap-2">
-            <span>{user.nickname} ({user.duprid})</span>
+            <span>{user.name} ({user.dupr_id})</span>
             <button onClick={() => editUser(idx)} className="text-blue-500"><Pencil size={16} /></button>
             <button onClick={() => deleteUser(idx)} className="text-red-500"><Trash2 size={16} /></button>
           </li>
@@ -179,7 +207,7 @@ export default function App() {
                   <select
                     value={val}
                     disabled={isLocked(row)}
-                    onChange={(e) => updateCell(rowIndex, ["D", "E", "F", "G"][i], e.target.value)}
+                    onChange={(e) => updateCell(rowIndex, ["D", "E", "F", "G"][i] as CellField, e.target.value)}
                   >
                     <option value="">--</option>
                     {getFilteredOptions(row, i).map((opt, idx) => (
