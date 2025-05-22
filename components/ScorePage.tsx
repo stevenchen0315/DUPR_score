@@ -41,14 +41,16 @@ export default function ScorePage() {
     const newRows = [...rows]
     const row = newRows[rowIndex]
 
-    if (['h', 'i', 'lock'].includes(field)) {
-      // 限制 0~99 整數
-      if ((field === 'h' || field === 'i') && (!/^\d{1,2}$/.test(value) || +value > 99)) return
-      ;(row as any)[field] = value
-    } else {
-      const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
-      row.values[colIndex] = value
+  if (['h', 'i', 'lock'].includes(field)) {
+    // 允許空字串
+    if ((field === 'h' || field === 'i') && value !== '') {
+      if (!/^\d{1,2}$/.test(value) || +value > 99) return
     }
+    ;(row as any)[field] = value
+  } else {
+    const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
+    row.values[colIndex] = value
+  }
 
     const [a1, a2, b1, b2] = row.values
     const teamACount = [a1, a2].filter(Boolean).length
@@ -167,7 +169,7 @@ export default function ScorePage() {
               <td className="border p-1">{row.sd}</td>
               <td className="border p-1">
                 <input
-                  type="numeric"
+                  type="number"
                   min="0"
                   max="99"
                   step="1"
@@ -179,7 +181,7 @@ export default function ScorePage() {
               </td>
               <td className="border p-1">
                 <input
-                  type="numeric"
+                  type="number"
                   min="0"
                   max="99"
                   step="1"
