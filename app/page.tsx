@@ -328,7 +328,9 @@ const deleteRow = async (index: number) => {
               <td className="border p-1">{row.sd}</td>
               <td className="border p-1">
                 <input
-                  type="text"
+                  type="number"
+		  min="0"
+		  step="1"
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, "h", e.target.value)}
                   disabled={isLocked(row)}
@@ -337,7 +339,9 @@ const deleteRow = async (index: number) => {
               </td>
               <td className="border p-1">
                 <input
-                  type="text"
+                  type="number"
+		  min="0"
+		  step="1"
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, "i", e.target.value)}
                   disabled={isLocked(row)}
