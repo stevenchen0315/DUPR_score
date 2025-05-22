@@ -18,14 +18,12 @@ export default function App() {
   useEffect(() => {
     const fetchUsers = async () => {
       const { data, error } = await supabase
-        .from<'player_info', player_info>('player_info')
+        .from('player_info')
         .select('dupr_id, name');
       if (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching users:', error.message);
       } else if (data) {
-        // Supabase 'name' 對應 name
-        const mapped = data.map(({ dupr_id, name }) => ({ dupr_id, name: name }));
-        setUserList(mapped);
+        setUserList(data); // 直接使用 data，無需再 map
       }
     }
     fetchUsers();
