@@ -16,18 +16,47 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase
-        .from('player_info')
-        .select('dupr_id, name');
-      if (error) {
-        console.error('Error fetching users:', error.message);
-      } else if (data) {
-        setUserList(data); // 直接使用 data，無需再 map
-      }
+  const fetchInitialData = async () => {
+    // 抓取選手資料
+    const { data: userData, error: userError } = await supabase
+      .from('player_info')
+      .select('dupr_id, name');
+
+    if (userError) {
+      console.error('Error fetching users:', userError.message);
+    } else if (userData) {
+      setUserList(userData);
     }
-    fetchUsers();
-  }, []);
+
+    // 抓取比賽資料
+    const { data: scoreData, error: scoreError } = await supabase
+      .from('score')
+      .select('*')
+      .order('serial_number', { ascending: true });
+
+    if (scoreError) {
+      console.error('Error fetching scores:', scoreError.message);
+    } else if (scoreData) {
+      const formatted = scoreData.map((item: score) => ({
+        values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
+        h: item.team_a_score,
+        i: item.team_b_score,
+        lock: item.lock ? "鎖定" : "解鎖",
+        sd:
+          [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
+          [item.player_b1, item.player_b2].filter(Boolean).length === 1
+            ? "S"
+            : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
+               [item.player_b1, item.player_b2].filter(Boolean).length === 2
+              ? "D"
+              : ""),
+      }));
+      setRows(formatted);
+    }
+  };
+
+  fetchInitialData();
+}, []);
 
   // 儲存所有使用者到 Supabase
 const saveUserToSupabase = async (list: player_info[]) => {
@@ -87,22 +116,49 @@ const deleteUser = async (index: number) => {
 
   type CellField = "D" | "E" | "F" | "G";
   type OtherField = "h" | "i" | "lock" | "sd";
+	
+const saveScoreRowToSupabase = async (row: Row, serial_number: number) => {
+  const [a1, a2, b1, b2] = row.values;
+  const payload = {
+    serial_number,
+    player_a1: a1,
+    player_a2: a2,
+    player_b1: b1,
+    player_b2: b2,
+    team_a_score: parseInt(row.h) || 0,
+    team_b_score: parseInt(row.i) || 0,
+    lock: row.lock === "鎖定"
+  };
 
-const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
+  const { error } = await supabase
+    .from("score")
+    .upsert(payload);
+
+  if (error) {
+    console.error(`Error saving score row ${serial_number}:`, error.message);
+  }
+};
+
+const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
   const newRows = [...rows];
+  const targetRow = newRows[rowIndex];
+
   if (["h", "i", "lock", "sd"].includes(field)) {
-    (newRows[rowIndex] as any)[field] = value;
+    (targetRow as any)[field] = value;
   } else {
     const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField];
-    newRows[rowIndex].values[colIndex] = value;
+    targetRow.values[colIndex] = value;
   }
 
-  const [a1, a2, b1, b2] = newRows[rowIndex].values;
+  const [a1, a2, b1, b2] = targetRow.values;
   const teamACount = [a1, a2].filter(Boolean).length;
   const teamBCount = [b1, b2].filter(Boolean).length;
-  newRows[rowIndex].sd = teamACount === 1 && teamBCount === 1 ? "S" : (teamACount === 2 && teamBCount === 2 ? "D" : "");
+  targetRow.sd = teamACount === 1 && teamBCount === 1 ? "S" : (teamACount === 2 && teamBCount === 2 ? "D" : "");
 
   setRows(newRows);
+
+  // 自動儲存到 Supabase
+  await saveScoreRowToSupabase(targetRow, rowIndex + 1); // serial_number 從 1 開始
 };
 
 type Row = {
