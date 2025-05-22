@@ -70,7 +70,7 @@ export default function PlayerPage() {
           value={userInfo.dupr_id}
           onChange={(e) => updateUserInfo('dupr_id', e.target.value)}
           type="text"
-          inputMode="numeric"
+          inputMode="text"
         />
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
