@@ -132,10 +132,6 @@ export default function ScorePage() {
 
   return (
     <div>
-      <button onClick={addRow} className="mb-4 bg-green-600 text-white px-3 py-1 rounded inline-flex items-center">
-        <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
-      </button>
-
       <table className="w-full border text-sm mb-6">
         <thead>
           <tr>
@@ -213,12 +209,21 @@ export default function ScorePage() {
         </tbody>
       </table>
 
+     <div className="flex justify-between mb-6">
+      <button
+        onClick={addRow}
+        className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
+      >
+        <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+      </button>
+
       <button
         onClick={exportCSV}
         className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
       >
         <Download size={18} className="mr-2" /> 匯出 CSV
       </button>
+     </div>
     </div>
   )
 }
