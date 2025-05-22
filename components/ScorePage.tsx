@@ -272,6 +272,6 @@ const handleDeleteAll = async () => {
   </div>
   {deleteMessage && <p className="text-sm text-gray-600 mt-1">{deleteMessage}</p>}
 </div>
-  
+</div>
   )
 }
