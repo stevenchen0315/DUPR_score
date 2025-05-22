@@ -225,6 +225,7 @@ export default function ScorePage() {
   >
     <Download size={18} className="mr-2" /> 匯出 CSV
   </button>
+  </div>
 </div>
   )
 }
