@@ -36,8 +36,8 @@ export default function ScorePage() {
   const formatScores = (scores: score[]) => {
     return scores.map((item: score) => ({
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-      h: item.team_a_score.toString(),
-      i: item.team_b_score.toString(),
+      h: item.team_a_score === 0 ? '' : item.team_a_score.toString(),
+      i: item.team_b_score === 0 ? '' : item.team_b_score.toString(),
       lock: item.lock ? '鎖定' : '解鎖',
       sd:
         [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
