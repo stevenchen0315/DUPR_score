@@ -39,8 +39,8 @@ export default function App() {
     } else if (scoreData) {
       const formatted = scoreData.map((item: score) => ({
         values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-        h: item.team_a_score,
-        i: item.team_b_score,
+        h: item.team_a_score.toString(),
+        i: item.team_b_score.toString(),
         lock: item.lock ? "鎖定" : "解鎖",
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
@@ -164,9 +164,9 @@ const updateCell = async (rowIndex: number, field: CellField | OtherField, value
 type Row = {
   values: string[];
   sd: string;
-  h: number;
-  i: number;
-  lock: boolean;
+  h: string;
+  i: string;
+  lock: string;
 };
 
 const getFilteredOptions = (row: Row, currentIndex: number) => {
