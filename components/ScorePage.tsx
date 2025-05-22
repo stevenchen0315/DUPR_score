@@ -1,4 +1,3 @@
-// components/ScorePage.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -54,16 +53,15 @@ export default function ScorePage() {
     const newRows = [...rows]
     const row = newRows[rowIndex]
 
-  if (['h', 'i', 'lock'].includes(field)) {
-    // 允許空字串
-    if ((field === 'h' || field === 'i') && value !== '') {
-      if (!/^\d{1,2}$/.test(value) || +value > 99) return
+    if (['h', 'i', 'lock'].includes(field)) {
+      if ((field === 'h' || field === 'i') && value !== '') {
+        if (!/^\d{1,2}$/.test(value) || +value > 99) return
+      }
+      ;(row as any)[field] = value
+    } else {
+      const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
+      row.values[colIndex] = value
     }
-    ;(row as any)[field] = value
-  } else {
-    const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
-    row.values[colIndex] = value
-  }
 
     const [a1, a2, b1, b2] = row.values
     const teamACount = [a1, a2].filter(Boolean).length
@@ -72,7 +70,6 @@ export default function ScorePage() {
 
     setRows(newRows)
 
-    // 上傳
     await supabase.from('score').upsert({
       serial_number: rowIndex + 1,
       player_a1: a1,
@@ -142,17 +139,17 @@ export default function ScorePage() {
     a.click()
     URL.revokeObjectURL(url)
   }
-  
-const handleDeleteAll = async () => {
-  const { error } = await supabase.from('score').delete().neq('serial_number', 0)
-  if (!error) {
-    setRows([])
-    setDeleteMessage('✅ 所有比賽資料已刪除')
-  } else {
-    setDeleteMessage('❌ 刪除失敗，請稍後再試')
+
+  const handleDeleteAll = async () => {
+    const { error } = await supabase.from('score').delete().neq('serial_number', 0)
+    if (!error) {
+      setRows([])
+      setDeleteMessage('✅ 所有比賽資料已刪除')
+    } else {
+      setDeleteMessage('❌ 刪除失敗，請稍後再試')
+    }
   }
-}
-  
+
   return (
     <div>
       <table className="w-full border text-sm mb-6">
@@ -232,48 +229,47 @@ const handleDeleteAll = async () => {
         </tbody>
       </table>
 
-<div className="flex justify-center mb-6">
-  <button
-    onClick={addRow}
-    className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
-  >
-    <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
-  </button>
+      <div className="flex justify-center mb-6">
+        <button
+          onClick={addRow}
+          className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+        >
+          <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+        </button>
 
-  <div className="mx-8" /> {/* 空白間隔 */}
+        <div className="mx-8" />
 
-  <button
-    onClick={exportCSV}
-    className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
-  >
-    <Download size={18} className="mr-2" /> 匯出 CSV
-  </button>
-  </div>
-</div>
-    
-<div className="flex justify-center mb-6 flex-col items-center space-y-2">
-  <div className="flex items-center space-x-2">
-    <input
-      type="password"
-      placeholder="請輸入密碼"
-      value={password}
-      onChange={(e) => setPassword(e.target.value)}
-      className="border px-2 py-1 rounded"
-    />
-    <button
-      onClick={deleteAll}
-      disabled={password !== '0315'}
-      className={`px-3 py-1 rounded text-white ${
-        password === '0315'
-          ? 'bg-red-600 hover:bg-red-700'
-          : 'bg-gray-300 cursor-not-allowed'
-      }`}
-    >
-      一鍵刪除
-    </button>
-  </div>
-  {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
-</div>
-</div>
-);
+        <button
+          onClick={exportCSV}
+          className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
+        >
+          <Download size={18} className="mr-2" /> 匯出 CSV
+        </button>
+      </div>
+
+      <div className="flex justify-center mb-6 flex-col items-center space-y-2">
+        <div className="flex items-center space-x-2">
+          <input
+            type="password"
+            placeholder="請輸入密碼"
+            value={deletePassword}
+            onChange={(e) => setDeletePassword(e.target.value)}
+            className="border px-2 py-1 rounded"
+          />
+          <button
+            onClick={handleDeleteAll}
+            disabled={deletePassword !== '0315'}
+            className={`px-3 py-1 rounded text-white ${
+              deletePassword === '0315'
+                ? 'bg-red-600 hover:bg-red-700'
+                : 'bg-gray-300 cursor-not-allowed'
+            }`}
+          >
+            一鍵刪除
+          </button>
+        </div>
+        {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+      </div>
+    </div>
+  )
 }
