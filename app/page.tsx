@@ -123,6 +123,12 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
   const addRow = () => {
     setRows([...rows, { values: ["", "", "", ""], sd: "", h: "", i: "", lock: "解鎖" }]);
   };
+  
+  const deleteRow = (index: number) => {
+  const updated = [...rows];
+  updated.splice(index, 1);
+  setRows(updated);
+  };
 
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10);
@@ -250,6 +256,15 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
                   className={`px-2 py-1 rounded text-white ${row.lock === "鎖定" ? "bg-red-500" : "bg-gray-400"}`}
                 >
                   {row.lock}
+                </button>
+              </td>
+			  <td className="border p-1 text-center">
+                <button
+                  onClick={() => deleteRow(rowIndex)}
+                  disabled={isLocked(row)}
+                  className={`px-2 py-1 rounded text-white ${isLocked(row) ? "bg-gray-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
+                >
+                  刪除
                 </button>
               </td>
             </tr>
