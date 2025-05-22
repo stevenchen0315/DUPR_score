@@ -224,12 +224,6 @@ const deleteRow = async (index: number) => {
   await syncRowsToSupabase(updated);
 };
 
-  const deleteRow = (index: number) => {
-  const updated = [...rows];
-  updated.splice(index, 1);
-  setRows(updated);
-  };
-
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10);
     const findUser = (name: string): player_info => 
