@@ -6,9 +6,22 @@ import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
 
+type CellField = 'D' | 'E' | 'F' | 'G'
+type OtherField = 'h' | 'i' | 'lock' | 'sd'
+
+type Row = {
+  values: string[]
+  sd: string
+  h: string
+  i: string
+  lock: string
+}
+
 export default function ScorePage() {
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteMessage, setDeleteMessage] = useState('')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,7 +142,17 @@ export default function ScorePage() {
     a.click()
     URL.revokeObjectURL(url)
   }
-
+  
+const handleDeleteAll = async () => {
+  const { error } = await supabase.from('score').delete().neq('serial_number', 0)
+  if (!error) {
+    setRows([])
+    setDeleteMessage('✅ 所有比賽資料已刪除')
+  } else {
+    setDeleteMessage('❌ 刪除失敗，請稍後再試')
+  }
+}
+  
   return (
     <div>
       <table className="w-full border text-sm mb-6">
@@ -227,16 +250,28 @@ export default function ScorePage() {
   </button>
   </div>
 </div>
+    
+<div className="flex justify-center mb-6 flex-col items-center space-y-2">
+  <div className="flex items-center space-x-2">
+    <input
+      type="password"
+      placeholder="輸入密碼以啟用刪除"
+      className="border px-2 py-1 rounded"
+      value={deletePassword}
+      onChange={(e) => setDeletePassword(e.target.value)}
+    />
+    <button
+      onClick={handleDeleteAll}
+      disabled={deletePassword !== '0315'}
+      className={`px-4 py-2 rounded text-white transition ${
+        deletePassword === '0315' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'
+      }`}
+    >
+      🗑️ 一鍵刪除所有賽事
+    </button>
+  </div>
+  {deleteMessage && <p className="text-sm text-gray-600 mt-1">{deleteMessage}</p>}
+</div>
+  
   )
-}
-
-type CellField = 'D' | 'E' | 'F' | 'G'
-type OtherField = 'h' | 'i' | 'lock' | 'sd'
-
-type Row = {
-  values: string[]
-  sd: string
-  h: string
-  i: string
-  lock: string
 }
