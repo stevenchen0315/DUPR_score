@@ -172,7 +172,7 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
         />
         <input
           className="border px-2 py-1 flex-1"
-          placeholder="暱稱"
+          placeholder="暱稱(nickname)"
           value={userInfo.name}
           onChange={(e) => updateUserInfo("name", e.target.value)}
         />
@@ -180,7 +180,7 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
           onClick={addUser}
           className="bg-blue-600 text-white px-4 py-1 rounded"
         >
-          {editIndex !== null ? "更新選手" : "新增選手"}
+          {editIndex !== null ? "更新選手(Update Player)" : "新增選手(Add Player)"}
         </button>
       </div>
 
@@ -198,7 +198,7 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
         onClick={addRow}
         className="mb-4 bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
       >
-        <Plus size={16} className="mr-1" /> 新增比賽組
+        <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
       </button>
 
       <table className="w-full border text-sm mb-6">
@@ -209,8 +209,8 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
             <th className="border p-1">B1</th>
             <th className="border p-1">B2</th>
             <th className="border p-1">S/D</th>
-            <th className="border p-1">T</th>
-            <th className="border p-1">U</th>
+            <th className="border p-1">Team A</th>
+            <th className="border p-1">Team B</th>
             <th className="border p-1">狀態</th>
           </tr>
         </thead>
@@ -264,7 +264,7 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
                   disabled={isLocked(row)}
                   className={`px-2 py-1 rounded text-white ${isLocked(row) ? "bg-gray-300 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"}`}
                 >
-                  刪除
+                  刪除(Delete)
                 </button>
               </td>
             </tr>
