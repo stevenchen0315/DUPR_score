@@ -270,7 +270,7 @@ const handleDeleteAll = async () => {
       🗑️ 一鍵刪除所有賽事
     </button>
   </div>
-  {deleteMessage && <p className="text-sm text-gray-600 mt-1">{deleteMessage}</p>}
+  {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
 </div>
 </div>
   )
