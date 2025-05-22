@@ -4,6 +4,7 @@ export type player_info = {
 }
 
 export type score = {
+  serial_number: int2
   player_a1: string
   player_a2: string
   player_b1: string
