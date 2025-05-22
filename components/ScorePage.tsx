@@ -255,23 +255,25 @@ const handleDeleteAll = async () => {
   <div className="flex items-center space-x-2">
     <input
       type="password"
-      placeholder="輸入密碼以啟用刪除"
+      placeholder="請輸入密碼"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
       className="border px-2 py-1 rounded"
-      value={deletePassword}
-      onChange={(e) => setDeletePassword(e.target.value)}
     />
     <button
-      onClick={handleDeleteAll}
-      disabled={deletePassword !== '0315'}
-      className={`px-4 py-2 rounded text-white transition ${
-        deletePassword === '0315' ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-400 cursor-not-allowed'
+      onClick={deleteAll}
+      disabled={password !== '0315'}
+      className={`px-3 py-1 rounded text-white ${
+        password === '0315'
+          ? 'bg-red-600 hover:bg-red-700'
+          : 'bg-gray-300 cursor-not-allowed'
       }`}
     >
-      🗑️ 一鍵刪除所有賽事
+      一鍵刪除
     </button>
   </div>
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
 </div>
 </div>
-  )
+);
 }
