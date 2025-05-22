@@ -209,25 +209,23 @@ export default function ScorePage() {
         </tbody>
       </table>
 
-      {/* 方法1: justify-between + gap */}
-      <div>
-        <h3 className="mb-2 font-bold">方法1：justify-between + gap</h3>
-        <div className="flex justify-between gap-4 border p-4 rounded">
-          <button
-            onClick={addRow}
-            className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
-          >
-            <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
-          </button>
+<div className="flex justify-center mb-6">
+  <button
+    onClick={addRow}
+    className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+  >
+    <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+  </button>
 
-          <button
-            onClick={exportCSV}
-            className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
-          >
-            <Download size={18} className="mr-2" /> 匯出 CSV
-          </button>
-        </div>
-      </div>    
+  <div className="mx-8" /> {/* 空白間隔 */}
+
+  <button
+    onClick={exportCSV}
+    className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
+  >
+    <Download size={18} className="mr-2" /> 匯出 CSV
+  </button>
+</div>
   )
 }
 
