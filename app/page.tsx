@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
+import { motion } from 'framer-motion'
 
 export default function Home() {
   const [tabValue, setTabValue] = useState<'players' | 'scores'>('scores')
