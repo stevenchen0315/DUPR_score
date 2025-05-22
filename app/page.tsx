@@ -1,14 +1,21 @@
 'use client'
 
+import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 
 export default function Home() {
+  const [tabValue, setTabValue] = useState<'players' | 'scores'>('scores')
+
   return (
     <main className="p-4 max-w-full mx-auto min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md p-5 sm:p-8">
-        <Tabs defaultValue="players" className="w-full">
+        <Tabs
+          value={tabValue}
+          onValueChange={(val) => setTabValue(val as 'players' | 'scores')}
+          className="w-full"
+        >
           <TabsList className="mb-6 flex flex-wrap gap-2 justify-center sm:justify-start border-b border-gray-300 pb-2">
             <TabsTrigger
               value="players"
