@@ -169,10 +169,10 @@ type Row = {
   lock: string;
 };
 
-const getFilteredOptions = (row: Row, currentIndex: number) => {
+  const getFilteredOptions = (row: Row, currentIndex: number) => {
   const selected = row.values.filter((v, i) => v && i !== currentIndex);
   return userList.map(u => u.name).filter(n => !selected.includes(n));
-};
+  };
 
   const isLocked = (row: Row) => row.lock === "鎖定";
 
@@ -180,6 +180,50 @@ const getFilteredOptions = (row: Row, currentIndex: number) => {
     setRows([...rows, { values: ["", "", "", ""], sd: "", h: "", i: "", lock: "解鎖" }]);
   };
   
+  const syncRowsToSupabase = async (rows: Row[]) => {
+  try {
+    // 先刪除所有 score 資料
+    const { error: deleteError } = await supabase
+      .from("score")
+      .delete()
+      .neq("serial_number", 0); // 假設 serial_number 不會是 0，這樣刪全部
+
+    if (deleteError) throw deleteError;
+
+    // 再批次插入全部 rows，serial_number 從 1 開始
+    const insertPayload = rows.map((row, idx) => {
+      const [a1, a2, b1, b2] = row.values;
+      return {
+        serial_number: idx + 1,
+        player_a1: a1,
+        player_a2: a2,
+        player_b1: b1,
+        player_b2: b2,
+        team_a_score: parseInt(row.h) || 0,
+        team_b_score: parseInt(row.i) || 0,
+        lock: row.lock === "鎖定",
+      };
+    });
+
+    const { error: insertError } = await supabase
+      .from("score")
+      .insert(insertPayload);
+
+    if (insertError) throw insertError;
+
+  } catch (error: any) {
+    console.error("Error syncing rows to Supabase:", error.message);
+  }
+};
+
+const deleteRow = async (index: number) => {
+  const updated = [...rows];
+  updated.splice(index, 1);
+  setRows(updated);
+
+  await syncRowsToSupabase(updated);
+};
+
   const deleteRow = (index: number) => {
   const updated = [...rows];
   updated.splice(index, 1);
