@@ -23,31 +23,51 @@ export default function ScorePage() {
   const [deleteMessage, setDeleteMessage] = useState('')
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: users } = await supabase.from('player_info').select('dupr_id, name')
-      if (users) setUserList(users)
+  const fetchData = async () => {
+    const { data: users } = await supabase.from('player_info').select('dupr_id, name')
+    if (users) setUserList(users)
 
-      const { data: scores } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
-      if (scores) {
-        const formatted = scores.map((item: score) => ({
-          values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-          h: item.team_a_score.toString(),
-          i: item.team_b_score.toString(),
-          lock: item.lock ? '鎖定' : '解鎖',
-          sd:
-            [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
-            [item.player_b1, item.player_b2].filter(Boolean).length === 1
-              ? 'S'
-              : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
-                 [item.player_b1, item.player_b2].filter(Boolean).length === 2
-                ? 'D'
-                : ''),
-        }))
-        setRows(formatted)
+    const { data: scores } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+    if (scores) setRows(formatScores(scores))
+  }
+
+  fetchData()
+
+  const formatScores = (scores: score[]) => {
+    return scores.map((item: score) => ({
+      values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
+      h: item.team_a_score.toString(),
+      i: item.team_b_score.toString(),
+      lock: item.lock ? '鎖定' : '解鎖',
+      sd:
+        [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
+        [item.player_b1, item.player_b2].filter(Boolean).length === 1
+          ? 'S'
+          : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
+             [item.player_b1, item.player_b2].filter(Boolean).length === 2
+            ? 'D'
+            : ''),
+    }))
+  }
+
+  // Supabase Realtime 訂閱
+  const channel = supabase
+    .channel('realtime-score')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'score' },
+      async () => {
+        const { data } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+        if (data) setRows(formatScores(data))
       }
-    }
-    fetchData()
-  }, [])
+    )
+    .subscribe()
+
+  // 清除訂閱
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [])
 
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = [...rows]
