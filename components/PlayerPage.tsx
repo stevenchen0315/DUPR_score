@@ -1,4 +1,3 @@
-// components/PlayerPage.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -62,34 +61,59 @@ export default function PlayerPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex gap-2">
+    <div className="max-w-md mx-auto p-4">
+      {/* 輸入區塊 */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
         <input
-          className="border px-2 py-1 flex-1"
+          className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
           placeholder="DUPR ID"
           value={userInfo.dupr_id}
           onChange={(e) => updateUserInfo('dupr_id', e.target.value)}
+          type="text"
+          inputMode="numeric"
         />
         <input
-          className="border px-2 py-1 flex-1"
-          placeholder="暱稱(nickname)"
+          className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
+          placeholder="暱稱 (nickname)"
           value={userInfo.name}
           onChange={(e) => updateUserInfo('name', e.target.value)}
+          type="text"
         />
         <button
           onClick={addUser}
-          className="bg-blue-600 text-white px-4 py-1 rounded"
+          className="bg-blue-600 text-white rounded-md px-5 py-2 shadow hover:bg-blue-700 transition flex-shrink-0"
+          aria-label={editIndex !== null ? '更新選手' : '新增選手'}
         >
-          {editIndex !== null ? '更新選手(Update Player)' : '新增選手(Add Player)'}
+          {editIndex !== null ? '更新選手' : '新增選手'}
         </button>
       </div>
 
-      <ul className="space-y-2">
+      {/* 玩家列表 */}
+      <ul className="space-y-4">
         {userList.map((user, idx) => (
-          <li key={idx} className="flex items-center gap-2">
-            <span>{user.name} ({user.dupr_id})</span>
-            <button onClick={() => editUser(idx)} className="text-blue-500"><Pencil size={16} /></button>
-            <button onClick={() => deleteUser(idx)} className="text-red-500"><Trash2 size={16} /></button>
+          <li
+            key={idx}
+            className="flex justify-between items-center bg-white rounded-lg shadow p-4"
+          >
+            <div className="text-base font-medium text-gray-800">
+              {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => editUser(idx)}
+                className="text-blue-500 hover:text-blue-700"
+                aria-label={`編輯 ${user.name}`}
+              >
+                <Pencil size={20} />
+              </button>
+              <button
+                onClick={() => deleteUser(idx)}
+                className="text-red-500 hover:text-red-700"
+                aria-label={`刪除 ${user.name}`}
+              >
+                <Trash2 size={20} />
+              </button>
+            </div>
           </li>
         ))}
       </ul>
