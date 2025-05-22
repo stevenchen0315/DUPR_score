@@ -164,9 +164,9 @@ const updateCell = async (rowIndex: number, field: CellField | OtherField, value
 type Row = {
   values: string[];
   sd: string;
-  h: string;
-  i: string;
-  lock: string;
+  h: number;
+  i: number;
+  lock: boolean;
 };
 
 const getFilteredOptions = (row: Row, currentIndex: number) => {
