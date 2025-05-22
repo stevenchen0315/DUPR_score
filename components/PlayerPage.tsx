@@ -10,15 +10,33 @@ export default function PlayerPage() {
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const { data, error } = await supabase.from('player_info').select('dupr_id, name')
-      if (error) console.error('Error fetching users:', error.message)
-      else setUserList(data || [])
-    }
-    fetchUsers()
-  }, [])
+  // 拉取選手資料
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from('player_info').select('dupr_id, name')
+    if (error) console.error('Error fetching users:', error.message)
+    else setUserList(data || [])
+  }
 
+  useEffect(() => {
+    fetchUsers()
+
+    // 訂閱 Supabase Realtime（player_info 資料表）
+    const playerChannel = supabase
+      .channel('realtime-player_info')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'player_info' },
+        () => {
+          fetchUsers()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(playerChannel)
+    }
+  }, [])
+  
   const saveUserToSupabase = async (list: player_info[]) => {
     try {
       const { error: deleteError } = await supabase.from('player_info').delete().neq('dupr_id', '')
