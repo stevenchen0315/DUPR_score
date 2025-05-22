@@ -330,6 +330,7 @@ const deleteRow = async (index: number) => {
                 <input
                   type="number"
 		  min="0"
+		  max="99"
 		  step="1"
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, "h", e.target.value)}
@@ -341,6 +342,7 @@ const deleteRow = async (index: number) => {
                 <input
                   type="number"
 		  min="0"
+		  max="99"
 		  step="1"
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, "i", e.target.value)}
