@@ -230,7 +230,7 @@ export default function ScorePage() {
         </div>
       </div>
 
-      {/* 方法2: justify-center + 固定寬度按鈕 + mx-8間隔 */}
+      {/* 方法2: justify-center + 固定寬度按鈕 + mx-4間隔 */}
       <div>
         <h3 className="mb-2 font-bold">方法2：justify-center + 固定寬度 + mx-8間隔</h3>
         <div className="flex justify-center border p-4 rounded">
@@ -241,7 +241,7 @@ export default function ScorePage() {
             <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
           </button>
 
-          <div className="mx-8" />
+          <div className="mx-4" />
 
           <button
             onClick={exportCSV}
