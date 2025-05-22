@@ -29,50 +29,61 @@ export default function App() {
     fetchUsers();
   }, []);
 
-  // 新增或更新選手
-  const saveUserToSupabase = async (list: player_info[]) => {
-    try {
-      // 先刪除全部再新增（簡單策略）
-      // 或用 upsert/update API 實作更精準更新
-      await supabase.from('player_info').delete().neq('dupr_id', ''); // 清空(示範，視情況改)
-      const insertData = list.map(({ dupr_id, name }) => ({ dupr_id, name: name }));
-      await supabase.from('player_info').insert(insertData);
-    } catch (error) {
-      console.error('Supabase save error:', error);
-    }
-  };
+  // 儲存所有使用者到 Supabase
+const saveUserToSupabase = async (list: player_info[]) => {
+  try {
+    const { error: deleteError } = await supabase
+      .from("player_info")
+      .delete()
+      .neq("dupr_id", "");
 
-  const updateUserInfo = (field: keyof player_info, value: string) => {
-    setUserInfo({ ...userInfo, [field]: value });
-  };
+    if (deleteError) throw deleteError;
 
-  const addUser = async () => {
-    if (!userInfo.dupr_id || !userInfo.name) return;
+    const { error: insertError } = await supabase
+      .from("player_info")
+      .insert(list);
 
-    let updated = [...userList];
-    if (editIndex !== null) {
-      updated[editIndex] = userInfo;
-      setEditIndex(null);
-    } else {
-      updated.push(userInfo);
-    }
+    if (insertError) throw insertError;
+  } catch (error: any) {
+    console.error("Supabase save error:", error.message);
+  }
+};
 
-    setUserList(updated);
-    setUserInfo({ dupr_id: "", name: "" });
-    await saveUserToSupabase(updated);
-  };
+// 輸入時更新 userInfo
+const updateUserInfo = (field: keyof player_info, value: string) => {
+  setUserInfo((prev) => ({ ...prev, [field]: value }));
+};
 
-  const editUser = (index: number) => {
-    setUserInfo(userList[index]);
-    setEditIndex(index);
-  };
+// 新增或更新使用者
+const addUser = async () => {
+  if (!userInfo.dupr_id || !userInfo.name) return;
 
-  const deleteUser = async (index: number) => {
-    const updated = [...userList];
-    updated.splice(index, 1);
-    setUserList(updated);
-    await saveUserToSupabase(updated);
-  };
+  const updated = [...userList];
+  if (editIndex !== null) {
+    updated[editIndex] = userInfo;
+    setEditIndex(null);
+  } else {
+    updated.push(userInfo);
+  }
+
+  setUserList(updated);
+  setUserInfo({ dupr_id: "", name: "" });
+  await saveUserToSupabase(updated);
+};
+
+// 編輯
+const editUser = (index: number) => {
+  setUserInfo(userList[index]);
+  setEditIndex(index);
+};
+
+// 刪除
+const deleteUser = async (index: number) => {
+  const updated = [...userList];
+  updated.splice(index, 1);
+  setUserList(updated);
+  await saveUserToSupabase(updated);
+};
 
   type CellField = "D" | "E" | "F" | "G";
   type OtherField = "h" | "i" | "lock" | "sd";
