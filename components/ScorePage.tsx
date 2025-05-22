@@ -209,21 +209,69 @@ export default function ScorePage() {
         </tbody>
       </table>
 
-     <div className="flex justify-between mb-6">
-      <button
-        onClick={addRow}
-        className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
-      >
-        <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
-      </button>
+         <div className="space-y-12 p-6 max-w-lg mx-auto">
+      {/* 方法1: justify-between + gap */}
+      <div>
+        <h3 className="mb-2 font-bold">方法1：justify-between + gap</h3>
+        <div className="flex justify-between gap-4 border p-4 rounded">
+          <button
+            onClick={addRow}
+            className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
+          >
+            <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+          </button>
 
-      <button
-        onClick={exportCSV}
-        className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
-      >
-        <Download size={18} className="mr-2" /> 匯出 CSV
-      </button>
-     </div>
+          <button
+            onClick={exportCSV}
+            className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
+          >
+            <Download size={18} className="mr-2" /> 匯出 CSV
+          </button>
+        </div>
+      </div>
+
+      {/* 方法2: justify-center + 固定寬度按鈕 + mx-8間隔 */}
+      <div>
+        <h3 className="mb-2 font-bold">方法2：justify-center + 固定寬度 + mx-8間隔</h3>
+        <div className="flex justify-center border p-4 rounded">
+          <button
+            onClick={addRow}
+            className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+          >
+            <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+          </button>
+
+          <div className="mx-8" />
+
+          <button
+            onClick={exportCSV}
+            className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
+          >
+            <Download size={18} className="mr-2" /> 匯出 CSV
+          </button>
+        </div>
+      </div>
+
+      {/* 方法3: flex + ml-auto */}
+      <div>
+        <h3 className="mb-2 font-bold">方法3：flex + ml-auto</h3>
+        <div className="flex border p-4 rounded">
+          <button
+            onClick={addRow}
+            className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center"
+          >
+            <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+          </button>
+
+          <button
+            onClick={exportCSV}
+            className="ml-auto bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
+          >
+            <Download size={18} className="mr-2" /> 匯出 CSV
+          </button>
+        </div>
+      </div>
+    </div>
     </div>
   )
 }
