@@ -30,17 +30,19 @@ export default function Home() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="players">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <PlayerPage />
-        </motion.div>
-      </TabsContent>
+      <TabsContent
+            value="players"
+            className="text-gray-800 text-base sm:text-lg leading-relaxed"
+          >
+            <PlayerPage />
+          </TabsContent>
 
-      <TabsContent value="scores">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-          <ScorePage />
-        </motion.div>
-      </TabsContent>
+          <TabsContent
+            value="scores"
+            className="text-gray-800 text-base sm:text-lg leading-relaxed"
+          >
+            <ScorePage />
+          </TabsContent>
     </Tabs>
   </div>
 </main>
