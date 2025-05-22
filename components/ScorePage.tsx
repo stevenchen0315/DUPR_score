@@ -167,7 +167,7 @@ export default function ScorePage() {
               <td className="border p-1">{row.sd}</td>
               <td className="border p-1">
                 <input
-                  type="number"
+                  type="numeric"
                   min="0"
                   max="99"
                   step="1"
@@ -179,7 +179,7 @@ export default function ScorePage() {
               </td>
               <td className="border p-1">
                 <input
-                  type="number"
+                  type="numeric"
                   min="0"
                   max="99"
                   step="1"
