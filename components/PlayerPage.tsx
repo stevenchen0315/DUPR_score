@@ -37,17 +37,17 @@ export default function PlayerPage() {
     }
   }, [])
   
-  const saveUserToSupabase = async (list: player_info[]) => {
-    try {
-      const { error: deleteError } = await supabase.from('player_info').delete().neq('dupr_id', '')
-      if (deleteError) throw deleteError
-      const { error: insertError } = await supabase.from('player_info').insert(list)
-      if (insertError) throw insertError
-    } catch (error: any) {
-      console.error('Supabase save error:', error.message)
-    }
+const saveUserToSupabase = async (list: player_info[]) => {
+  try {
+    const { error } = await supabase
+      .from('player_info')
+      .upsert(list, { onConflict: ['dupr_id'] })
+    if (error) throw error
+  } catch (error: any) {
+    console.error('Supabase save error:', error.message)
   }
-
+}
+  
   const updateUserInfo = (field: keyof player_info, value: string) => {
     setUserInfo((prev) => ({ ...prev, [field]: value }))
   }
