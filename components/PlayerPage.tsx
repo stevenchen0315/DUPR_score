@@ -41,7 +41,7 @@ const saveUserToSupabase = async (list: player_info[]) => {
   try {
     const { error } = await supabase
       .from('player_info')
-      .upsert(list, { onConflict: ['dupr_id'] })
+      .upsert(list, { onConflict: 'dupr_id' })
     if (error) throw error
   } catch (error: any) {
     console.error('Supabase save error:', error.message)
