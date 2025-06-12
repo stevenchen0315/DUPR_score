@@ -71,12 +71,23 @@ const saveUserToSupabase = async (list: player_info[]) => {
     setEditIndex(index)
   }
 
-  const deleteUser = async (index: number) => {
-    const updated = [...userList]
-    updated.splice(index, 1)
-    setUserList(updated)
-    await saveUserToSupabase(updated)
+const deleteUser = async (index: number) => {
+  const deletedUser = userList[index]
+  const updated = [...userList]
+  updated.splice(index, 1)
+  setUserList(updated)
+
+  // 刪除資料庫中的該筆資料
+const { error } = await supabase
+    .from('player_info')
+    .delete()
+    .eq('dupr_id', deletedUser.dupr_id)
+
+  if (error) {
+    console.error('Supabase delete error:', error.message)
   }
+}
+
 
   return (
     <div className="max-w-md mx-auto p-4">
