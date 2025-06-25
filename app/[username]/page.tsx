@@ -6,6 +6,6 @@ export default function UserPage({ params }: { params: { username: string } }) {
     <div>
       <PlayerPage username={params.username} />
       <ScorePage username={params.username} />
-    </div>Add commentMore actions
+    </div>
   )
 }
