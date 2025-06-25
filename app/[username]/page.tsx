@@ -4,7 +4,7 @@ import { useState } from 'react'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 
-export default function UserPage({ params }: { params: { username: string } }) {
+export default function UserPage({ params }: any) {
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
 
   return (
