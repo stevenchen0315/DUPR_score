@@ -5,16 +5,22 @@ import { supabase } from '@/lib/supabase'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
 
-export default function PlayerPage() {
+export default function PlayerPage({ username }: { username: string }) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
 
-  // 拉取選手資料
+  // 根據 username 動態抓對應資料表
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('player_info').select('dupr_id, name')
-    if (error) console.error('Error fetching users:', error.message)
-    else setUserList(data || [])
+    const { data, error } = await supabase
+      .from(`player_info_${username}`)
+      .select('dupr_id, name')
+
+    if (error) {
+      console.error('Error fetching users:', error.message)
+    } else {
+      setUserList(data || [])
+    }
   }
 
   useEffect(() => {
@@ -22,10 +28,14 @@ export default function PlayerPage() {
 
     // 訂閱 Supabase Realtime（player_info 資料表）
     const playerChannel = supabase
-      .channel('realtime-player_info')
+      .channel(`realtime-player_info_${username}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'player_info' },
+        {
+          event: '*',
+          schema: 'public',
+          table: `player_info_${username}`,
+        },
         () => {
           fetchUsers()
         }
@@ -35,12 +45,12 @@ export default function PlayerPage() {
     return () => {
       supabase.removeChannel(playerChannel)
     }
-  }, [])
+  }, [username])
   
 const saveUserToSupabase = async (list: player_info[]) => {
   try {
     const { error } = await supabase
-      .from('player_info')
+      .from(`player_info_${username}`)
       .upsert(list, { onConflict: 'dupr_id' })
     if (error) throw error
   } catch (error: any) {
@@ -79,7 +89,7 @@ const deleteUser = async (index: number) => {
 
   // 刪除資料庫中的該筆資料
 const { error } = await supabase
-    .from('player_info')
+    .from(`player_info_${username}`)
     .delete()
     .eq('dupr_id', deletedUser.dupr_id)
 
