@@ -1,4 +1,4 @@
-import PlayerPage from '@/components/PlayerPage'Add commentMore actions
+import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 
 export default function UserPage({ params }: { params: { username: string } }) {
@@ -6,6 +6,6 @@ export default function UserPage({ params }: { params: { username: string } }) {
     <div>
       <PlayerPage username={params.username} />
       <ScorePage username={params.username} />
-    </div>
+    </div>Add commentMore actions
   )
 }
