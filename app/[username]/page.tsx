@@ -20,20 +20,28 @@ export default function UserPage({ params }: any) {
       </h1>
 
       {/* 切換按鈕 */}
-      <div className="flex justify-center gap-4 mb-6">
-        <button
-          onClick={() => setTab('players')}
-          className={`px-4 py-2 rounded ${tab === 'players' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          選手資料
-        </button>
-        <button
-          onClick={() => setTab('scores')}
-          className={`px-4 py-2 rounded ${tab === 'scores' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-        >
-          比賽分數
-        </button>
-      </div>
+      <div className="flex justify-center gap-4 mb-4">
+  <button
+    onClick={() => setTab('players')}
+    className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
+      tab === 'players'
+        ? 'bg-black text-white'
+        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    }`}
+  >
+    選手資料
+  </button>
+  <button
+    onClick={() => setTab('scores')}
+    className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
+      tab === 'scores'
+        ? 'bg-black text-white'
+        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+    }`}
+  >
+    比賽分數
+  </button>
+</div>
 
       {/* 主內容 */}
       {tab === 'players' && <PlayerPage username={username} />}
