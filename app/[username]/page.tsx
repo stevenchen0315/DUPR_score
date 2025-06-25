@@ -1,14 +1,13 @@
-// app/[username]/page.tsx
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 
-type PageProps = {
+interface UserPageProps {
   params: {
     username: string
   }
 }
 
-export default function UserPage({ params }: PageProps) {
+export default function UserPage({ params }: UserPageProps) {
   return (
     <div>
       <PlayerPage username={params.username} />
