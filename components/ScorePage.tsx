@@ -29,9 +29,10 @@ export default function ScorePage({ username }: { username: string }) {
 
     const { data: scores } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
     if (scores) setRows(formatScores(scores))
-
-    fetchData()
-  }, [username])  
+    
+  }
+    
+  fetchData()
 
   const formatScores = (scores: score[]) => {
     return scores.map((item: score) => ({
