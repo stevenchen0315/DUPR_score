@@ -181,9 +181,9 @@ export default function ScorePage({ username }: { username: string }) {
             <th className="border p-1">B1</th>
             <th className="border p-1">B2</th>
             <th className="border p-1">S/D</th>
-            <th className="border p-1">Team A</th>
-            <th className="border p-1">Team B</th>
-            <th className="border p-1">狀態</th>
+            <th className="border p-1">A Score</th>
+            <th className="border p-1">B Score</th>
+            <th className="border p-1">Status</th>
           </tr>
         </thead>
         <tbody>
@@ -255,7 +255,7 @@ export default function ScorePage({ username }: { username: string }) {
           onClick={addRow}
           className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
         >
-          <Plus size={16} className="mr-1" /> 新增比賽組(Add Match)
+          <Plus size={16} className="mr-1" /> 添加比賽(Add Match)
         </button>
 
         <div className="mx-8" />
