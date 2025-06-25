@@ -16,7 +16,7 @@ type Row = {
   lock: string
 }
 
-export default function ScorePage() {
+export default function ScorePage({ username }: { username: string }) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
@@ -24,14 +24,14 @@ export default function ScorePage() {
 
   useEffect(() => {
   const fetchData = async () => {
-    const { data: users } = await supabase.from('player_info').select('dupr_id, name')
+    const { data: users } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
     if (users) setUserList(users)
 
-    const { data: scores } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+    const { data: scores } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
     if (scores) setRows(formatScores(scores))
-  }
 
-  fetchData()
+    fetchData()
+  }, [username])  
 
   const formatScores = (scores: score[]) => {
     return scores.map((item: score) => ({
@@ -57,7 +57,7 @@ export default function ScorePage() {
       'postgres_changes',
       { event: '*', schema: 'public', table: 'score' },
       async () => {
-        const { data } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+        const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
         if (data) setRows(formatScores(data))
       }
     )
@@ -90,7 +90,7 @@ export default function ScorePage() {
 
     setRows(newRows)
 
-    await supabase.from('score').upsert({
+    await supabase.from(`score_${username}`).upsert({
       serial_number: rowIndex + 1,
       player_a1: a1,
       player_a2: a2,
@@ -121,8 +121,8 @@ export default function ScorePage() {
       }
     })
 
-    await supabase.from('score').delete().neq('serial_number', 0)
-    await supabase.from('score').insert(payload)
+    await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
+    await supabase.from(`score_${username}`).insert(payload)
   }
 
   const addRow = () => {
@@ -161,7 +161,7 @@ export default function ScorePage() {
   }
 
   const handleDeleteAll = async () => {
-    const { error } = await supabase.from('score').delete().neq('serial_number', 0)
+    const { error } = await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
     if (!error) {
       setRows([])
       setDeleteMessage('✅ 所有比賽資料已刪除')
