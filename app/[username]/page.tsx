@@ -1,13 +1,11 @@
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 
-type PageProps = {
-  params: {
-    username: string
-  }
-}
-
-export default function UserPage({ params }: PageProps) {
+export default function UserPage({
+  params,
+}: {
+  params: { username: string }
+}) {
   return (
     <div>
       <PlayerPage username={params.username} />
