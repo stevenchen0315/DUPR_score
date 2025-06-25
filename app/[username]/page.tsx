@@ -16,7 +16,7 @@ export default function UserPage({ params }: any) {
     <div className="p-6">
       {/* 顯示使用者名稱 */}
       <h1 className="text-3xl font-bold text-center text-blue-600 mb-6 border-b pb-2">
-        Organizers: {capitalizeFirstLetter(username)}
+        Organizer: {capitalizeFirstLetter(username)}
       </h1>
 
       {/* 切換按鈕 */}
