@@ -3,10 +3,19 @@
 import { useState } from 'react'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
+import { notFound } from 'next/navigation'
+
+// ✅ 只允許的使用者名稱清單
+const allowedUsernames = ['orange', 'steven']
 
 export default function UserPage({ params }: any) {
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const username = params.username
+
+  // ❌ 不在白名單 → 顯示 404
+  if (!allowedUsernames.includes(username)) {
+    notFound()
+  }
 
   // 第一個字母大寫的處理函數
   const capitalizeFirstLetter = (str: string) =>
