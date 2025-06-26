@@ -272,12 +272,15 @@ const formatScores = (scores: score[]): Row[] => {
       <div className="text-xs">(Add Match)</div>
     </div>
   </button>
-
+    
+  {/* 分隔線 */}
+  <hr className="border-t w-40 my-2" />
+    
   {/* 輸出與刪除功能排成一列 */}
   <div className="flex items-center space-x-3">
     <input
       type="password"
-      placeholder="請輸入密碼"
+      placeholder="Password"
       value={deletePassword}
       onChange={(e) => setDeletePassword(e.target.value)}
       className="border px-2 py-1 rounded w-24"
