@@ -23,15 +23,33 @@ export default function ScorePage({ username }: { username: string }) {
   const [deleteMessage, setDeleteMessage] = useState('')
 
   useEffect(() => {
+    if (!username) return
+    
+  const formatScores = (scores: score[]) => {
+    return scores.map((item: score) => ({
+      values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
+      h: item.team_a_score?.toString() || '',
+      i: item.team_b_score?.toString() || '',
+      lock: item.lock ? '鎖定' : '解鎖',
+      sd:
+        [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
+        [item.player_b1, item.player_b2].filter(Boolean).length === 1
+          ? 'S'
+          : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
+             [item.player_b1, item.player_b2].filter(Boolean).length === 2
+            ? 'D'
+            : ''),
+    }))
+  }
+
   const fetchData = async () => {
     const { data: users } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
     if (users) setUserList(users)
 
     const { data: scores } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
     if (scores) setRows(formatScores(scores))
-    
   }
-    
+
   fetchData()
 
   const formatScores = (scores: score[]) => {
@@ -53,22 +71,42 @@ export default function ScorePage({ username }: { username: string }) {
 
   // Supabase Realtime 訂閱
   const channel = supabase
-    .channel('realtime-score')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'score' },
-      async () => {
-        const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
-        if (data) setRows(formatScores(data))
-      }
-    )
-    .subscribe()
+      .channel('realtime-score')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: `score_${username}` },
+        (payload) => {
+          if (!payload.new) return
+          setRows((prevRows) => {
+            const updatedRows = [...prevRows]
+            const changed = payload.new
+            const idx = updatedRows.findIndex(row => row.serial_number === changed.serial_number)
+            if (idx !== -1) {
+              updatedRows[idx] = {
+                values: [changed.player_a1, changed.player_a2, changed.player_b1, changed.player_b2],
+                h: changed.team_a_score?.toString() || '',
+                i: changed.team_b_score?.toString() || '',
+                lock: changed.lock ? '鎖定' : '解鎖',
+                sd:
+                  [changed.player_a1, changed.player_a2].filter(Boolean).length === 1 &&
+                  [changed.player_b1, changed.player_b2].filter(Boolean).length === 1
+                    ? 'S'
+                    : ([changed.player_a1, changed.player_a2].filter(Boolean).length === 2 &&
+                       [changed.player_b1, changed.player_b2].filter(Boolean).length === 2
+                      ? 'D'
+                      : ''),
+              }
+            }
+            return updatedRows
+          })
+        }
+      )
+      .subscribe()
 
-  // 清除訂閱
-  return () => {
-    supabase.removeChannel(channel)
-  }
-}, [])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [username])
 
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = [...rows]
