@@ -262,11 +262,14 @@ const formatScores = (scores: score[]): Row[] => {
 
       <div className="flex flex-col items-center mb-6 space-y-4">
   <button
-    onClick={addRow}
-    className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+  onClick={addRow}
+  className="bg-green-600 text-white px-3 py-1 rounded inline-flex flex-col items-center w-40"
   >
-    <Plus size={16} className="mr-1" /> 添加比賽
-    (Add Match)
+  <Plus size={16} className="mb-1" />
+  <div className="text-center leading-tight">
+    <div>添加比賽</div>
+    <div className="text-xs">(Add Match)</div>
+  </div>
   </button>
 
   <button
