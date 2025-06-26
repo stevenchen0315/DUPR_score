@@ -276,7 +276,12 @@ const formatScores = (scores: score[]): Row[] => {
   </button>
     
   {/* 分隔線 */}
-  <hr className="w-full border-t border-gray-300 my-4" />
+  <div className="relative w-full my-4">
+  <hr className="border-t border-gray-300" />
+  <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+    Organizer only
+  </span>
+  </div>
     
   {/* 輸出與刪除功能排成一列 */}
   <div className="flex items-center space-x-3">
