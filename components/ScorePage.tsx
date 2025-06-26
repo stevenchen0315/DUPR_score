@@ -126,8 +126,8 @@ const formatScores = (scores: score[]): Row[] => {
         player_a2: a2,
         player_b1: b1,
         player_b2: b2,
-        team_a_score: parseInt(row.h) || 0,
-        team_b_score: parseInt(row.i) || 0,
+        team_a_score: row.h === '' ? null : parseInt(row.h),
+        team_b_score: row.i === '' ? null : parseInt(row.i),
         lock: row.lock === '鎖定'
       }
     })
