@@ -59,7 +59,7 @@ const channel = supabase
     .channel('realtime-score')
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'score' },
+      { event: '*', schema: 'public', table: `score_${username}` },
       async () => {
         const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
         if (data) setRows(formatScores(data))
