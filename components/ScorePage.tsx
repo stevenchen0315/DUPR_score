@@ -260,23 +260,21 @@ const formatScores = (scores: score[]): Row[] => {
         </tbody>
       </table>
 
-      <div className="flex justify-center mb-6">
-        <button
-          onClick={addRow}
-          className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
-        >
-          <Plus size={16} className="mr-1" /> 添加比賽(Add Match)
-        </button>
+      <div className="flex flex-col items-center mb-6 space-y-4">
+  <button
+    onClick={addRow}
+    className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+  >
+    <Plus size={16} className="mr-1" /> 添加比賽(Add Match)
+  </button>
 
-        <div className="mx-8" />
-
-        <button
-          onClick={exportCSV}
-          className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
-        >
-          <Download size={18} className="mr-2" /> 匯出 CSV
-        </button>
-      </div>
+  <button
+    onClick={exportCSV}
+    className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
+  >
+    <Download size={18} className="mr-2" /> 匯出 CSV
+  </button>
+</div>
 
       <div className="flex justify-center mb-6 flex-col items-center space-y-2">
         <div className="flex items-center space-x-2">
