@@ -31,26 +31,32 @@ export default function UserPage({ params }: any) {
       {/* 切換按鈕 */}
       <div className="flex justify-center gap-4 mb-4">
         <button
-        onClick={() => setTab('players')}
-        className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
-        tab === 'players'
-        ? 'bg-black text-white'
-        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-        }`}
+          onClick={() => setTab('players')}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
+            tab === 'players'
+              ? 'bg-black text-white'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+          }`}
         >
-        選手資料
+          <div className="text-center leading-tight">
+            <div>選手資料</div>
+            <div className="text-xs">(Players)</div>
+          </div>
         </button>
         <button
-    onClick={() => setTab('scores')}
-    className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
-      tab === 'scores'
-        ? 'bg-black text-white'
-        : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-    }`}
-  >
-    比賽分數
-  </button>
-</div>
+          onClick={() => setTab('scores')}
+          className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
+            tab === 'scores'
+              ? 'bg-black text-white'
+              : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+          }`}
+        >
+          <div className="text-center leading-tight">
+            <div>比賽分數</div>
+            <div className="text-xs">(Matches)</div>
+          </div>
+        </button>
+      </div>
 
       {/* 主內容 */}
       <div className="flex-grow">
