@@ -19,7 +19,7 @@ type Row = {
 
 export default function ScorePage({ username }: { username: string }) {
   const [userList, setUserList] = useState<player_info[]>([])
-  const [rows, setRows] = useState<Row[]>([])
+  const [rows, setRows] = useState<score[]>([])
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
 
