@@ -280,7 +280,7 @@ const formatScores = (scores: score[]): Row[] => {
       placeholder="請輸入密碼"
       value={deletePassword}
       onChange={(e) => setDeletePassword(e.target.value)}
-      className="border px-2 py-1 rounded"
+      className="border px-2 py-1 rounded w-24"
     />
     
     <button
