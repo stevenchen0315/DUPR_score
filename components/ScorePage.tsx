@@ -9,7 +9,7 @@ type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
 
 type Row = {
-  serial_number: number
+  //serial_number: number
   values: string[]
   sd: string
   h: string
@@ -38,7 +38,7 @@ export default function ScorePage({ username }: { username: string }) {
 
   const formatScores = (scores: score[]) => {
     return scores.map((item: score) => ({
-      serial_number: item.serial_number,
+      //serial_number: item.serial_number,
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
       h: item.team_a_score.toString(),
       i: item.team_b_score.toString(),
@@ -55,43 +55,23 @@ export default function ScorePage({ username }: { username: string }) {
   }
 
   // Supabase Realtime 訂閱
-  const channel = supabase
-      .channel('realtime-score')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: `score_${username}` },
-        (payload) => {
-          if (!payload.new) return
-          setRows((prevRows) => {
-            const updatedRows = [...prevRows]
-            const changed = payload.new
-            const idx = updatedRows.findIndex(row => row.serial_number === changed.serial_number)
-            if (idx !== -1) {
-              updatedRows[idx] = {
-                values: [changed.player_a1, changed.player_a2, changed.player_b1, changed.player_b2],
-                h: changed.team_a_score?.toString() || '',
-                i: changed.team_b_score?.toString() || '',
-                lock: changed.lock ? '鎖定' : '解鎖',
-                sd:
-                  [changed.player_a1, changed.player_a2].filter(Boolean).length === 1 &&
-                  [changed.player_b1, changed.player_b2].filter(Boolean).length === 1
-                    ? 'S'
-                    : ([changed.player_a1, changed.player_a2].filter(Boolean).length === 2 &&
-                       [changed.player_b1, changed.player_b2].filter(Boolean).length === 2
-                      ? 'D'
-                      : ''),
-              }
-            }
-            return updatedRows
-          })
-        }
-      )
-      .subscribe()
+const channel = supabase
+    .channel('realtime-score')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'score' },
+      async () => {
+        const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
+        if (data) setRows(formatScores(data))
+      }
+    )
+    .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [username])
+  // 清除訂閱
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [username])
 
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = [...rows]
