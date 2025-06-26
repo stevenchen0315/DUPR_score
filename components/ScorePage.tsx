@@ -66,8 +66,8 @@ const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => ({
       //serial_number: item.serial_number,
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-      h: item.team_a_score.toString(),
-      i: item.team_b_score.toString(),
+      h: item.team_a_score?.toString() ?? '',
+      i: item.team_b_score?.toString() ?? '',
       lock: item.lock ? '鎖定' : '解鎖',
       sd:
         [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
