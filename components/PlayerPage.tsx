@@ -123,7 +123,12 @@ const { error } = await supabase
           className="bg-blue-600 text-white rounded-md px-5 py-2 shadow hover:bg-blue-700 transition flex-shrink-0"
           aria-label={editIndex !== null ? '更新選手' : '新增選手'}
         >
-          {editIndex !== null ? '更新選手' : '新增選手'}
+          <div className="leading-tight text-center">
+            <div>{editIndex !== null ? '更新選手' : '新增選手'}</div>
+            <div className="text-xs">
+              {editIndex !== null ? '(Update player)' : '(Add player)'}
+            </div>
+          </div>
         </button>
       </div>
 
