@@ -59,7 +59,7 @@ export default function UserPage({ params }: any) {
       </div>
       {/* Footer 區塊 */}
       <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
-        &copy; {new Date().getFullYear()} Steven Chen
+        Copyright &copy; {new Date().getFullYear()} Steven Chen
       </footer>
     </div>
   )
