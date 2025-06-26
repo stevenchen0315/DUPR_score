@@ -21,17 +21,17 @@ export default function UserPage({ params }: any) {
 
       {/* 切換按鈕 */}
       <div className="flex justify-center gap-4 mb-4">
-  <button
-    onClick={() => setTab('players')}
-    className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
-      tab === 'players'
+        <button
+        onClick={() => setTab('players')}
+        className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
+        tab === 'players'
         ? 'bg-black text-white'
         : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-    }`}
-  >
-    選手資料
-  </button>
-  <button
+        }`}
+        >
+        選手資料
+        </button>
+        <button
     onClick={() => setTab('scores')}
     className={`px-5 py-2 rounded-md text-sm font-medium transition active:scale-95 ${
       tab === 'scores'
@@ -44,8 +44,14 @@ export default function UserPage({ params }: any) {
 </div>
 
       {/* 主內容 */}
-      {tab === 'players' && <PlayerPage username={username} />}
-      {tab === 'scores' && <ScorePage username={username} />}
+      <div className="flex-grow">
+        {tab === 'players' && <PlayerPage username={username} />}
+        {tab === 'scores' && <ScorePage username={username} />}
+      </div>
+      {/* Footer 區塊 */}
+      <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
+        &copy; {new Date().getFullYear()} Steven Chen
+      </footer>
     </div>
   )
 }
