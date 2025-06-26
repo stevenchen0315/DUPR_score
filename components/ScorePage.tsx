@@ -23,7 +23,8 @@ export default function ScorePage({ username }: { username: string }) {
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
 
-  useEffect(() => {
+  useEffect(() => 
+    {
     if (!username) return
 
     const fetchData = async () => {
@@ -41,24 +42,6 @@ export default function ScorePage({ username }: { username: string }) {
     }
 
   fetchData()
-
-  const formatScores = (scores: score[]) => {
-    return scores.map((item: score) => ({
-      //serial_number: item.serial_number,
-      values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-      h: item.team_a_score.toString(),
-      i: item.team_b_score.toString(),
-      lock: item.lock ? '鎖定' : '解鎖',
-      sd:
-        [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
-        [item.player_b1, item.player_b2].filter(Boolean).length === 1
-          ? 'S'
-          : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
-             [item.player_b1, item.player_b2].filter(Boolean).length === 2
-            ? 'D'
-            : ''),
-    }))
-  }
 
   // Supabase Realtime 訂閱
 const channel = supabase
@@ -79,6 +62,24 @@ const channel = supabase
     }
   }, [username])
 
+  const formatScores = (scores: score[]) => {
+    return scores.map((item: score) => ({
+      //serial_number: item.serial_number,
+      values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
+      h: item.team_a_score.toString(),
+      i: item.team_b_score.toString(),
+      lock: item.lock ? '鎖定' : '解鎖',
+      sd:
+        [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
+        [item.player_b1, item.player_b2].filter(Boolean).length === 1
+          ? 'S'
+          : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
+             [item.player_b1, item.player_b2].filter(Boolean).length === 2
+            ? 'D'
+            : ''),
+    }))
+  }
+  
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = [...rows]
     const row = newRows[rowIndex]
