@@ -260,50 +260,52 @@ const formatScores = (scores: score[]): Row[] => {
         </tbody>
       </table>
 
-      <div className="flex flex-col items-center mb-6 space-y-4">
-        
+  <div className="flex flex-col items-center mb-6 space-y-4">
+  {/* 添加比賽按鈕 */}
   <button
-  onClick={addRow}
-  className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
+    onClick={addRow}
+    className="bg-green-600 text-white px-3 py-1 rounded inline-flex items-center w-40"
   >
-  <Plus size={16} className="mr-2" />
-  <div className="text-left leading-tight">
-    <div>添加比賽</div>
-    <div className="text-xs">(Add Match)</div>
-  </div>
-  </button>
-
-  <button
-    onClick={exportCSV}
-    className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center w-40"
-  >
-    <Download size={18} className="mr-2" /> 匯出 CSV
-  </button>
-</div>
-
-      <div className="flex justify-center mb-6 flex-col items-center space-y-2">
-        <div className="flex items-center space-x-2">
-          <input
-            type="password"
-            placeholder="請輸入密碼"
-            value={deletePassword}
-            onChange={(e) => setDeletePassword(e.target.value)}
-            className="border px-2 py-1 rounded"
-          />
-          <button
-            onClick={handleDeleteAll}
-            disabled={deletePassword !== '0315'}
-            className={`px-3 py-1 rounded text-white ${
-              deletePassword === '0315'
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-gray-300 cursor-not-allowed'
-            }`}
-          >
-            一鍵刪除
-          </button>
-        </div>
-        {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
-      </div>
+    <Plus size={16} className="mr-2" />
+    <div className="text-left leading-tight">
+      <div>添加比賽</div>
+      <div className="text-xs">(Add Match)</div>
     </div>
+  </button>
+
+  {/* 輸出與刪除功能排成一列 */}
+  <div className="flex items-center space-x-3">
+    <input
+      type="password"
+      placeholder="請輸入密碼"
+      value={deletePassword}
+      onChange={(e) => setDeletePassword(e.target.value)}
+      className="border px-2 py-1 rounded"
+    />
+    
+    <button
+      onClick={exportCSV}
+      className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
+    >
+      <Download size={18} className="mr-2" /> 匯出 CSV
+    </button>
+
+    <button
+      onClick={handleDeleteAll}
+      disabled={deletePassword !== '0315'}
+      className={`px-3 py-2 rounded text-white ${
+        deletePassword === '0315'
+          ? 'bg-red-600 hover:bg-red-700'
+          : 'bg-gray-300 cursor-not-allowed'
+      }`}
+    >
+      一鍵刪除
+    </button>
+  </div>
+
+  {/* 提示訊息 */}
+  {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+  </div>
+  </div>
   )
 }
