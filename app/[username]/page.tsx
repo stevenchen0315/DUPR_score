@@ -13,6 +13,7 @@ export default function UserPage({ params }: any) {
     str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
+    <div>
     <div className="text-red-500 text-3xl font-bold bg-yellow-200 p-4">
       TAILWIND TEST
     </div>
@@ -50,5 +51,6 @@ export default function UserPage({ params }: any) {
       {tab === 'players' && <PlayerPage username={username} />}
       {tab === 'scores' && <ScorePage username={username} />}
     </div>
+      </div>
   )
 }
