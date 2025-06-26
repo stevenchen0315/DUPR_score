@@ -25,7 +25,7 @@ export default function ScorePage({ username }: { username: string }) {
 
   useEffect(() => 
     {
-    if (!username) return
+    //if (!username) return
 
     const fetchData = async () => {
       try {
@@ -45,7 +45,7 @@ export default function ScorePage({ username }: { username: string }) {
 
   // Supabase Realtime 訂閱
 const channel = supabase
-      .channel(`realtime-score-${username}`)
+      .channel(`realtime-score_${username}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: `score_${username}` },
