@@ -25,14 +25,20 @@ export default function ScorePage({ username }: { username: string }) {
 
   useEffect(() => {
     if (!username) return
-    
-  const fetchData = async () => {
-    const { data: users } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
-    if (users) setUserList(users)
 
-    const { data: scores } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
-    if (scores) setRows(formatScores(scores))
-  }
+    const fetchData = async () => {
+      try {
+        const { data: users, error: userError } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
+        if (userError) throw userError
+        if (users) setUserList(users)
+
+        const { data: scores, error: scoreError } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
+        if (scoreError) throw scoreError
+        if (scores) setRows(formatScores(scores))
+      } catch (error) {
+        console.error('Fetch error:', error)
+      }
+    }
 
   fetchData()
 
@@ -56,22 +62,22 @@ export default function ScorePage({ username }: { username: string }) {
 
   // Supabase Realtime 訂閱
 const channel = supabase
-    .channel('realtime-score')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: `score_${username}` },
-      async () => {
-        const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
-        if (data) setRows(formatScores(data))
-      }
-    )
-    .subscribe()
+      .channel(`realtime-score-${username}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: `score_${username}` },
+        async () => {
+          // 變更時再抓一次整張表（你可用前面提的優化改成只更新部分）
+          const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
+          if (data) setRows(formatScores(data))
+        }
+      )
+      .subscribe()
 
-  // 清除訂閱
-  return () => {
-    supabase.removeChannel(channel)
-  }
-}, [username])
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [username])
 
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = [...rows]
