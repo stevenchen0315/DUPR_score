@@ -278,17 +278,18 @@ const formatScores = (scores: score[]): Row[] => {
     
   {/* 輸出與刪除功能排成一列 */}
   <div className="flex items-center space-x-3">
+    {/* 密碼輸入框 */}
     <input
       type="password"
       placeholder="Password"
       value={deletePassword}
       onChange={(e) => setDeletePassword(e.target.value)}
-      className="border px-2 py-1 rounded w-24"
+      className="border px-3 py-2 rounded w-24 text-sm h-10"
     />
     
     <button
       onClick={exportCSV}
-      className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center"
+      className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
     >
       <Download size={18} className="mr-2" /> 匯出 CSV
     </button>
@@ -296,7 +297,7 @@ const formatScores = (scores: score[]): Row[] => {
     <button
       onClick={handleDeleteAll}
       disabled={deletePassword !== '0315'}
-      className={`px-3 py-2 rounded text-white ${
+      className={`px-3 py-2 rounded text-white text-sm h-10 ${
         deletePassword === '0315'
           ? 'bg-red-600 hover:bg-red-700'
           : 'bg-gray-300 cursor-not-allowed'
