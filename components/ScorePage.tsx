@@ -25,23 +25,6 @@ export default function ScorePage({ username }: { username: string }) {
   useEffect(() => {
     if (!username) return
     
-  const formatScores = (scores: score[]) => {
-    return scores.map((item: score) => ({
-      values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
-      h: item.team_a_score?.toString() || '',
-      i: item.team_b_score?.toString() || '',
-      lock: item.lock ? '鎖定' : '解鎖',
-      sd:
-        [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
-        [item.player_b1, item.player_b2].filter(Boolean).length === 1
-          ? 'S'
-          : ([item.player_a1, item.player_a2].filter(Boolean).length === 2 &&
-             [item.player_b1, item.player_b2].filter(Boolean).length === 2
-            ? 'D'
-            : ''),
-    }))
-  }
-
   const fetchData = async () => {
     const { data: users } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
     if (users) setUserList(users)
