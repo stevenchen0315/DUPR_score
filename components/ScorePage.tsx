@@ -274,7 +274,7 @@ const formatScores = (scores: score[]): Row[] => {
   </button>
     
   {/* 分隔線 */}
-  <hr className="border-t w-40 my-2" />
+  <hr className="border-t w-400 my-2" />
     
   {/* 輸出與刪除功能排成一列 */}
   <div className="flex items-center space-x-3">
