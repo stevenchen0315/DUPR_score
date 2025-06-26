@@ -13,6 +13,9 @@ export default function UserPage({ params }: any) {
     str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
+    <div className="text-red-500 text-3xl font-bold bg-yellow-200 p-4">
+      TAILWIND TEST
+    </div>
     <div className="p-6">
       {/* 顯示使用者名稱 */}
       <h1 className="text-3xl font-bold text-center text-blue-600 mb-6 border-b pb-2">
