@@ -9,6 +9,7 @@ type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
 
 type Row = {
+  serial_number: number
   values: string[]
   sd: string
   h: string
