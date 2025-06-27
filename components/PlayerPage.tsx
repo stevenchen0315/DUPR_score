@@ -98,7 +98,6 @@ const { error } = await supabase
   }
 }
 
-
   return (
     <div className="max-w-md mx-auto p-4">
       {/* 輸入區塊 */}
@@ -120,7 +119,12 @@ const { error } = await supabase
         />
         <button
           onClick={addUser}
-          className="bg-blue-600 text-white rounded-md px-5 py-2 shadow hover:bg-blue-700 transition flex-shrink-0"
+          disabled={!/^[A-Z0-9]{6}$/.test(userInfo.dupr_id)}
+          className={`rounded-md px-5 py-2 shadow flex-shrink-0 transition
+            ${/^[A-Z0-9]{6}$/.test(userInfo.dupr_id)
+              ? 'bg-blue-600 text-white hover:bg-blue-700'
+              : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+          `}
           aria-label={editIndex !== null ? '更新選手' : '新增選手'}
         >
           <div className="leading-tight text-center">
