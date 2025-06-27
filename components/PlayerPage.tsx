@@ -106,7 +106,7 @@ const { error } = await supabase
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
           placeholder="DUPR ID"
           value={userInfo.dupr_id}
-          onChange={(e) => updateUserInfo('dupr_id', e.target.value)}
+          onChange={(e) => updateUserInfo('dupr_id', e.target.value.toUpperCase())}
           type="text"
           inputMode="text"
         />
@@ -117,6 +117,7 @@ const { error } = await supabase
           onChange={(e) => updateUserInfo('name', e.target.value)}
           type="text"
         />
+        
         <button
           onClick={addUser}
           disabled={!/^[A-Z0-9]{6}$/.test(userInfo.dupr_id)}
