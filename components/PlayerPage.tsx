@@ -120,9 +120,11 @@ const { error } = await supabase
         
         <button
           onClick={addUser}
-          disabled={!/^[A-Z0-9]{6}$/.test(userInfo.dupr_id)}
+          disabled={
+            !/^[A-Z0-9]{6}$/.test(userInfo.dupr_id) || userInfo.name.trim() === ''
+          }
           className={`rounded-md px-5 py-2 shadow flex-shrink-0 transition
-            ${/^[A-Z0-9]{6}$/.test(userInfo.dupr_id)
+            ${/^[A-Z0-9]{6}$/.test(userInfo.dupr_id) && userInfo.name.trim() !== ''
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
           `}
