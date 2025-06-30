@@ -64,6 +64,17 @@ export default function UserPage({ params }: any) {
         {tab === 'scores' && <ScorePage username={username} />}
       </div>
       {/* Footer 區塊 */}
+      <div className="text-center mt-12">
+        <a
+        href="https://XXX.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition"
+        >
+          👉 點我入群
+        </a>
+      </div>
+      
       <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
         Copyright &copy; {new Date().getFullYear()} Steven Chen
       </footer>
