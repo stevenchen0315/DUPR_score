@@ -76,7 +76,13 @@ export default function UserPage({ params }: any) {
       </div>
       
       <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
-        Copyright &copy; {new Date().getFullYear()} Steven Chen
+        Copyright &copy; {new Date().getFullYear()}{' '}
+        <a
+          href="mailto:steven0315@kimo.com"
+          className="text-blue-500 hover:underline"
+        >
+          Steven Chen
+        </a>
       </footer>
     </div>
   )
