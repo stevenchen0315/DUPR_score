@@ -66,7 +66,7 @@ export default function UserPage({ params }: any) {
       {/* Footer 區塊 */}
       <div className="text-center mt-12">
         <a
-        href="https://line.me/ti/g/NNN6nsaWv4"
+        href="https://line.me/ti/g/DU-T74Hccm"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition"
