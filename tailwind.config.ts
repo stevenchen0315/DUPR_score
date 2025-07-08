@@ -8,7 +8,7 @@ const config: Config = {
   theme: {
     extend: {
       animation: {
-        blinkBg: 'blinkBg 1s ease-in-out infinite',
+        blinkBg: 'blinkBg 2s ease-in-out infinite',
       },
       keyframes: {
         blinkBg: {
