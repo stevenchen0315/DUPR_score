@@ -8,12 +8,12 @@ const config: Config = {
   theme: {
     extend: {
       animation: {
-        blink: 'blink 1s steps(2, start) infinite',
+        blinkBg: 'blinkBg 1s ease-in-out infinite',
       },
       keyframes: {
-        blink: {
-          '0%, 100%': { opacity: '1' },
-          '50%': { opacity: '0' },
+        blinkBg: {
+          '0%, 100%': { backgroundColor: '#FEF9C3' }, // yellow-100
+          '50%': { backgroundColor: '#FDE68A' }, // yellow-200
         },
       },
     },
