@@ -78,7 +78,7 @@ export default function UserPage({ params }: any) {
         </a>
       </div>
       {/* Footer 區塊 */}
-      <div className="text-center mt-12">
+      <div className="text-center mt-6">
         <a
         href="https://line.me/ti/g/DU-T74Hccm"
         target="_blank"
