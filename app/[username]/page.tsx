@@ -63,6 +63,20 @@ export default function UserPage({ params }: any) {
         {tab === 'players' && <PlayerPage username={username} />}
         {tab === 'scores' && <ScorePage username={username} />}
       </div>
+      {/* 加入廣告圖片 */}
+      <div className="text-center mb-6">
+        <a
+          href="https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <img
+            src="/goldhome.png"
+            alt="廣告圖片"
+            className="mx-auto max-w-full h-auto rounded-md shadow hover:opacity-90 transition"
+          />
+        </a>
+      </div>
       {/* Footer 區塊 */}
       <div className="text-center mt-12">
         <a
