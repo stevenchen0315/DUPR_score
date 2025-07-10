@@ -63,21 +63,18 @@ export default function UserPage({ params }: any) {
         {tab === 'players' && <PlayerPage username={username} />}
         {tab === 'scores' && <ScorePage username={username} />}
       </div>
-      {/* 加入廣告圖片 */}
-      <div className="text-center mb-6">
+      
+      {/* Footer 區塊 */}
+      <div className="text-center mt-6">
         <a
-          href="https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0"
-          target="_blank"
-          rel="noopener noreferrer"
+        href="https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition animate-blinkBg"
         >
-          <img
-            src="/goldhome.png"
-            alt="廣告圖片"
-            className="mx-auto max-w-full h-auto rounded-md shadow hover:opacity-90 transition"
-          />
+          Gold Home澎湖民宿
         </a>
       </div>
-      {/* Footer 區塊 */}
       <div className="text-center mt-6">
         <a
         href="https://line.me/ti/g/DU-T74Hccm"
