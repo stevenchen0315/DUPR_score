@@ -4,6 +4,7 @@ import { useState } from 'react'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 import { notFound } from 'next/navigation'
+import MarqueeAd from '@/components/MarqueeAd'
 
 // ✅ 只允許的使用者名稱清單
 const allowedUsernames = ['orange', 'steven']
@@ -64,27 +65,8 @@ export default function UserPage({ params }: any) {
         {tab === 'scores' && <ScorePage username={username} />}
       </div>
       
-      {/* Footer 區塊 */}
-      <div className="text-center mt-6">
-        <a
-        href="https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition animate-blinkBg"
-        >
-          Gold Home澎湖民宿👉點我訂房
-        </a>
-      </div>
-      <div className="text-center mt-6">
-        <a
-        href="https://line.me/ti/g/DU-T74Hccm"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition animate-blinkBg"
-        >
-          樹林輕鬆匹克球週六日零打👉點我入群
-        </a>
-      </div>
+      {/* ✅ 跑馬燈廣告 */}
+      <MarqueeAd />
       
       <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
         Copyright &copy; {new Date().getFullYear()}{' '}
