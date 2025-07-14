@@ -19,7 +19,7 @@ export default function MarqueeAd() {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % ads.length)
-    }, 3000)
+    }, 5000)
     return () => clearInterval(interval)
   }, [])
 
