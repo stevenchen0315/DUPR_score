@@ -137,6 +137,10 @@ const { error } = await supabase
             </div>
           </div>
         </button>
+        {/* 顯示目前選手數量 */}
+        <div className="text-sm text-gray-500 mt-1 ml-1">
+          {userList.length} players
+        </div>
       </div>
 
       {/* 玩家列表 */}
