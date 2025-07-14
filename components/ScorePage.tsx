@@ -9,7 +9,7 @@ type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
 
 type Row = {
-  //serial_number: number
+  serial_number: number
   values: string[]
   sd: string
   h: string
@@ -64,7 +64,7 @@ const channel = supabase
 
 const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => ({
-      //serial_number: item.serial_number,
+      serial_number: item.serial_number,
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
       h: item.team_a_score?.toString() ?? '',
       i: item.team_b_score?.toString() ?? '',
@@ -102,7 +102,7 @@ const formatScores = (scores: score[]): Row[] => {
     setRows(newRows)
 
     await supabase.from(`score_${username}`).upsert({
-      serial_number: rowIndex + 1,
+      serial_number: row.serial_number,
       player_a1: a1,
       player_a2: a2,
       player_b1: b1,
@@ -186,6 +186,7 @@ const formatScores = (scores: score[]): Row[] => {
       <table className="w-full border text-sm mb-6">
         <thead>
           <tr>
+            <th className="border p-1">#</th> {/* serial number */}
             <th className="border p-1">A1</th>
             <th className="border p-1">A2</th>
             <th className="border p-1">B1</th>
@@ -199,6 +200,7 @@ const formatScores = (scores: score[]): Row[] => {
         <tbody>
           {rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
+              <td className="border p-1 text-center font-medium">{row.serial_number}</td> {/* ← 顯示 serial_number */}
               {row.values.map((val, i) => (
                 <td key={i} className="border p-1">
                   <select
