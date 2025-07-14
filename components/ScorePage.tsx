@@ -5,7 +5,6 @@ import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FaLock, FaLockOpen } from 'react-icons/fa';
-import { Lock, LockOpen } from 'lucide-react';
 
 type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
