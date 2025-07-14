@@ -276,7 +276,7 @@ const formatScores = (scores: score[]): Row[] => {
                   }`}
                   disabled={row.lock === '鎖定' && deletePassword !== '0315'}
                 >
-                  {row.lock}
+                  {row.lock === '鎖定' ? '🔒' : '🔓'}
                 </button>
               </td>
               <td className="border p-1 text-center">
