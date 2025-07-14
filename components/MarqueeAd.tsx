@@ -15,11 +15,17 @@ const ads = [
 
 export default function MarqueeAd() {
   const [index, setIndex] = useState(0)
+  const [fade, setFade] = useState(true)
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % ads.length)
+      setFade(false) // 先淡出
+      setTimeout(() => {
+        setIndex((prev) => (prev + 1) % ads.length)
+        setFade(true) // 再淡入
+      }, 500) // 要跟 CSS transition-duration 一致
     }, 5000)
+
     return () => clearInterval(interval)
   }, [])
 
@@ -29,7 +35,9 @@ export default function MarqueeAd() {
         href={ads[index].url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition-all duration-500 animate-slide"
+        className={`inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition-opacity duration-500 ${
+          fade ? 'opacity-100' : 'opacity-0'
+        }`}
       >
         {ads[index].text}
       </a>
