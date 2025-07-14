@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
-import { lock, lock-open } from 'lucide-react';
+import { Lock, LockOpen } from 'lucide-react';
 
 type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
@@ -277,7 +277,7 @@ const formatScores = (scores: score[]): Row[] => {
                   }`}
                   disabled={row.lock === '鎖定' && deletePassword !== '0315'}
                 >
-                  {row.lock === '鎖定' ? <lock size={18} /> : <lock-open size={18} />}
+                  {row.lock === '鎖定' ? <Lock size={18} /> : <LockOpen size={18} />}
                 </button>
               </td>
               <td className="border p-1 text-center">
