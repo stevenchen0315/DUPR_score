@@ -137,7 +137,21 @@ const formatScores = (scores: score[]): Row[] => {
   }
 
   const addRow = () => {
-    setRows([...rows, { values: ['', '', '', ''], sd: '', h: '', i: '', lock: '解鎖' }])
+    const nextSerial = rows.length > 0
+      ? Math.max(...rows.map(r => r.serial_number)) + 1
+      : 1
+
+    setRows([
+      ...rows,
+      {
+        serial_number: nextSerial,
+        values: ['', '', '', ''],
+        sd: '',
+        h: '',
+        i: '',
+        lock: '解鎖'
+      }
+    ])
   }
 
   const getFilteredOptions = (row: Row, currentIndex: number) => {
