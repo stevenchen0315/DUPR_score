@@ -112,7 +112,7 @@ const { error } = await supabase
         />
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
-          placeholder="暱稱 (nickname)"
+          placeholder="名稱 (name)"
           value={userInfo.name}
           onChange={(e) => updateUserInfo('name', e.target.value)}
           type="text"
