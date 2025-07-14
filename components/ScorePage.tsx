@@ -240,8 +240,25 @@ const formatScores = (scores: score[]): Row[] => {
               </td>
               <td className="border p-1 text-center">
                 <button
-                  onClick={() => updateCell(rowIndex, 'lock', row.lock === '鎖定' ? '解鎖' : '鎖定')}
-                  className={`px-2 py-1 rounded text-white ${row.lock === '鎖定' ? 'bg-red-500' : 'bg-gray-400'}`}
+                  onClick={() => {
+                    if (row.lock === '鎖定') {
+                      if (deletePassword === '0315') {
+                        updateCell(rowIndex, 'lock', '解鎖');
+                      } else {
+                        alert('請找管理員解鎖');
+                      }
+                    } else {
+                        updateCell(rowIndex, 'lock', '鎖定');
+                    }
+                  }}
+                  className={`px-2 py-1 rounded text-white ${
+                    row.lock === '鎖定'
+                      ? deletePassword === '0315'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-gray-400 hover:bg-gray-500'
+                  }`}
+                  disabled={row.lock === '鎖定' && deletePassword !== '0315'}
                 >
                   {row.lock}
                 </button>
