@@ -272,7 +272,7 @@ const formatScores = (scores: score[]): Row[] => {
                       ? deletePassword === '0315'
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-gray-400 hover:bg-gray-500'
+                    : 'bg-green-400 hover:bg-green-500'
                   }`}
                   disabled={row.lock === '鎖定' && deletePassword !== '0315'}
                 >
