@@ -187,6 +187,9 @@ const formatScores = (scores: score[]): Row[] => {
   }
 
   const handleDeleteAll = async () => {
+    const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
+    if (!confirmed) return
+    
     const { error } = await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
     if (!error) {
       setRows([])
