@@ -1,35 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
-
-// ✅ 只允許的使用者名稱清單
-const allowedUsernames = ['orange', 'steven']
+import { supabase } from '@/lib/supabase'
 
 export default function UserPage({ params }: any) {
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
+  const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
   const username = params.username
+
+  // 🔄 讀取 account 資料表中的所有 username
+  useEffect(() => {
+    const fetchUsernames = async () => {
+      const { data, error } = await supabase.from('account').select('username')
+      if (error) {
+        console.error('Failed to fetch usernames:', error)
+        setAllowedUsernames([])
+      } else {
+        setAllowedUsernames(data.map((d) => d.username))
+      }
+    }
+
+    fetchUsernames()
+  }, [])
+
+  // ✅ 還沒載入完成就先不顯示頁面
+  if (allowedUsernames === null) return null
 
   // ❌ 不在白名單 → 顯示 404
   if (!allowedUsernames.includes(username)) {
     notFound()
   }
 
-  // 第一個字母大寫的處理函數
   const capitalizeFirstLetter = (str: string) =>
     str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
     <div className="p-6">
-      {/* 顯示使用者名稱 */}
       <h1 className="text-3xl font-bold text-center text-blue-600 mb-6 border-b pb-2">
         Organizer: {capitalizeFirstLetter(username)}
       </h1>
 
-      {/* 切換按鈕 */}
       <div className="flex justify-center gap-4 mb-4">
         <button
           onClick={() => setTab('players')}
@@ -59,15 +73,13 @@ export default function UserPage({ params }: any) {
         </button>
       </div>
 
-      {/* 主內容 */}
       <div className="flex-grow">
         {tab === 'players' && <PlayerPage username={username} />}
         {tab === 'scores' && <ScorePage username={username} />}
       </div>
-      
-      {/* ✅ 跑馬燈廣告 */}
+
       <MarqueeAd />
-      
+
       <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
         Copyright &copy; {new Date().getFullYear()}{' '}
         <a
