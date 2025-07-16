@@ -48,7 +48,10 @@ export default function ScorePage({ username }: { username: string }) {
           .like('serial_number', `%_${username}`)
 
         if (scoreError) throw scoreError
-        if (scores) setRows(formatScores(scores))
+        if (scores) {
+          const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
+          setRows(formatScores(sorted))
+        }
       } catch (error) {
         console.error('Fetch error:', error)
       }
@@ -67,7 +70,10 @@ export default function ScorePage({ username }: { username: string }) {
             .select('*')
             .like('serial_number', `%_${username}`)
 
-          if (data) setRows(formatScores(data))
+          if (data) {
+            const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
+            setRows(formatScores(sorted))
+          }
         }
       )
       .subscribe()
@@ -99,26 +105,36 @@ export default function ScorePage({ username }: { username: string }) {
   }
 
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
-    const newRows = [...rows]
-    const row = newRows[rowIndex]
+    const newRows = rows.map((r, i) => {
+      if (i !== rowIndex) return r
 
-    if (['h', 'i', 'lock'].includes(field)) {
-      if ((field === 'h' || field === 'i') && value !== '') {
-        if (!/^\d{1,2}$/.test(value) || +value > 99) return
+      const updatedRow: Row = {
+        ...r,
+        values: [...r.values]
       }
-      ;(row as any)[field] = value
-    } else {
-      const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
-      row.values[colIndex] = value
-    }
 
-    const [a1, a2, b1, b2] = row.values
-    const teamACount = [a1, a2].filter(Boolean).length
-    const teamBCount = [b1, b2].filter(Boolean).length
-    row.sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+      if (['h', 'i', 'lock'].includes(field)) {
+        if ((field === 'h' || field === 'i') && value !== '') {
+          if (!/^\d{1,2}$/.test(value) || +value > 99) return r
+        }
+        (updatedRow as any)[field] = value
+      } else {
+        const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
+        updatedRow.values[colIndex] = value
+      }
+
+      const [a1, a2, b1, b2] = updatedRow.values
+      const teamACount = [a1, a2].filter(Boolean).length
+      const teamBCount = [b1, b2].filter(Boolean).length
+      updatedRow.sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+
+      return updatedRow
+    })
 
     setRows(newRows)
 
+    const row = newRows[rowIndex]
+    const [a1, a2, b1, b2] = row.values
     await supabase.from('score').upsert({
       serial_number: `${row.serial_number}_${username}`,
       player_a1: a1,
@@ -130,6 +146,7 @@ export default function ScorePage({ username }: { username: string }) {
       lock: row.lock === LOCKED
     })
   }
+}
 
   const deleteRow = async (index: number) => {
     const updated = [...rows]
