@@ -19,6 +19,8 @@ type Row = {
 }
 
 export default function ScorePage({ username }: { username: string }) {
+  const suffix = `_${username}`
+
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
@@ -29,14 +31,16 @@ export default function ScorePage({ username }: { username: string }) {
     if (!username) return
 
     const fetchData = async () => {
-      try {
-        const { data: users, error: userError } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
-        if (userError) throw userError
-        if (users) setUserList(users)
+    const stripSuffix = (val) => val?.endsWith(suffix) ? val.replace(suffix, '') : val;
 
-        const { data: scores, error: scoreError } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
+      try {
+        const { data: users, error: userError } = await supabase.from('player_info').select('dupr_id, name')
+        if (userError) throw userError
+        if (users) setUserList(users.filter(u => u.dupr_id.endsWith(suffix)).map(u => ({ ...u, dupr_id: u.dupr_id.replace(suffix, '') })))
+
+        const { data: scores, error: scoreError } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
         if (scoreError) throw scoreError
-        if (scores) setRows(formatScores(scores))
+        if (scores) setRows(formatScores(scores.filter(s => typeof s.serial_number === 'string' && s.serial_number.endsWith(suffix)).map(s => ({ ...s, serial_number: parseInt(s.serial_number.replace(suffix, '')) }))))
       } catch (error) {
         console.error('Fetch error:', error)
       }
@@ -46,13 +50,13 @@ export default function ScorePage({ username }: { username: string }) {
     
   // Supabase Realtime 訂閱
 const channel = supabase
-      .channel(`realtime-score_${username}`)
+      .channel(`realtime-score`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: `score_${username}` },
+        { event: '*', schema: 'public', table: 'score' },
         async () => {
           // 變更時再抓一次整張表（你可用前面提的優化改成只更新部分）
-          const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
+          const { data } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
           if (data) setRows(formatScores(data))
         }
       )
@@ -65,7 +69,7 @@ const channel = supabase
 
 const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => ({
-      serial_number: item.serial_number,
+      serial_number: typeof item.serial_number === 'string' ? parseInt(item.serial_number.replace(suffix, '')) : item.serial_number,
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
       h: item.team_a_score?.toString() ?? '',
       i: item.team_b_score?.toString() ?? '',
@@ -102,7 +106,8 @@ const formatScores = (scores: score[]): Row[] => {
 
     setRows(newRows)
 
-    await supabase.from(`score_${username}`).upsert({
+    await supabase.from('score').upsert({
+      serial_number: `${row.serial_number}${suffix}`,
       serial_number: row.serial_number,
       player_a1: a1,
       player_a2: a2,
@@ -122,7 +127,7 @@ const formatScores = (scores: score[]): Row[] => {
     const payload = updated.map((row, idx) => {
       const [a1, a2, b1, b2] = row.values
       return {
-        serial_number: idx + 1,
+        serial_number: `${idx + 1}${suffix}`,
         player_a1: a1,
         player_a2: a2,
         player_b1: b1,
@@ -133,8 +138,8 @@ const formatScores = (scores: score[]): Row[] => {
       }
     })
 
-    await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
-    await supabase.from(`score_${username}`).insert(payload)
+    await supabase.from('score').delete().like('serial_number', `%${suffix}`)
+    await supabase.from('score').insert(payload)
   }
 
   const addRow = () => {
@@ -190,7 +195,7 @@ const formatScores = (scores: score[]): Row[] => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
     
-    const { error } = await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
+    const { error } = await supabase.from('score').delete().like('serial_number', `%${suffix}`)
     if (!error) {
       setRows([])
       setDeleteMessage('✅ 所有比賽資料已刪除')
