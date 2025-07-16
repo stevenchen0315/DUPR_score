@@ -26,12 +26,22 @@ export default function ScorePage({ username }: { username: string }) {
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
+  const [storedPassword, setStoredPassword] = useState<string>('')
 
   useEffect(() => {
     if (!username) return
 
     const fetchData = async () => {
       try {
+        const { data: account, error: accountError } = await supabase
+          .from('account')
+          .select('password')
+          .eq('username', username)
+          .single()
+
+        if (accountError) throw accountError
+        if (account?.password) setStoredPassword(account.password)
+        
         const { data: users, error: userError } = await supabase
           .from('player_info')
           .select('dupr_id, name')
@@ -303,7 +313,7 @@ return (
                 <button
                   onClick={() => {
                     if (row.lock === '鎖定') {
-                      if (deletePassword === '0315') {
+                      if (deletePassword === storedPassword) {
                         updateCell(rowIndex, 'lock', '解鎖');
                       } else {
                         alert('請找管理員解鎖');
@@ -314,12 +324,12 @@ return (
                   }}
                   className={`px-2 py-1 rounded text-white ${
                     row.lock === '鎖定'
-                      ? deletePassword === '0315'
+                      ? deletePassword === storedPassword
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-gray-300 cursor-not-allowed'
                     : 'bg-green-400 hover:bg-green-500'
                   }`}
-                  disabled={row.lock === '鎖定' && deletePassword !== '0315'}
+                  disabled={row.lock === '鎖定' && deletePassword !== storedPassword}
                 >
                   {row.lock === '鎖定' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
                 </button>
@@ -381,9 +391,9 @@ return (
 
     <button
       onClick={handleDeleteAll}
-      disabled={deletePassword !== '0315'}
+      disabled={deletePassword !== storedPassword}
       className={`px-3 py-2 rounded text-white text-sm h-10 ${
-        deletePassword === '0315'
+        deletePassword === storedPassword
           ? 'bg-red-600 hover:bg-red-700'
           : 'bg-gray-300 cursor-not-allowed'
       }`}
