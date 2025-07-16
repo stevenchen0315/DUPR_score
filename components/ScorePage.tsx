@@ -206,29 +206,39 @@ export default function ScorePage({ username }: { username: string }) {
 
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10)
-    const findUser = (name: string): player_info => userList.find((u) => u.name === name) || { dupr_id: '', name: '' }
-    const csvRows = rows.map((row) => {
-      const [a1, a2, b1, b2] = row.values
-      const a1User = findUser(a1), a2User = findUser(a2)
-      const b1User = findUser(b1), b2User = findUser(b2)
-      return [
-        '', '', '', row.sd, '', today,
-        a1User.name, a1User.dupr_id, '',
-        a2User.name, a2User.dupr_id, '',
-        b1User.name, b1User.dupr_id, '',
-        b2User.name, b2User.dupr_id, '', '',
-        row.h, row.i
-      ]
-    })
-    const csvContent = csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `export-${today}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+
+    // ✅ 僅清除 dupr_id 中的 _username
+    const cleanDuprId = (text: string) => text.replace(`_${username}`, '')
+
+    const findUser = (name: string): player_info => {
+      const user = userList.find((u) => u.name === name)
+      return user ? { dupr_id: cleanDuprId(user.dupr_id), name: user.name } : { dupr_id: '', name: '' }
   }
+
+  const csvRows = rows.map((row) => {
+    const [a1, a2, b1, b2] = row.values
+    const a1User = findUser(a1), a2User = findUser(a2)
+    const b1User = findUser(b1), b2User = findUser(b2)
+
+    return [
+      '', '', '', row.sd, '', today,
+      a1User.name, a1User.dupr_id, '',
+      a2User.name, a2User.dupr_id, '',
+      b1User.name, b1User.dupr_id, '',
+      b2User.name, b2User.dupr_id, '', '',
+      row.h, row.i
+    ]
+  })
+
+  const csvContent = csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `export-${today}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 return (
     <div>
