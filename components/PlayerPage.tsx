@@ -4,37 +4,43 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
- 
+
 export default function PlayerPage({ username }: { username: string }) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
 
-  // 根據 username 動態抓對應資料表
+  const suffix = `_${username}`
+
   const fetchUsers = async () => {
     const { data, error } = await supabase
-      .from(`player_info_${username}`)
+      .from('player_info')
       .select('dupr_id, name')
 
     if (error) {
       console.error('Error fetching users:', error.message)
     } else {
-      setUserList(data || [])
+      const filtered = (data || [])
+        .filter(user => user.dupr_id.endsWith(suffix))
+        .map(user => ({
+          dupr_id: user.dupr_id.replace(suffix, ''),
+          name: user.name.replace(suffix, ''),
+        }))
+      setUserList(filtered)
     }
   }
 
   useEffect(() => {
     fetchUsers()
 
-    // 訂閱 Supabase Realtime（player_info 資料表）
     const playerChannel = supabase
-      .channel(`realtime-player_info_${username}`)
+      .channel(`realtime-player_info`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: `player_info_${username}`,
+          table: 'player_info',
         },
         () => {
           fetchUsers()
@@ -46,20 +52,24 @@ export default function PlayerPage({ username }: { username: string }) {
       supabase.removeChannel(playerChannel)
     }
   }, [username])
-  
-const saveUserToSupabase = async (list: player_info[]) => {
-  try {
-    const { error } = await supabase
-      .from(`player_info_${username}`)
-      .upsert(list, { onConflict: 'dupr_id' })
-    if (error) throw error
-  } catch (error: any) {
-    console.error('Supabase save error:', error.message)
+
+  const saveUserToSupabase = async (list: player_info[]) => {
+    try {
+      const transformed = list.map(user => ({
+        dupr_id: `${user.dupr_id.toUpperCase()}${suffix}`,
+        name: `${user.name}${suffix}`,
+      }))
+      const { error } = await supabase
+        .from('player_info')
+        .upsert(transformed, { onConflict: 'dupr_id' })
+      if (error) throw error
+    } catch (error: any) {
+      console.error('Supabase save error:', error.message)
+    }
   }
-}
-  
+
   const updateUserInfo = (field: keyof player_info, value: string) => {
-    setUserInfo((prev) => ({ ...prev, [field]: value }))
+    setUserInfo(prev => ({ ...prev, [field]: value }))
   }
 
   const addUser = async () => {
@@ -81,22 +91,23 @@ const saveUserToSupabase = async (list: player_info[]) => {
     setEditIndex(index)
   }
 
-const deleteUser = async (index: number) => {
-  const deletedUser = userList[index]
-  const updated = [...userList]
-  updated.splice(index, 1)
-  setUserList(updated)
+  const deleteUser = async (index: number) => {
+    const deletedUser = userList[index]
+    const updated = [...userList]
+    updated.splice(index, 1)
+    setUserList(updated)
 
-  // 刪除資料庫中的該筆資料
-const { error } = await supabase
-    .from(`player_info_${username}`)
-    .delete()
-    .eq('dupr_id', deletedUser.dupr_id)
+    const fullDuprId = `${deletedUser.dupr_id}${suffix}`
 
-  if (error) {
-    console.error('Supabase delete error:', error.message)
+    const { error } = await supabase
+      .from('player_info')
+      .delete()
+      .eq('dupr_id', fullDuprId)
+
+    if (error) {
+      console.error('Supabase delete error:', error.message)
+    }
   }
-}
 
   return (
     <div className="max-w-md mx-auto p-4">
@@ -117,7 +128,6 @@ const { error } = await supabase
           onChange={(e) => updateUserInfo('name', e.target.value)}
           type="text"
         />
-        
         <button
           onClick={addUser}
           disabled={
@@ -137,7 +147,6 @@ const { error } = await supabase
             </div>
           </div>
         </button>
-        {/* 顯示目前選手數量 */}
         <div className="text-sm text-gray-500 mt-1 ml-1">
           {userList.length} players
         </div>
