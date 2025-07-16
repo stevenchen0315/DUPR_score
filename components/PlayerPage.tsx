@@ -24,7 +24,7 @@ export default function PlayerPage({ username }: { username: string }) {
         .filter(user => user.dupr_id.endsWith(suffix))
         .map(user => ({
           dupr_id: user.dupr_id.replace(suffix, ''),
-          name: user.name.replace(suffix, ''),
+          name: user.name,
         }))
       setUserList(filtered)
     }
@@ -57,7 +57,7 @@ export default function PlayerPage({ username }: { username: string }) {
     try {
       const transformed = list.map(user => ({
         dupr_id: `${user.dupr_id.toUpperCase()}${suffix}`,
-        name: `${user.name}${suffix}`,
+        name: user.name,
       }))
       const { error } = await supabase
         .from('player_info')
