@@ -31,13 +31,13 @@ export default function ScorePage({ username }: { username: string }) {
 
     const fetchData = async () => {
       try {
-        const { data: users, error: userError } = await supabase.from('player_info').select('dupr_id, name')
+        const { data: users, error: userError } = await supabase.from(`player_info_${username}`).select('dupr_id, name')
         if (userError) throw userError
-        if (users) setUserList(users.filter(u => u.dupr_id.endsWith(suffix)).map(u => ({ ...u, dupr_id: u.dupr_id.replace(suffix, '') })))
+        if (users) setUserList(users)
 
-        const { data: scores, error: scoreError } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+        const { data: scores, error: scoreError } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
         if (scoreError) throw scoreError
-        if (scores) setRows(formatScores(scores.filter(s => s.serial_number.toString().endsWith(suffix)).map(s => ({ ...s, serial_number: parseInt(s.serial_number.toString().replace(suffix, '')) }))))
+        if (scores) setRows(formatScores(scores))
       } catch (error) {
         console.error('Fetch error:', error)
       }
@@ -50,10 +50,10 @@ const channel = supabase
       .channel(`realtime-score_${username}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'score' },
+        { event: '*', schema: 'public', table: `score_${username}` },
         async () => {
           // 變更時再抓一次整張表（你可用前面提的優化改成只更新部分）
-          const { data } = await supabase.from('score').select('*').order('serial_number', { ascending: true })
+          const { data } = await supabase.from(`score_${username}`).select('*').order('serial_number', { ascending: true })
           if (data) setRows(formatScores(data))
         }
       )
@@ -103,8 +103,8 @@ const formatScores = (scores: score[]): Row[] => {
 
     setRows(newRows)
 
-    await supabase.from('score').upsert({
-      serial_number: `${row.serial_number}${suffix}`,
+    await supabase.from(`score_${username}`).upsert({
+      serial_number: row.serial_number,
       player_a1: a1,
       player_a2: a2,
       player_b1: b1,
@@ -134,11 +134,10 @@ const formatScores = (scores: score[]): Row[] => {
       }
     })
 
-    await supabase.from('score').delete().like('serial_number', `%${suffix}`)
-    await supabase.from('score').insert(payload)
+    await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
+    await supabase.from(`score_${username}`).insert(payload)
   }
 
-  const addRow = () => {
     const nextSerial = rows.length > 0
       ? Math.max(...rows.map(r => r.serial_number)) + 1
       : 1
@@ -191,7 +190,7 @@ const formatScores = (scores: score[]): Row[] => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
     
-    const { error } = await supabase.from('score').delete().like('serial_number', `%${suffix}`)
+    const { error } = await supabase.from(`score_${username}`).delete().neq('serial_number', 0)
     if (!error) {
       setRows([])
       setDeleteMessage('✅ 所有比賽資料已刪除')
@@ -301,7 +300,6 @@ const formatScores = (scores: score[]): Row[] => {
   <div className="flex flex-col items-center mb-6 space-y-4">
   {/* 添加比賽按鈕 */}
   <button
-  onClick={addRow}
   className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
   <div className="flex items-center">
