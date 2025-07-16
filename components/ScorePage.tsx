@@ -19,8 +19,6 @@ type Row = {
 }
 
 export default function ScorePage({ username }: { username: string }) {
-  const suffix = `_${username}`
-
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
@@ -31,8 +29,8 @@ export default function ScorePage({ username }: { username: string }) {
     if (!username) return
 
     const fetchData = async () => {
-    const stripSuffix = (val) => val?.endsWith(suffix) ? val.replace(suffix, '') : val;
-
+    const suffix = `_${username}`;
+    const stripSuffix = (val: string): string => val?.endsWith(suffix) ? val.replace(suffix, '') : val;
       try {
         const { data: users, error: userError } = await supabase.from('player_info').select('dupr_id, name')
         if (userError) throw userError
@@ -50,7 +48,7 @@ export default function ScorePage({ username }: { username: string }) {
     
   // Supabase Realtime 訂閱
 const channel = supabase
-      .channel(`realtime-score`)
+      .channel(`realtime-score_${username}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'score' },
@@ -69,7 +67,7 @@ const channel = supabase
 
 const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => ({
-      serial_number: typeof item.serial_number === 'string' ? parseInt(item.serial_number.replace(suffix, '')) : item.serial_number,
+      serial_number: item.serial_number,
       values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
       h: item.team_a_score?.toString() ?? '',
       i: item.team_b_score?.toString() ?? '',
@@ -108,7 +106,6 @@ const formatScores = (scores: score[]): Row[] => {
 
     await supabase.from('score').upsert({
       serial_number: `${row.serial_number}${suffix}`,
-      serial_number: row.serial_number,
       player_a1: a1,
       player_a2: a2,
       player_b1: b1,
