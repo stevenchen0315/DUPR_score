@@ -138,6 +138,7 @@ const formatScores = (scores: score[]): Row[] => {
     await supabase.from(`score_${username}`).insert(payload)
   }
 
+  const addRow = () => {
     const nextSerial = rows.length > 0
       ? Math.max(...rows.map(r => r.serial_number)) + 1
       : 1
@@ -300,6 +301,7 @@ const formatScores = (scores: score[]): Row[] => {
   <div className="flex flex-col items-center mb-6 space-y-4">
   {/* 添加比賽按鈕 */}
   <button
+  onClick={addRow}
   className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
   <div className="flex items-center">
