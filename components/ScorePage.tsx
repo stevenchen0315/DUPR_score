@@ -214,7 +214,161 @@ export default function ScorePage({ username }: { username: string }) {
     URL.revokeObjectURL(url)
   }
 
-  return (
-    <div>{/* 你的原本 JSX 保留 */}</div>
+return (
+    <div>
+      <table className="w-full border text-sm mb-6">
+        <thead>
+          <tr>
+            <th className="border p-1">#</th> {/* serial number */}
+            <th className="border p-1">A1</th>
+            <th className="border p-1">A2</th>
+            <th className="border p-1">B1</th>
+            <th className="border p-1">B2</th>
+            <th className="border p-1">S/D</th>
+            <th className="border p-1">A Score</th>
+            <th className="border p-1">B Score</th>
+            <th className="border p-1">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              <td className="border p-1 text-center font-medium">{row.serial_number}</td> {/* ← 顯示 serial_number */}
+              {row.values.map((val, i) => (
+                <td key={i} className="border p-1">
+                  <select
+                    value={val}
+                    disabled={row.lock === '鎖定'}
+                    onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
+                  >
+                    <option value="">--</option>
+                    {getFilteredOptions(row, i).map((opt, idx) => (
+                      <option key={idx} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                </td>
+              ))}
+              <td className="border p-1">{row.sd}</td>
+              <td className="border p-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="99"
+                  step="1"
+                  value={row.h}
+                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                  disabled={row.lock === '鎖定'}
+                  className="w-full border px-1"
+                />
+              </td>
+              <td className="border p-1">
+                <input
+                  type="number"
+                  min="0"
+                  max="99"
+                  step="1"
+                  value={row.i}
+                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                  disabled={row.lock === '鎖定'}
+                  className="w-full border px-1"
+                />
+              </td>
+              <td className="border p-1 text-center">
+                <button
+                  onClick={() => {
+                    if (row.lock === '鎖定') {
+                      if (deletePassword === '0315') {
+                        updateCell(rowIndex, 'lock', '解鎖');
+                      } else {
+                        alert('請找管理員解鎖');
+                      }
+                    } else {
+                        updateCell(rowIndex, 'lock', '鎖定');
+                    }
+                  }}
+                  className={`px-2 py-1 rounded text-white ${
+                    row.lock === '鎖定'
+                      ? deletePassword === '0315'
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-green-400 hover:bg-green-500'
+                  }`}
+                  disabled={row.lock === '鎖定' && deletePassword !== '0315'}
+                >
+                  {row.lock === '鎖定' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                </button>
+              </td>
+              <td className="border p-1 text-center">
+                <button
+                  onClick={() => deleteRow(rowIndex)}
+                  disabled={row.lock === '鎖定'}
+                  className={`px-2 py-1 rounded text-white ${row.lock === '鎖定' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+  <div className="flex flex-col items-center mb-6 space-y-4">
+  {/* 添加比賽按鈕 */}
+  <button
+  onClick={addRow}
+  className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+  >
+  <div className="flex items-center">
+    <Plus size={16} className="mr-2" />
+    <div className="leading-tight text-left">
+      <div>添加比賽</div>
+      <div className="text-xs">(Add Match)</div>
+    </div>
+  </div>
+  </button>
+    
+  {/* 分隔線 */}
+  <div className="relative w-full my-4">
+  <hr className="border-t border-gray-300" />
+  <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+    Organizer only
+  </span>
+  </div>
+    
+  {/* 輸出與刪除功能排成一列 */}
+  <div className="flex items-center space-x-3">
+    {/* 密碼輸入框 */}
+    <input
+      type="password"
+      placeholder="Password"
+      value={deletePassword}
+      onChange={(e) => setDeletePassword(e.target.value)}
+      className="border px-3 py-2 rounded w-24 text-sm h-10"
+    />
+    
+    <button
+      onClick={exportCSV}
+      className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
+    >
+      <Download size={18} className="mr-2" /> 匯出 CSV
+    </button>
+
+    <button
+      onClick={handleDeleteAll}
+      disabled={deletePassword !== '0315'}
+      className={`px-3 py-2 rounded text-white text-sm h-10 ${
+        deletePassword === '0315'
+          ? 'bg-red-600 hover:bg-red-700'
+          : 'bg-gray-300 cursor-not-allowed'
+      }`}
+    >
+      一鍵刪除
+    </button>
+  </div>
+
+  {/* 提示訊息 */}
+  {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+  </div>
+  </div>
   )
 }
