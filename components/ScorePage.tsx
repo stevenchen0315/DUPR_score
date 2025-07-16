@@ -138,7 +138,6 @@ const formatScores = (scores: score[]): Row[] => {
     await supabase.from(`score_${username}`).insert(payload)
   }
 
-  const addRow = () => {
     const nextSerial = rows.length > 0
       ? Math.max(...rows.map(r => r.serial_number)) + 1
       : 1
