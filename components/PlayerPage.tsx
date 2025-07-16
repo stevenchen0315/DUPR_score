@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
-
+ 
 export default function PlayerPage({ username }: { username: string }) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [userList, setUserList] = useState<player_info[]>([])
