@@ -146,7 +146,6 @@ export default function ScorePage({ username }: { username: string }) {
       lock: row.lock === LOCKED
     })
   }
-}
 
   const deleteRow = async (index: number) => {
     const updated = [...rows]
