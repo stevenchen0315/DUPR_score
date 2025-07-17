@@ -301,7 +301,7 @@ return (
               </td>
               <td className="border p-1">
                 <input
-                  type="text"
+                  type="number"
                   inputMode="numeric"
                   pattern="[0-9]*"
                   min="0"
