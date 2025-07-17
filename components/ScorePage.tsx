@@ -309,36 +309,28 @@ return (
                   className="w-full border px-1"
                 />
               </td>
-              <td className="border p-1 text-center">
-                <div
+              <td className="border p-1 text-center">                
+                <button
                   onClick={() => {
-                    if (row.lock === 'Locked' && deletePassword !== storedPassword) {
-                      alert('請找管理員解鎖')
+                    if (row.lock === 'Locked') {
+                    if (deletePassword === storedPassword) {
+                      updateCell(rowIndex, 'lock', 'Unlocked')
+                    }
+                    } else {
+                      updateCell(rowIndex, 'lock', 'Locked')
                     }
                   }}
+                  className={`px-2 py-1 rounded text-white ${
+                    row.lock === 'Locked'
+                      ? deletePassword === storedPassword
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-green-400 hover:bg-green-500'
+                  }`}
+                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
                 >
-                  <button
-                    onClick={() => {
-                      if (row.lock === 'Locked') {
-                      if (deletePassword === storedPassword) {
-                        updateCell(rowIndex, 'lock', 'Unlocked')
-                      }
-                      } else {
-                        updateCell(rowIndex, 'lock', 'Locked')
-                      }
-                    }}
-                    className={`px-2 py-1 rounded text-white ${
-                      row.lock === 'Locked'
-                        ? deletePassword === storedPassword
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-green-400 hover:bg-green-500'
-                    }`}
-                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                  >
-                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
-                  </button>
-                </div>
+                  {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                </button>                
               </td>
               <td className="border p-1 text-center">
                 <button
