@@ -287,7 +287,9 @@ return (
               <td className="border p-1">{row.sd}</td>
               <td className="border p-1">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="0"
                   max="99"
                   step="1"
