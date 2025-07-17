@@ -291,7 +291,7 @@ return (
                   inputMode="numeric"
                   pattern="[0-9]*"
                   min="0"
-                  max="99"
+                  max="21"
                   step="1"
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
@@ -305,7 +305,7 @@ return (
                   inputMode="numeric"
                   pattern="[0-9]*"
                   min="0"
-                  max="99"
+                  max="21"
                   step="1"
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
