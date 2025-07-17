@@ -6,8 +6,8 @@ import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FaLock, FaLockOpen } from 'react-icons/fa'
 
-const LOCKED = '鎖定'
-const UNLOCKED = '解鎖'
+const LOCKED = 'Locked'
+const UNLOCKED = 'Unlocked'
 
 type CellField = 'D' | 'E' | 'F' | 'G'
 type OtherField = 'h' | 'i' | 'lock' | 'sd'
@@ -274,7 +274,7 @@ return (
                 <td key={i} className="border p-1">
                   <select
                     value={val}
-                    disabled={row.lock === '鎖定'}
+                    disabled={row.lock === 'Locked'}
                     onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
                   >
                     <option value="">--</option>
@@ -293,7 +293,7 @@ return (
                   step="1"
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                  disabled={row.lock === '鎖定'}
+                  disabled={row.lock === 'Locked'}
                   className="w-full border px-1"
                 />
               </td>
@@ -305,40 +305,40 @@ return (
                   step="1"
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                  disabled={row.lock === '鎖定'}
+                  disabled={row.lock === 'Locked'}
                   className="w-full border px-1"
                 />
               </td>
               <td className="border p-1 text-center">
                 <button
                   onClick={() => {
-                    if (row.lock === '鎖定') {
+                    if (row.lock === 'Locked') {
                       if (deletePassword === storedPassword) {
-                        updateCell(rowIndex, 'lock', '解鎖');
+                        updateCell(rowIndex, 'lock', 'Unlocked');
                       } else {
                         alert('請找管理員解鎖');
                       }
                     } else {
-                        updateCell(rowIndex, 'lock', '鎖定');
+                        updateCell(rowIndex, 'lock', 'Locked');
                     }
                   }}
                   className={`px-2 py-1 rounded text-white ${
-                    row.lock === '鎖定'
+                    row.lock === 'Locked'
                       ? deletePassword === storedPassword
                       ? 'bg-red-500 hover:bg-red-600'
                       : 'bg-gray-300 cursor-not-allowed'
                     : 'bg-green-400 hover:bg-green-500'
                   }`}
-                  disabled={row.lock === '鎖定' && deletePassword !== storedPassword}
+                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
                 >
-                  {row.lock === '鎖定' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                  {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
                 </button>
               </td>
               <td className="border p-1 text-center">
                 <button
                   onClick={() => deleteRow(rowIndex)}
-                  disabled={row.lock === '鎖定'}
-                  className={`px-2 py-1 rounded text-white ${row.lock === '鎖定' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                  disabled={row.lock === 'Locked'}
+                  className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
                 >
                   <Trash2 size={16} />
                 </button>
