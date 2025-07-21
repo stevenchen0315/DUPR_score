@@ -26,7 +26,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
-  const [storedPassword, setStoredPassword] = useState<string>('')
+  const [storedPassword, setStoredPassword] = useState<string | null>(null)
 
   useEffect(() => {
     if (!username) return
@@ -393,7 +393,7 @@ return (
 
     <button
       onClick={handleDeleteAll}
-      disabled={deletePassword !== storedPassword}
+      disabled={storedPassword === null || deletePassword !== storedPassword}
       className={`px-3 py-2 rounded text-white text-sm h-10 ${
         deletePassword === storedPassword
           ? 'bg-red-600 hover:bg-red-700'
