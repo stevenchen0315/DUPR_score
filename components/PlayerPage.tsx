@@ -11,9 +11,11 @@ export default function PlayerPage({ username }: { username: string }) {
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
   const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
-
   const suffix = `_${username}`
-
+  
+useEffect(() => {
+    if (!username) return
+  
   const fetchData = async () => {
       try {
         // 讀取 player_info 名單
