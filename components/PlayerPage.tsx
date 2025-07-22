@@ -30,7 +30,7 @@ useEffect(() => {
           setUserList(
             users.map(u => ({
               dupr_id: u.dupr_id.replace(`_${username}`, ''),
-              name: u.name.replace(`_${username}`, ''),
+              name: u.name,
             }))
           )
         }
