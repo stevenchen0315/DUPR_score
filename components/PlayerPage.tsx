@@ -9,48 +9,60 @@ export default function PlayerPage({ username }: { username: string }) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
-
+  const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
+  const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
+  const [loadingLockedNames, setLoadingLockedNames] = useState(true)
   const suffix = `_${username}`
+  
+useEffect(() => {
+    if (!username) return
+  
+  const fetchData = async () => {
+      try {
+        // 讀取 player_info 名單
+        const { data: users, error: userError } = await supabase
+          .from('player_info')
+          .select('dupr_id, name')
+          .like('dupr_id', `%_${username}`)
 
-  const fetchUsers = async () => {
-    const { data, error } = await supabase
-      .from('player_info')
-      .select('dupr_id, name')
-
-    if (error) {
-      console.error('Error fetching users:', error.message)
-    } else {
-      const filtered = (data || [])
-        .filter(user => user.dupr_id.endsWith(suffix))
-        .map(user => ({
-          dupr_id: user.dupr_id.replace(suffix, ''),
-          name: user.name,
-        }))
-      setUserList(filtered)
-    }
-  }
-
-  useEffect(() => {
-    fetchUsers()
-
-    const playerChannel = supabase
-      .channel(`realtime-player_info`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'player_info',
-        },
-        () => {
-          fetchUsers()
+        if (userError) throw userError
+        if (users) {
+          setUserList(
+            users.map(u => ({
+              dupr_id: u.dupr_id.replace(`_${username}`, ''),
+              name: u.name,
+            }))
+          )
         }
-      )
-      .subscribe()
 
-    return () => {
-      supabase.removeChannel(playerChannel)
+        // 讀取 score 中出現過的 player 名稱
+        const { data: scores, error: scoreError } = await supabase
+          .from('score')
+          .select('*')
+          .like('serial_number', `%_${username}`)
+
+        if (scoreError) throw scoreError
+
+        if (scores) {
+          const namesInScores = new Set<string>()
+          scores.forEach(score => {
+            const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
+            fields.forEach(field => {
+              const name = score[field]
+              if (name) namesInScores.add(name)
+            })
+          })
+          setLockedNames(namesInScores)
+          setLoadingLockedNames(false) 
+        }
+
+      } catch (error) {
+        console.error('Fetch error:', error)
+        setLoadingLockedNames(false)
+      }
     }
+
+    fetchData()
   }, [username])
 
   const saveUserToSupabase = async (list: player_info[]) => {
@@ -154,32 +166,35 @@ export default function PlayerPage({ username }: { username: string }) {
 
       {/* 玩家列表 */}
       <ul className="space-y-4">
-        {userList.map((user, idx) => (
-          <li
-            key={idx}
-            className="flex justify-between items-center bg-white rounded-lg shadow p-4"
-          >
-            <div className="text-base font-medium text-gray-800">
-              {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => editUser(idx)}
-                className="text-blue-500 hover:text-blue-700"
-                aria-label={`編輯 ${user.name}`}
-              >
-                <Pencil size={20} />
-              </button>
-              <button
-                onClick={() => deleteUser(idx)}
-                className="text-red-500 hover:text-red-700"
-                aria-label={`刪除 ${user.name}`}
-              >
-                <Trash2 size={20} />
-              </button>
-            </div>
-          </li>
-        ))}
+        {userList.map((user, idx) => {
+          const isLocked = lockedNames.has(user.name)
+
+          return (
+            <li key={idx} className="flex justify-between items-center bg-white rounded-lg shadow p-4">
+              <div className="text-base font-medium text-gray-800">
+                {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => editUser(idx)}
+                  disabled={loadingLockedNames || isLocked}
+                  className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  aria-label={`編輯 ${user.name}`}
+                >
+                  <Pencil size={20} />
+                </button>
+                <button
+                  onClick={() => deleteUser(idx)}
+                  disabled={loadingLockedNames || isLocked}
+                  className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                  aria-label={`刪除 ${user.name}`}
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
+            </li>
+          )
+        })}
       </ul>
     </div>
   )
