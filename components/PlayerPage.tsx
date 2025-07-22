@@ -11,6 +11,7 @@ export default function PlayerPage({ username }: { username: string }) {
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
   const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
+  const [loadingLockedNames, setLoadingLockedNames] = useState(true)
   const suffix = `_${username}`
   
 useEffect(() => {
@@ -50,10 +51,12 @@ useEffect(() => {
             })
           })
           setLockedNames(namesInScores)
+          setLoadingLockedNames(false) 
         }
 
       } catch (error) {
         console.error('Fetch error:', error)
+        setLoadingLockedNames(false)
       }
     }
 
@@ -172,7 +175,7 @@ useEffect(() => {
               <div className="flex gap-3">
                 <button
                   onClick={() => editUser(idx)}
-                  disabled={isLocked}
+                  disabled={loadingLockedNames || isLocked}
                   className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                   aria-label={`編輯 ${user.name}`}
                 >
@@ -180,7 +183,7 @@ useEffect(() => {
                 </button>
                 <button
                   onClick={() => deleteUser(idx)}
-                  disabled={isLocked}
+                  disabled={loadingLockedNames || isLocked}
                   className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                   aria-label={`刪除 ${user.name}`}
                 >
