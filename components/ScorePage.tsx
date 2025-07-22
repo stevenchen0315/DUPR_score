@@ -49,7 +49,7 @@ export default function ScorePage({ username }: { username: string }) {
 
         if (userError) throw userError
         if (users) {
-          setUserList(users.map(u => ({ ...u, name: u.name.replace(`_${username}`, '') })))
+          setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
         }
 
         const { data: scores, error: scoreError } = await supabase
