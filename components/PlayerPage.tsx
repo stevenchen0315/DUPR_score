@@ -27,10 +27,11 @@ useEffect(() => {
 
         if (userError) throw userError
         if (users) {
-          setUserList(users.map(u => ({
-            ...u,
-            name: u.name.replace(`_${username}`, '')
-          })))
+          setUserList(
+            users.map(u => ({
+              dupr_id: u.dupr_id.replace(`_${username}`, ''),              
+            }))
+          )
         }
 
         // 讀取 score 中出現過的 player 名稱
