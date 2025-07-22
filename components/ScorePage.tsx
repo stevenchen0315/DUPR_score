@@ -27,6 +27,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
+  const [event, setEvent] = useState('')
 
   useEffect(() => {
     if (!username) return
@@ -35,12 +36,13 @@ export default function ScorePage({ username }: { username: string }) {
       try {
         const { data: account, error: accountError } = await supabase
           .from('account')
-          .select('password')
+          .select('password, event')
           .eq('username', username)
           .single()
 
         if (accountError) throw accountError
         if (account?.password) setStoredPassword(account.password)
+        if (account?.event) setEvent(account.event) // ← 儲存 event
         
         const { data: users, error: userError } = await supabase
           .from('player_info')
@@ -231,7 +233,7 @@ export default function ScorePage({ username }: { username: string }) {
     const b1User = findUser(b1), b2User = findUser(b2)
 
     return [
-      '', '', '', row.sd, '', today,
+      '', '', '', row.sd, event, today,
       a1User.name, a1User.dupr_id, '',
       a2User.name, a2User.dupr_id, '',
       b1User.name, b1User.dupr_id, '',
