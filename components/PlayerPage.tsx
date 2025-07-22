@@ -39,13 +39,15 @@ useEffect(() => {
           .like('serial_number', `%_${username}`)
 
         if (scoreError) throw scoreError
+
         if (scores) {
           const namesInScores = new Set<string>()
           scores.forEach(score => {
-            for (let i = 1; i <= 4; i++) {
-              const name = score[`player_${i}`]
+            const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
+            fields.forEach(field => {
+              const name = score[field]
               if (name) namesInScores.add(name)
-            }
+            })
           })
           setLockedNames(namesInScores)
         }
