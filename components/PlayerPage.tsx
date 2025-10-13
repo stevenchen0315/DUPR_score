@@ -99,6 +99,9 @@ useEffect(() => {
 
       setUserList(imported)
       await saveUserToSupabase(imported)
+      
+      // ✅ 清空 input，避免第二次匯入同檔案不觸發
+      e.target.value = ''
     }
     reader.readAsText(file)
   }
