@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
