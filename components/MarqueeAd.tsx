@@ -6,11 +6,7 @@ const ads = [
   {
     text: 'Gold Home澎湖民宿👉點我訂房',
     url: 'https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0',
-  },
-  {
-    text: '樹林輕鬆匹克球週六日零打👉點我入群',
-    url: 'https://line.me/ti/g/DU-T74Hccm',
-  },
+  },  
 ]
 
 export default function MarqueeAd() {
