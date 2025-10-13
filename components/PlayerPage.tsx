@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
+import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
 
 export default function PlayerPage({ username }: { username: string }) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
@@ -13,6 +14,7 @@ export default function PlayerPage({ username }: { username: string }) {
   const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
   const suffix = `_${username}`
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
 useEffect(() => {
     if (!username) return
@@ -64,7 +66,45 @@ useEffect(() => {
 
     fetchData()
   }, [username])
+  
+// 🚀 匯出 CSV
+const exportCSV = () => {
+  const rows = userList.map(u => [u.dupr_id, u.name])
+  const csvContent = rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${username}_players.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
+// 🚀 匯入 CSV
+const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (event) => {
+    const text = event.target?.result as string
+    const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
+
+    const imported: player_info[] = lines.map(line => {
+      const [dupr_id, name] = line.split(',').map(s => s.trim())
+      return { dupr_id, name }
+    })
+
+    setUserList(imported)
+    await saveUserToSupabase(imported)
+
+    // ✅ 清空 input，避免第二次匯入同檔案不觸發
+    e.target.value = ''
+  }
+
+  reader.readAsText(file)
+}
+  
   const saveUserToSupabase = async (list: player_info[]) => {
     try {
       const transformed = list.map(user => ({
@@ -159,8 +199,30 @@ useEffect(() => {
             </div>
           </div>
         </button>
-        <div className="text-sm text-gray-500 mt-1 ml-1">
+        
+        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1 ml-1">
           {userList.length} players
+          <button
+            onClick={exportCSV}
+            className="text-green-600 hover:text-green-800"
+            title="匯出 CSV"
+          >
+            <Download size={18} />
+          </button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-blue-600 hover:text-blue-800"
+            title="匯入 CSV"
+          >
+            <Upload size={18} />
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={importCSV}
+            className="hidden"
+          />
         </div>
       </div>
 
