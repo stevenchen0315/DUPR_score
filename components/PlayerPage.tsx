@@ -69,9 +69,8 @@ useEffect(() => {
   
 // 🚀 匯出 CSV
   const exportCSV = () => {
-    const header = ['dupr_id', 'name']
     const rows = userList.map(u => [u.dupr_id, u.name])
-    const csvContent = [header, ...rows].map(r => r.join(',')).join('\n')
+    const csvContent = rows.map(r => r.join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -90,7 +89,6 @@ useEffect(() => {
     reader.onload = async (event) => {
       const text = event.target?.result as string
       const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
-      const [headerLine, ...rows] = lines
 
       const imported: player_info[] = rows.map(line => {
         const [dupr_id, name] = line.split(',').map(s => s.trim())
