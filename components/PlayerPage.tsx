@@ -68,41 +68,42 @@ useEffect(() => {
   }, [username])
   
 // 🚀 匯出 CSV
-  const exportCSV = () => {
-    const rows = userList.map(u => [u.dupr_id, u.name])
-    const csvContent = rows.map(r => r.join(',')).join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${username}_players.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+const exportCSV = () => {
+  const rows = userList.map(u => [u.dupr_id, u.name])
+  const csvContent = rows.map(r => r.join(',')).join('\n')
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${username}_players.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+// 🚀 匯入 CSV
+const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (event) => {
+    const text = event.target?.result as string
+    const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
+
+    const imported: player_info[] = lines.map(line => {
+      const [dupr_id, name] = line.split(',').map(s => s.trim())
+      return { dupr_id, name }
+    })
+
+    setUserList(imported)
+    await saveUserToSupabase(imported)
+
+    // ✅ 清空 input，避免第二次匯入同檔案不觸發
+    e.target.value = ''
   }
 
-  // 🚀 匯入 CSV
-  const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      const text = event.target?.result as string
-      const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
-
-      const imported: player_info[] = rows.map(line => {
-        const [dupr_id, name] = line.split(',').map(s => s.trim())
-        return { dupr_id, name }
-      })
-
-      setUserList(imported)
-      await saveUserToSupabase(imported)
-      
-      // ✅ 清空 input，避免第二次匯入同檔案不觸發
-      e.target.value = ''
-    }
-    reader.readAsText(file)
-  }
+  reader.readAsText(file)
+}
   
   const saveUserToSupabase = async (list: player_info[]) => {
     try {
