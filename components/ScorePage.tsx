@@ -128,7 +128,7 @@ const resubscribe = () => {
       },
       async (payload) => {
         // 雙重保險：只處理屬於該使用者的資料
-        const sn = (payload.new?.serial_number ?? payload.old?.serial_number ?? '') as string
+        const sn = (payload.new?.serial_number ?? payload.old?.serial_number ?? '') as number
         if (!sn.endsWith(`_${username}`)) return
         await refetchScores()
       }
