@@ -159,29 +159,14 @@ export default function ScorePage({ username }: { username: string }) {
     })
   }
 
-  const deleteRow = async (index: number) => {
-    const updated = [...rows]
-    updated.splice(index, 1)
-    setRows(updated)
-
-    await supabase.from('score').delete().like('serial_number', `%_${username}`)
-
-    const payload = updated.map((row) => {
-      const [a1, a2, b1, b2] = row.values
-      return {
-        serial_number: `${row.serial_number}_${username}`,
-        player_a1: a1,
-        player_a2: a2,
-        player_b1: b1,
-        player_b2: b2,
-        team_a_score: row.h === '' ? null : parseInt(row.h),
-        team_b_score: row.i === '' ? null : parseInt(row.i),
-        lock: row.lock === LOCKED
-      }
-    })
-
-    await supabase.from('score').insert(payload)
-  }
+const deleteRow = async (index: number) => {
+  const row = rows[index]
+  // 先更新本地
+  const updated = [...rows]; updated.splice(index, 1); setRows(updated)
+  // 僅刪除單列（避免整表抖動與資料競爭）
+  await supabase.from('score').delete()
+    .eq('serial_number', `${row.serial_number}_${username}`)
+}
 
 const addRow = async () => {
   const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
