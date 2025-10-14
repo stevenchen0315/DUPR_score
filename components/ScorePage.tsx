@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
@@ -29,72 +29,120 @@ export default function ScorePage({ username }: { username: string }) {
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [event, setEvent] = useState('')
 
-  useEffect(() => {
-    if (!username) return
+useEffect(() => {
+  if (!username) return
 
-    const fetchData = async () => {
-      try {
-        const { data: account, error: accountError } = await supabase
-          .from('account')
-          .select('password, event')
-          .eq('username', username)
-          .single()
+  const fetchData = async () => {
+    try {
+      const { data: account, error: accountError } = await supabase
+        .from('account')
+        .select('password, event')
+        .eq('username', username)
+        .single()
+      if (accountError) throw accountError
+      if (account?.password) setStoredPassword(account.password)
+      if (account?.event) setEvent(account.event)
 
-        if (accountError) throw accountError
-        if (account?.password) setStoredPassword(account.password)
-        if (account?.event) setEvent(account.event) // ← 儲存 event
-        
-        const { data: users, error: userError } = await supabase
-          .from('player_info')
-          .select('dupr_id, name')
-          .like('dupr_id', `%_${username}`)
-
-        if (userError) throw userError
-        if (users) {
-          setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
-        }
-
-        const { data: scores, error: scoreError } = await supabase
-          .from('score')
-          .select('*')
-          .like('serial_number', `%_${username}`)
-
-        if (scoreError) throw scoreError
-        if (scores) {
-          const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
-          setRows(formatScores(sorted))
-        }
-      } catch (error) {
-        console.error('Fetch error:', error)
+      const { data: users, error: userError } = await supabase
+        .from('player_info')
+        .select('dupr_id, name')
+        .like('dupr_id', `%_${username}`)
+      if (userError) throw userError
+      if (users) {
+        setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
       }
+
+      // 初次全量抓一次
+      await refetchScores()
+    } catch (error) {
+      console.error('Fetch error:', error)
     }
+  }
 
-    fetchData()
+  fetchData()
+  resubscribe()
 
-    const channel = supabase
-      .channel(`realtime-score-${username}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'score' },
-        async () => {
-          const { data } = await supabase
-            .from('score')
-            .select('*')
-            .like('serial_number', `%_${username}`)
+  return () => {
+    if (channelRef.current) supabase.removeChannel(channelRef.current)
+  }
+}, [username])
 
-          if (data) {
-            const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
-            setRows(formatScores(sorted))
-          }
-        }
-      )
-      .subscribe()
+useEffect(() => {
+  if (!username) return
 
-    return () => {
-      supabase.removeChannel(channel)
+  const onVisible = () => {
+    if (document.visibilityState === 'visible') {
+      refetchScores()
+      if (!channelRef.current) resubscribe()
     }
-  }, [username])
+  }
+  const onFocus = () => { refetchScores() }
+  const onOnline = () => { refetchScores(); resubscribe() }
+  const onPageShow = () => { refetchScores(); resubscribe() } // iOS/Safari from bfcache
 
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('focus', onFocus)
+  window.addEventListener('online', onOnline)
+  window.addEventListener('pageshow', onPageShow)
+
+  return () => {
+    document.removeEventListener('visibilitychange', onVisible)
+    window.removeEventListener('focus', onFocus)
+    window.removeEventListener('online', onOnline)
+    window.removeEventListener('pageshow', onPageShow)
+  }
+}, [username])
+
+// 用來保存目前的 Realtime channel
+const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+
+// 重新抓取屬於該使用者的 score（全量補拉）
+const refetchScores = async () => {
+  if (!username) return
+  const { data } = await supabase
+    .from('score')
+    .select('*')
+    .like('serial_number', `%_${username}`)
+  if (data) {
+    const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
+    setRows(formatScores(sorted))
+  }
+}
+
+// 建立或重建 Realtime 訂閱（幂等）
+const resubscribe = () => {
+  if (!username) return
+  if (channelRef.current) supabase.removeChannel(channelRef.current)
+
+  const channel = supabase
+    .channel(`realtime-score-${username}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'score',
+        // 只接屬於該使用者的變更，降低事件風暴
+        // 註：若個別環境對 like 萬一不生效，callback 內仍有守門條件
+        filter: `serial_number=like.%_${username}`
+      },
+      async (payload) => {
+        // 雙重保險：只處理屬於該使用者的資料
+        const sn = (payload.new?.serial_number ?? payload.old?.serial_number ?? '') as string
+        if (!sn.endsWith(`_${username}`)) return
+        await refetchScores()
+      }
+    )
+    .subscribe((status) => {
+      // 若通道異常，稍後重試一次
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setTimeout(() => resubscribe(), 1000)
+      }
+    })
+
+  channelRef.current = channel
+}
+  
   const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => {
       const serialNum = parseInt(item.serial_number.toString().replace(`_${username}`, ''))
