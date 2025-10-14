@@ -124,7 +124,7 @@ const resubscribe = () => {
         table: 'score',
         // 只接屬於該使用者的變更，降低事件風暴
         // 註：若個別環境對 like 萬一不生效，callback 內仍有守門條件
-        filter: `event=eq.${event}`
+        filter: `owner=eq.${username}`
       },
       async (payload) => {       
         await refetchScores()
