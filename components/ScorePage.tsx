@@ -21,6 +21,14 @@ type Row = {
   lock: string
 }
 
+function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay = 200) {
+  const timer = useRef<number | null>(null)
+  return (...args: Parameters<T>) => {
+    if (timer.current) window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => fn(...args), delay)
+  }
+}
+
 export default function ScorePage({ username }: { username: string }) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
@@ -157,7 +165,21 @@ const resubscribe = () => {
       }
     })
   }
-
+  
+const debouncedSave = useDebouncedCallback(async (row: Row) => {
+  const [a1, a2, b1, b2] = row.values
+  await supabase.from('score').upsert({
+    serial_number: `${row.serial_number}_${username}`,
+    player_a1: a1,
+    player_a2: a2,
+    player_b1: b1,
+    player_b2: b2,
+    team_a_score: row.h === '' ? null : parseInt(row.h),
+    team_b_score: row.i === '' ? null : parseInt(row.i),
+    lock: row.lock === LOCKED
+  })
+}, 200)
+  
   const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
     const newRows = rows.map((r, i) => {
       if (i !== rowIndex) return r
@@ -189,16 +211,8 @@ const resubscribe = () => {
 
     const row = newRows[rowIndex]
     const [a1, a2, b1, b2] = row.values
-    await supabase.from('score').upsert({
-      serial_number: `${row.serial_number}_${username}`,
-      player_a1: a1,
-      player_a2: a2,
-      player_b1: b1,
-      player_b2: b2,
-      team_a_score: row.h === '' ? null : parseInt(row.h),
-      team_b_score: row.i === '' ? null : parseInt(row.i),
-      lock: row.lock === LOCKED
-    })
+    
+    debouncedSave(row)
   }
 
 const deleteRow = async (index: number) => {
