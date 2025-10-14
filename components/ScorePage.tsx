@@ -183,20 +183,22 @@ export default function ScorePage({ username }: { username: string }) {
     await supabase.from('score').insert(payload)
   }
 
-  const addRow = () => {
-    const nextSerial = rows.length > 0 ? Math.max(...rows.map((r) => r.serial_number)) + 1 : 1
-    setRows([
-      ...rows,
-      {
-        serial_number: nextSerial,
-        values: ['', '', '', ''],
-        sd: '',
-        h: '',
-        i: '',
-        lock: UNLOCKED
-      }
-    ])
+const addRow = async () => {
+  const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+  const payload = {
+    serial_number: `${nextSerial}_${username}`,
+    player_a1: '', player_a2: '', player_b1: '', player_b2: '',
+    team_a_score: null, team_b_score: null, lock: false,
   }
+  const { data, error } = await supabase.from('score').insert(payload).select().single()
+  if (!error && data) {
+    // 讓本地立即顯示（但其實等 realtime 回來也會更新一次）
+    setRows(prev => [...prev, {
+      serial_number: nextSerial, values: ['', '', '', ''],
+      sd: '', h: '', i: '', lock: 'Unlocked'
+    }])
+  }
+}
 
   const handleDeleteAll = async () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
