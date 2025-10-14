@@ -126,10 +126,7 @@ const resubscribe = () => {
         // 註：若個別環境對 like 萬一不生效，callback 內仍有守門條件
         filter: `serial_number=like.%_${username}`
       },
-      async (payload) => {
-        // 雙重保險：只處理屬於該使用者的資料
-        const sn = (payload.new?.serial_number ?? payload.old?.serial_number ?? '') as number
-        if (!sn.endsWith(`_${username}`)) return
+      async (payload) => {       
         await refetchScores()
       }
     )
