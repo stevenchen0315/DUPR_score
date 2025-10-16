@@ -38,6 +38,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [event, setEvent] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState('')
 
 useEffect(() => {
   if (!username) return
@@ -136,11 +137,14 @@ const resubscribe = () => {
       {
         event: '*',
         schema: 'public',
-        table: 'score',
-        filter: `serial_number=like.*_${username}` // 只監聽當前用戶的資料
+        table: 'score'       
       },
-      async (payload) => {       
-        await refetchScores()
+      async (payload) => {
+        // 只處理屬於當前用戶的變更
+        const serialNumber = payload.new?.serial_number || payload.old?.serial_number
+        if (serialNumber && serialNumber.includes(`_${username}`)) {
+          await refetchScores()
+        }
       }
     )
     .subscribe((status) => {
@@ -149,8 +153,8 @@ const resubscribe = () => {
         setRealtimeConnected(true)
       } else {
         setRealtimeConnected(false)
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          setTimeout(() => resubscribe(), 2000) // 增加重試間隔
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setTimeout(() => resubscribe(), 3000) // 增加重試間隔
         }
       }
     })
