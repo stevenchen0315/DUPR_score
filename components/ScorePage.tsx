@@ -147,11 +147,11 @@ const resubscribe = () => {
       console.log('Realtime status:', status) // 調試用
       if (status === 'SUBSCRIBED') {
         setRealtimeConnected(true)
-      } else if (status === 'CONNECTING') {
-        setRealtimeConnected(false) // 連線中保持 false
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      } else {
         setRealtimeConnected(false)
-        setTimeout(() => resubscribe(), 2000) // 增加重試間隔
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          setTimeout(() => resubscribe(), 2000) // 增加重試間隔
+        }
       }
     })
 
