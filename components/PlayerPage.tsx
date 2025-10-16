@@ -23,6 +23,14 @@ useEffect(() => {
   
   const fetchData = async () => {
       try {
+        // 讀取密碼
+        const { data: account, error: accountError } = await supabase
+          .from('account')
+          .select('password')
+          .eq('username', username)
+          .single()
+        if (accountError) throw accountError
+        if (account?.password) setStoredPassword(account.password)
         // 讀取 player_info 名單
         const { data: users, error: userError } = await supabase
           .from('player_info')
