@@ -12,6 +12,7 @@ export default function PlayerPage({ username }: { username: string }) {
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
@@ -67,10 +68,12 @@ useEffect(() => {
           setLockedNames(namesInScores)
           setLoadingLockedNames(false) 
         }
+        setIsLoading(false)
 
       } catch (error) {
         console.error('Fetch error:', error)
         setLoadingLockedNames(false)
+        setIsLoading(false)
       }
     }
 
@@ -188,7 +191,18 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       console.error('Supabase delete error:', error.message)
     }
   }
-
+  
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <div className="max-w-md mx-auto p-4">
       {/* 輸入區塊 */}
