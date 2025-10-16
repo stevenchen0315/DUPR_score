@@ -36,6 +36,9 @@ export default function ScorePage({ username }: { username: string }) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [event, setEvent] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState('')
 
 useEffect(() => {
   if (!username) return
@@ -62,13 +65,17 @@ useEffect(() => {
 
       // 初次全量抓一次
       await refetchScores()
+      setIsLoading(false)
     } catch (error) {
       console.error('Fetch error:', error)
+      setIsLoading(false)
     }
   }
 
-  fetchData()
-  resubscribe()
+  fetchData().then(() => {
+    // 等數據載入完成後再建立 Realtime 訂閱
+    resubscribe()
+  })
 
   return () => {
     if (channelRef.current) supabase.removeChannel(channelRef.current)
@@ -121,6 +128,7 @@ const refetchScores = async () => {
 const resubscribe = () => {
   if (!username) return
   if (channelRef.current) supabase.removeChannel(channelRef.current)
+  setRealtimeConnected(false)
 
   const channel = supabase
     .channel(`realtime-score-${username}`)
@@ -129,16 +137,25 @@ const resubscribe = () => {
       {
         event: '*',
         schema: 'public',
-        table: 'score',
+        table: 'score'       
       },
-      async (payload) => {       
-        await refetchScores()
+      async (payload: any) => {
+        // 只處理屬於當前用戶的變更
+        const serialNumber = payload.new?.serial_number || payload.old?.serial_number
+        if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
+          await refetchScores()
+        }
       }
     )
     .subscribe((status) => {
-      // 若通道異常，稍後重試一次
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        setTimeout(() => resubscribe(), 1000)
+      console.log('Realtime status:', status) // 調試用
+      if (status === 'SUBSCRIBED') {
+        setRealtimeConnected(true)
+      } else {
+        setRealtimeConnected(false)
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setTimeout(() => resubscribe(), 3000) // 增加重試間隔
+        }
       }
     })
 
@@ -293,6 +310,17 @@ const addRow = async () => {
   a.download = `export-${today}.csv`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+if (isLoading || !realtimeConnected) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
 }
 
 return (
