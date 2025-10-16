@@ -11,8 +11,10 @@ export default function PlayerPage({ username }: { username: string }) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
-  const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
+  const [storedPassword, setStoredPassword] = useState<string | null>(null)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteMessage, setDeleteMessage] = useState('')
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   
