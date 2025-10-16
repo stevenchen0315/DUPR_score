@@ -11,8 +11,10 @@ export default function PlayerPage({ username }: { username: string }) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
-  const [canEdit, setCanEdit] = useState(true) // 你可以根據情境改變這個狀態
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
+  const [storedPassword, setStoredPassword] = useState<string | null>(null)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteMessage, setDeleteMessage] = useState('')
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -21,6 +23,14 @@ useEffect(() => {
   
   const fetchData = async () => {
       try {
+        // 讀取密碼
+        const { data: account, error: accountError } = await supabase
+          .from('account')
+          .select('password')
+          .eq('username', username)
+          .single()
+        if (accountError) throw accountError
+        if (account?.password) setStoredPassword(account.password)
         // 讀取 player_info 名單
         const { data: users, error: userError } = await supabase
           .from('player_info')
@@ -66,6 +76,24 @@ useEffect(() => {
 
     fetchData()
   }, [username])
+  
+  // 🚀 一鍵刪除功能
+  const handleDeleteAll = async () => {
+    const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('player_info')
+      .delete()
+      .like('dupr_id', `%_${username}`)
+
+    if (!error) {
+      setUserList([])
+      setDeleteMessage('✅ 所有玩家資料已刪除')
+    } else {
+      setDeleteMessage('❌ 刪除失敗，請稍後再試')
+    }
+  }
   
 // 🚀 匯出 CSV
 const exportCSV = () => {
@@ -258,6 +286,38 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           )
         })}
       </ul>
+      {/* 分隔線 */}
+      <div className="relative w-full my-6">
+        <hr className="border-t border-gray-300" />
+        <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+          Organizer only
+        </span>
+      </div>
+
+      {/* 一鍵刪除區塊 */}
+      <div className="flex items-center space-x-3 justify-center">
+        <input
+          type="password"
+          placeholder="Password"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+          className="border px-3 py-2 rounded w-28 text-sm h-10"
+        />
+        <button
+          onClick={handleDeleteAll}
+          disabled={storedPassword === null || deletePassword !== storedPassword}
+          className={`px-3 py-2 rounded text-white text-sm h-10 ${
+            deletePassword === storedPassword
+              ? 'bg-red-600 hover:bg-red-700'
+              : 'bg-gray-300 cursor-not-allowed'
+          }`}
+        >
+          一鍵刪除
+        </button>
+      </div>
+
+      {/* 提示訊息 */}
+      {deleteMessage && <div className="text-center text-red-600 mt-2">{deleteMessage}</div>}
     </div>
   )
 }
