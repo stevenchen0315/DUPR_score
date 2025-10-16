@@ -71,8 +71,10 @@ useEffect(() => {
     }
   }
 
-  fetchData()
-  resubscribe()
+  fetchData().then(() => {
+    // 等數據載入完成後再建立 Realtime 訂閱
+    resubscribe()
+  })
 
   return () => {
     if (channelRef.current) supabase.removeChannel(channelRef.current)
@@ -135,18 +137,21 @@ const resubscribe = () => {
         event: '*',
         schema: 'public',
         table: 'score',
+        filter: `serial_number=like.*_${username}` // 只監聽當前用戶的資料
       },
       async (payload) => {       
         await refetchScores()
       }
     )
     .subscribe((status) => {
-      // 若通道異常，稍後重試一次
+      console.log('Realtime status:', status) // 調試用
       if (status === 'SUBSCRIBED') {
         setRealtimeConnected(true)
+      } else if (status === 'CONNECTING') {
+        setRealtimeConnected(false) // 連線中保持 false
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         setRealtimeConnected(false)
-        setTimeout(() => resubscribe(), 1000)
+        setTimeout(() => resubscribe(), 2000) // 增加重試間隔
       }
     })
 
