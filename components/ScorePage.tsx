@@ -139,10 +139,10 @@ const resubscribe = () => {
         schema: 'public',
         table: 'score'       
       },
-      async (payload) => {
+      async (payload: any) => {
         // 只處理屬於當前用戶的變更
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
-        if (serialNumber && serialNumber.includes(`_${username}`)) {
+        if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
           await refetchScores()
         }
       }
