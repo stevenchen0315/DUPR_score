@@ -36,6 +36,8 @@ export default function ScorePage({ username }: { username: string }) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [event, setEvent] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
 
 useEffect(() => {
   if (!username) return
@@ -62,8 +64,10 @@ useEffect(() => {
 
       // 初次全量抓一次
       await refetchScores()
+      setIsLoading(false)
     } catch (error) {
       console.error('Fetch error:', error)
+      setIsLoading(false)
     }
   }
 
@@ -121,6 +125,7 @@ const refetchScores = async () => {
 const resubscribe = () => {
   if (!username) return
   if (channelRef.current) supabase.removeChannel(channelRef.current)
+  setRealtimeConnected(false)
 
   const channel = supabase
     .channel(`realtime-score-${username}`)
@@ -137,7 +142,10 @@ const resubscribe = () => {
     )
     .subscribe((status) => {
       // 若通道異常，稍後重試一次
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+      if (status === 'SUBSCRIBED') {
+        setRealtimeConnected(true)
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        setRealtimeConnected(false)
         setTimeout(() => resubscribe(), 1000)
       }
     })
@@ -295,7 +303,26 @@ const addRow = async () => {
   URL.revokeObjectURL(url)
 }
 
+if (isLoading) {
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <p className="text-gray-600">載入中...</p>
+      </div>
+    </div>
+  )
+}
+
 return (
+<div className="p-4">
+    {!realtimeConnected && (
+      <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg flex items-center space-x-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
+        <span className="text-yellow-800 text-sm">即時同步連線中...</span>
+      </div>
+    )}
+  {
     <div>
       <table className="w-full border text-sm mb-6">
         <thead>
@@ -452,6 +479,8 @@ return (
   {/* 提示訊息 */}
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
   </div>
+  </div>
+  }
   </div>
   )
 }
