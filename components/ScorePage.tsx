@@ -312,7 +312,7 @@ const addRow = async () => {
   URL.revokeObjectURL(url)
 }
 
-if (isLoading) {
+if (isLoading || !realtimeConnected) {
   return (
     <div className="flex items-center justify-center min-h-screen">
       <div className="flex flex-col items-center space-y-4">
@@ -324,14 +324,6 @@ if (isLoading) {
 }
 
 return (
-<div className="p-4">
-    {!realtimeConnected && (
-      <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 rounded-lg flex items-center space-x-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
-        <span className="text-yellow-800 text-sm">即時同步連線中...</span>
-      </div>
-    )}
-  {
     <div>
       <table className="w-full border text-sm mb-6">
         <thead>
@@ -488,8 +480,6 @@ return (
   {/* 提示訊息 */}
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
   </div>
-  </div>
-  }
   </div>
   )
 }
