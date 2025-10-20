@@ -78,7 +78,8 @@ useEffect(() => {
   })
 
   return () => {
-    if (channelRef.current) supabase.removeChannel(channelRef.current)
+    if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
+    if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
   }
 }, [username])
 
@@ -89,7 +90,7 @@ useEffect(() => {
     if (document.visibilityState === 'visible') {
       refetchScores()
       refetchPlayers()
-      if (!channelRef.current) resubscribe()
+      if (!scoreChannelRef.current || !playerChannelRef.current) resubscribe()
     }
   }
   const onFocus = () => { refetchScores(); refetchPlayers() }
@@ -110,7 +111,8 @@ useEffect(() => {
 }, [username])
 
 // 用來保存目前的 Realtime channel
-const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+const scoreChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
 
 // 重新抓取屬於該使用者的 score（全量補拉）
 const refetchScores = async () => {
@@ -138,11 +140,14 @@ const refetchPlayers = async () => {
 // 建立或重建 Realtime 訂閱（幂等）
 const resubscribe = () => {
   if (!username) return
-  if (channelRef.current) supabase.removeChannel(channelRef.current)
+  // 清理舊的 channels
+  if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
+  if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
   setRealtimeConnected(false)
 
-  const channel = supabase
-    .channel(`realtime-score-${username}`)
+  // Score 表的 channel
+  const scoreChannel = supabase
+    .channel(`score-${username}`)
     .on(
       'postgres_changes',
       {
@@ -151,13 +156,20 @@ const resubscribe = () => {
         table: 'score'       
       },
       async (payload: any) => {
-        // 只處理屬於當前用戶的變更
+        console.log('Score change detected:', payload)
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
         if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
           await refetchScores()
         }
       }
     )
+    .subscribe((status) => {
+      console.log('Score channel status:', status)
+    })
+
+  // Player 表的 channel
+  const playerChannel = supabase
+    .channel(`player-${username}`)
     .on(
       'postgres_changes',
       {
@@ -166,26 +178,29 @@ const resubscribe = () => {
         table: 'player_info'
       },
       async (payload: any) => {
-        // 只處理屬於當前用戶的選手變更
+        console.log('Player change detected:', payload)
         const duprId = payload.new?.dupr_id || payload.old?.dupr_id
         if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
+          console.log('Refreshing players...')
           await refetchPlayers()
         }
       }
     )
     .subscribe((status) => {
-      console.log('Realtime status:', status) // 調試用
+      console.log('Player channel status:', status)
+      // 只有當兩個 channel 都連接成功時才設為 connected
       if (status === 'SUBSCRIBED') {
-        setRealtimeConnected(true)
-      } else {
-        setRealtimeConnected(false)
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setTimeout(() => resubscribe(), 3000) // 增加重試間隔
-        }
+        // 檢查是否兩個 channel 都已連接
+        setTimeout(() => {
+          setRealtimeConnected(true)
+        }, 1000)
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setTimeout(() => resubscribe(), 3000)
       }
     })
 
-  channelRef.current = channel
+  scoreChannelRef.current = scoreChannel
+  playerChannelRef.current = playerChannel
 }
   
   const formatScores = (scores: score[]): Row[] => {
