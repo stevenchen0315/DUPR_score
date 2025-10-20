@@ -40,9 +40,14 @@ export default function UserPage({ params }: any) {
 
   return (
     <div className="p-6">
-      <h1 className="text-3xl font-bold text-center text-blue-600 mb-6 border-b pb-2">
-        Organizer: {capitalizeFirstLetter(username)}
-      </h1>
+      <div className="relative mb-6 border-b pb-2">
+        <div className="absolute left-0 top-0 text-2xl font-bold text-blue-600">
+          DUPLA
+        </div>
+        <h1 className="text-3xl font-bold text-center text-blue-600">
+          Organizer: {capitalizeFirstLetter(username)}
+        </h1>
+      </div>
 
       <div className="flex justify-center gap-4 mb-4">
         <button
