@@ -88,12 +88,13 @@ useEffect(() => {
   const onVisible = () => {
     if (document.visibilityState === 'visible') {
       refetchScores()
+      refetchPlayers()
       if (!channelRef.current) resubscribe()
     }
   }
-  const onFocus = () => { refetchScores() }
-  const onOnline = () => { refetchScores(); resubscribe() }
-  const onPageShow = () => { refetchScores(); resubscribe() } // iOS/Safari from bfcache
+  const onFocus = () => { refetchScores(); refetchPlayers() }
+  const onOnline = () => { refetchScores(); refetchPlayers(); resubscribe() }
+  const onPageShow = () => { refetchScores(); refetchPlayers(); resubscribe() } // iOS/Safari from bfcache
 
   document.addEventListener('visibilitychange', onVisible)
   window.addEventListener('focus', onFocus)
@@ -123,7 +124,17 @@ const refetchScores = async () => {
     setRows(formatScores(sorted))
   }
 }
-
+// 重新抓取選手資料
+const refetchPlayers = async () => {
+  if (!username) return
+  const { data: users } = await supabase
+    .from('player_info')
+    .select('dupr_id, name')
+    .like('dupr_id', `%_${username}`)
+  if (users) {
+    setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
+  }
+}
 // 建立或重建 Realtime 訂閱（幂等）
 const resubscribe = () => {
   if (!username) return
@@ -144,6 +155,21 @@ const resubscribe = () => {
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
         if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
           await refetchScores()
+        }
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'player_info'
+      },
+      async (payload: any) => {
+        // 只處理屬於當前用戶的選手變更
+        const duprId = payload.new?.dupr_id || payload.old?.dupr_id
+        if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
+          await refetchPlayers()
         }
       }
     )
