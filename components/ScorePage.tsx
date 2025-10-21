@@ -38,6 +38,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [event, setEvent] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState('')
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
 
 useEffect(() => {
@@ -266,17 +267,18 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
         (updatedRow as any)[field] = value
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
+        const oldValue = updatedRow.values[colIndex]
         updatedRow.values[colIndex] = value
         
-        // 固定隊友自動帶入邏輯
+        // 固定隊友自動帶入和防呆邏輯
         if (value && partnerNumbers[value]) {
+          // 選擇固定隊友 - 自動帶入
           const partnerNum = partnerNumbers[value]
           const partnerName = Object.keys(partnerNumbers).find(name => 
             name !== value && partnerNumbers[name] === partnerNum
           )
           
           if (partnerName) {
-            // A1/A2 或 B1/B2 的自動帶入
             if (colIndex === 0) { // A1 -> A2
               updatedRow.values[1] = partnerName
             } else if (colIndex === 1) { // A2 -> A1
@@ -285,6 +287,36 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
               updatedRow.values[3] = partnerName
             } else if (colIndex === 3) { // B2 -> B1
               updatedRow.values[2] = partnerName
+            }
+          }
+        } else if (value && !partnerNumbers[value]) {
+          // 選擇非固定隊友 - 檢查是否需要清空對應位置
+          if (oldValue && partnerNumbers[oldValue]) {
+            // 原本是固定隊友，現在改成非固定隊友，需要清空對應位置
+            if (colIndex === 0) { // A1 改變，清空 A2
+              updatedRow.values[1] = ''
+            } else if (colIndex === 1) { // A2 改變，清空 A1
+              updatedRow.values[0] = ''
+            } else if (colIndex === 2) { // B1 改變，清空 B2
+              updatedRow.values[3] = ''
+            } else if (colIndex === 3) { // B2 改變，清空 B1
+              updatedRow.values[2] = ''
+            }
+          }
+        } else if (!value) {
+          // 清空選擇 - 如果對應位置是固定隊友，也要清空
+          let partnerIndex = -1
+          if (colIndex === 0) partnerIndex = 1 // A1 清空，檢查 A2
+          else if (colIndex === 1) partnerIndex = 0 // A2 清空，檢查 A1
+          else if (colIndex === 2) partnerIndex = 3 // B1 清空，檢查 B2
+          else if (colIndex === 3) partnerIndex = 2 // B2 清空，檢查 B1
+          
+          if (partnerIndex >= 0) {
+            const partnerValue = updatedRow.values[partnerIndex]
+            if (partnerValue && partnerNumbers[partnerValue] && oldValue && partnerNumbers[oldValue] && 
+                partnerNumbers[partnerValue] === partnerNumbers[oldValue]) {
+              // 對應位置是同組固定隊友，也要清空
+              updatedRow.values[partnerIndex] = ''
             }
           }
         }
