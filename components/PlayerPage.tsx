@@ -16,6 +16,8 @@ export default function PlayerPage({ username }: { username: string }) {
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
+  const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
+  const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   
@@ -35,17 +37,22 @@ useEffect(() => {
         // 讀取 player_info 名單
         const { data: users, error: userError } = await supabase
           .from('player_info')
-          .select('dupr_id, name')
+          .select('dupr_id, name, partner_number')
           .like('dupr_id', `%_${username}`)
 
         if (userError) throw userError
         if (users) {
-          setUserList(
-            users.map(u => ({
-              dupr_id: u.dupr_id.replace(`_${username}`, ''),
+          const partners: {[key: string]: number | null} = {}
+          const userListData = users.map(u => {
+            const cleanId = u.dupr_id.replace(`_${username}`, '')
+            partners[u.name] = u.partner_number
+            return {
+              dupr_id: cleanId,
               name: u.name,
-            }))
-          )
+            }
+          })
+          setUserList(userListData)
+          setPartnerNumbers(partners)
         }
 
         // 讀取 score 中出現過的 player 名稱
@@ -141,6 +148,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       const transformed = list.map(user => ({
         dupr_id: `${user.dupr_id.toUpperCase()}${suffix}`,
         name: user.name,
+        partner_number: null
       }))
       const { error } = await supabase
         .from('player_info')
@@ -190,6 +198,85 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (error) {
       console.error('Supabase delete error:', error.message)
     }
+  }
+
+  const togglePlayerSelection = (index: number) => {
+    if (deletePassword !== storedPassword) return
+    
+    const newSelected = new Set(selectedPlayers)
+    if (newSelected.has(index)) {
+      newSelected.delete(index)
+    } else {
+      if (newSelected.size < 2) {
+        newSelected.add(index)
+      }
+    }
+    setSelectedPlayers(newSelected)
+  }
+
+  const handlePartnerAction = async () => {
+    if (deletePassword !== storedPassword) return
+    
+    const selectedArray = Array.from(selectedPlayers)
+    if (selectedArray.length !== 2) return
+
+    const player1 = userList[selectedArray[0]]
+    const player2 = userList[selectedArray[1]]
+    
+    // 檢查是否要解除固定
+    const partner1 = partnerNumbers[player1.name]
+    const partner2 = partnerNumbers[player2.name]
+    const shouldUnfix = partner1 && partner2 && partner1 === partner2
+
+    try {
+      if (shouldUnfix) {
+        // 解除固定
+        await supabase
+          .from('player_info')
+          .update({ partner_number: null })
+          .in('dupr_id', [`${player1.dupr_id}${suffix}`, `${player2.dupr_id}${suffix}`])
+        
+        setPartnerNumbers(prev => ({
+          ...prev,
+          [player1.name]: null,
+          [player2.name]: null
+        }))
+      } else {
+        // 固定隊友 - 找到下一個可用的 partner_number
+        const usedNumbers = new Set(Object.values(partnerNumbers).filter(n => n !== null))
+        let nextNumber = 1
+        while (usedNumbers.has(nextNumber)) {
+          nextNumber++
+        }
+
+        await supabase
+          .from('player_info')
+          .update({ partner_number: nextNumber })
+          .in('dupr_id', [`${player1.dupr_id}${suffix}`, `${player2.dupr_id}${suffix}`])
+        
+        setPartnerNumbers(prev => ({
+          ...prev,
+          [player1.name]: nextNumber,
+          [player2.name]: nextNumber
+        }))
+      }
+      
+      setSelectedPlayers(new Set())
+    } catch (error) {
+      console.error('Partner action error:', error)
+    }
+  }
+
+  const getButtonText = () => {
+    const selectedArray = Array.from(selectedPlayers)
+    if (selectedArray.length !== 2) return null
+    
+    const player1 = userList[selectedArray[0]]
+    const player2 = userList[selectedArray[1]]
+    const partner1 = partnerNumbers[player1.name]
+    const partner2 = partnerNumbers[player2.name]
+    
+    return partner1 && partner2 && partner1 === partner2 ? '解除固定' : '固定隊友'
   }
   
   if (isLoading) {
@@ -268,19 +355,44 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         </div>
       </div>
 
+      {/* 固定隊友按鈕 */}
+      {deletePassword === storedPassword && selectedPlayers.size === 2 && (
+        <div className="mb-4 text-center">
+          <button
+            onClick={handlePartnerAction}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            {getButtonText()}
+          </button>
+        </div>
+      )}
+
       {/* 玩家列表 */}
       <ul className="space-y-4">
         {userList.map((user, idx) => {
           const isLocked = lockedNames.has(user.name)
+          const isSelected = selectedPlayers.has(idx)
+          const partnerNum = partnerNumbers[user.name]
+          const isAdmin = deletePassword === storedPassword
 
           return (
-            <li key={idx} className="flex justify-between items-center bg-white rounded-lg shadow p-4">
+            <li 
+              key={idx} 
+              className={`flex justify-between items-center rounded-lg shadow p-4 cursor-pointer transition ${
+                isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
+              } ${isAdmin ? 'hover:bg-gray-50' : ''}`}
+              onClick={() => isAdmin && togglePlayerSelection(idx)}
+            >
               <div className="text-base font-medium text-gray-800">
                 {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
+                {partnerNum && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">隊友{partnerNum}</span>}
               </div>
               <div className="flex gap-3">
                 <button
-                  onClick={() => editUser(idx)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    editUser(idx)
+                  }}
                   disabled={loadingLockedNames || isLocked}
                   className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                   aria-label={`編輯 ${user.name}`}
@@ -288,7 +400,10 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                   <Pencil size={20} />
                 </button>
                 <button
-                  onClick={() => deleteUser(idx)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    deleteUser(idx)
+                  }}
                   disabled={loadingLockedNames || isLocked}
                   className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                   aria-label={`刪除 ${user.name}`}
