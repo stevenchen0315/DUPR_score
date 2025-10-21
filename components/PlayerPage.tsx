@@ -451,7 +451,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             >
               <div className="text-base font-medium text-gray-800">
                 {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
-                {partnerNum && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">隊友{partnerNum}</span>}
+                {partnerNum && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Team {partnerNum}</span>}
               </div>
               <div className="flex gap-3">
                 <button
