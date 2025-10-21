@@ -38,7 +38,6 @@ export default function ScorePage({ username }: { username: string }) {
   const [event, setEvent] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
-  const [realtimeStatus, setRealtimeStatus] = useState('')
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
 
 useEffect(() => {
