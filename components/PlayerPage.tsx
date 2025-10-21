@@ -445,7 +445,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
               className={`flex justify-between items-center rounded-lg shadow p-4 transition ${
                 isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
               } ${
-                canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed opacity-60'
+                canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
               }`}
               onClick={() => canSelect && togglePlayerSelection(idx)}
             >
