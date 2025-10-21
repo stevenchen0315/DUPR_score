@@ -203,12 +203,36 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   const togglePlayerSelection = (index: number) => {
     if (deletePassword !== storedPassword) return
     
+    const user = userList[index]
+    const partnerNum = partnerNumbers[user.name]
     const newSelected = new Set(selectedPlayers)
+    
     if (newSelected.has(index)) {
       newSelected.delete(index)
     } else {
-      if (newSelected.size < 2) {
+      // 如果點選固定隊友，清空選擇並只選這個
+      if (partnerNum) {
+        newSelected.clear()
         newSelected.add(index)
+      } else {
+        // 點選非固定隊友
+        if (newSelected.size === 0) {
+          // 第一個選擇
+          newSelected.add(index)
+        } else if (newSelected.size === 1) {
+          // 第二個選擇，檢查第一個是否為固定隊友
+          const firstIndex = Array.from(newSelected)[0]
+          const firstUser = userList[firstIndex]
+          const firstPartnerNum = partnerNumbers[firstUser.name]
+          
+          if (firstPartnerNum) {
+            // 第一個是固定隊友，不能選第二個
+            return
+          } else {
+            // 都是非固定隊友，可以選
+            newSelected.add(index)
+          }
+        }
       }
     }
     setSelectedPlayers(newSelected)
@@ -218,30 +242,40 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (deletePassword !== storedPassword) return
     
     const selectedArray = Array.from(selectedPlayers)
-    if (selectedArray.length !== 2) return
-
-    const player1 = userList[selectedArray[0]]
-    const player2 = userList[selectedArray[1]]
-    
-    // 檢查是否要解除固定
-    const partner1 = partnerNumbers[player1.name]
-    const partner2 = partnerNumbers[player2.name]
-    const shouldUnfix = partner1 && partner2 && partner1 === partner2
+    if (selectedArray.length === 0) return
 
     try {
-      if (shouldUnfix) {
-        // 解除固定
-        await supabase
-          .from('player_info')
-          .update({ partner_number: null })
-          .in('dupr_id', [`${player1.dupr_id}${suffix}`, `${player2.dupr_id}${suffix}`])
+      if (selectedArray.length === 1) {
+        // 單個固定隊友解除固定
+        const player = userList[selectedArray[0]]
+        const partnerNum = partnerNumbers[player.name]
         
-        setPartnerNumbers(prev => ({
-          ...prev,
-          [player1.name]: null,
-          [player2.name]: null
-        }))
-      } else {
+        if (partnerNum) {
+          // 找到同組的另一個隊友並一起解除
+          const partnerNames = Object.keys(partnerNumbers).filter(name => 
+            partnerNumbers[name] === partnerNum
+          )
+          const partnerDuprIds = partnerNames.map(name => {
+            const user = userList.find(u => u.name === name)
+            return `${user?.dupr_id}${suffix}`
+          })
+          
+          await supabase
+            .from('player_info')
+            .update({ partner_number: null })
+            .in('dupr_id', partnerDuprIds)
+          
+          const updatedPartners = { ...partnerNumbers }
+          partnerNames.forEach(name => {
+            updatedPartners[name] = null
+          })
+          setPartnerNumbers(updatedPartners)
+        }
+      } else if (selectedArray.length === 2) {
+        // 兩個玩家的操作
+        const player1 = userList[selectedArray[0]]
+        const player2 = userList[selectedArray[1]]
+        
         // 固定隊友 - 找到下一個可用的 partner_number
         const usedNumbers = new Set(Object.values(partnerNumbers).filter(n => n !== null))
         let nextNumber = 1
@@ -269,14 +303,19 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const getButtonText = () => {
     const selectedArray = Array.from(selectedPlayers)
-    if (selectedArray.length !== 2) return null
+    if (selectedArray.length === 0) return null
     
-    const player1 = userList[selectedArray[0]]
-    const player2 = userList[selectedArray[1]]
-    const partner1 = partnerNumbers[player1.name]
-    const partner2 = partnerNumbers[player2.name]
+    if (selectedArray.length === 1) {
+      const player = userList[selectedArray[0]]
+      const partnerNum = partnerNumbers[player.name]
+      return partnerNum ? '解除固定' : null
+    }
     
-    return partner1 && partner2 && partner1 === partner2 ? '解除固定' : '固定隊友'
+    if (selectedArray.length === 2) {
+      return '固定隊友'
+    }
+    
+    return null
   }
   
   if (isLoading) {
@@ -356,11 +395,15 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       </div>
 
       {/* 固定隊友按鈕 */}
-      {deletePassword === storedPassword && selectedPlayers.size === 2 && (
+      {deletePassword === storedPassword && getButtonText() && (
         <div className="mb-4 text-center">
           <button
             onClick={handlePartnerAction}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+            className={`px-4 py-2 text-white rounded-md ${
+              getButtonText() === '解除固定' 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
             {getButtonText()}
           </button>
@@ -374,14 +417,37 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           const isSelected = selectedPlayers.has(idx)
           const partnerNum = partnerNumbers[user.name]
           const isAdmin = deletePassword === storedPassword
+          
+          // 檢查是否可點選
+          const canSelect = isAdmin && (() => {
+            if (selectedPlayers.size === 0) return true
+            if (isSelected) return true
+            
+            const firstSelectedIndex = Array.from(selectedPlayers)[0]
+            const firstSelectedUser = userList[firstSelectedIndex]
+            const firstPartnerNum = partnerNumbers[firstSelectedUser.name]
+            
+            // 如果第一個選擇是固定隊友，其他人都不能選
+            if (firstPartnerNum) return false
+            
+            // 如果第一個選擇是非固定隊友，則固定隊友不能選
+            if (partnerNum) return false
+            
+            // 已選擇兩個非固定隊友，不能再選
+            if (selectedPlayers.size >= 2) return false
+            
+            return true
+          })()
 
           return (
             <li 
               key={idx} 
-              className={`flex justify-between items-center rounded-lg shadow p-4 cursor-pointer transition ${
+              className={`flex justify-between items-center rounded-lg shadow p-4 transition ${
                 isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
-              } ${isAdmin ? 'hover:bg-gray-50' : ''}`}
-              onClick={() => isAdmin && togglePlayerSelection(idx)}
+              } ${
+                canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed opacity-60'
+              }`}
+              onClick={() => canSelect && togglePlayerSelection(idx)}
             >
               <div className="text-base font-medium text-gray-800">
                 {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
