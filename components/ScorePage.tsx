@@ -38,7 +38,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [event, setEvent] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
-  const [realtimeStatus, setRealtimeStatus] = useState('')
+  const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
 
 useEffect(() => {
   if (!username) return
@@ -56,11 +56,17 @@ useEffect(() => {
 
       const { data: users, error: userError } = await supabase
         .from('player_info')
-        .select('dupr_id, name')
+        .select('dupr_id, name, partner_number')
         .like('dupr_id', `%_${username}`)
       if (userError) throw userError
       if (users) {
-        setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
+        const partners: {[key: string]: number | null} = {}
+        const userListData = users.map(u => {
+          partners[u.name] = u.partner_number
+          return { ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') }
+        })
+        setUserList(userListData)
+        setPartnerNumbers(partners)
       }
 
       // 初次全量抓一次
@@ -131,10 +137,16 @@ const refetchPlayers = async () => {
   if (!username) return
   const { data: users } = await supabase
     .from('player_info')
-    .select('dupr_id, name')
+    .select('dupr_id, name, partner_number')
     .like('dupr_id', `%_${username}`)
   if (users) {
-    setUserList(users.map(u => ({ ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') })))
+    const partners: {[key: string]: number | null} = {}
+    const userListData = users.map(u => {
+      partners[u.name] = u.partner_number
+      return { ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') }
+    })
+    setUserList(userListData)
+    setPartnerNumbers(partners)
   }
 }
 // 建立或重建 Realtime 訂閱（幂等）
@@ -255,6 +267,27 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
         updatedRow.values[colIndex] = value
+        
+        // 固定隊友自動帶入邏輯
+        if (value && partnerNumbers[value]) {
+          const partnerNum = partnerNumbers[value]
+          const partnerName = Object.keys(partnerNumbers).find(name => 
+            name !== value && partnerNumbers[name] === partnerNum
+          )
+          
+          if (partnerName) {
+            // A1/A2 或 B1/B2 的自動帶入
+            if (colIndex === 0) { // A1 -> A2
+              updatedRow.values[1] = partnerName
+            } else if (colIndex === 1) { // A2 -> A1
+              updatedRow.values[0] = partnerName
+            } else if (colIndex === 2) { // B1 -> B2
+              updatedRow.values[3] = partnerName
+            } else if (colIndex === 3) { // B2 -> B1
+              updatedRow.values[2] = partnerName
+            }
+          }
+        }
       }
 
       const [a1, a2, b1, b2] = updatedRow.values
