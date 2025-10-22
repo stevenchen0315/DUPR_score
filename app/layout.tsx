@@ -2,7 +2,7 @@ import './globals.css'
 
 export const metadata = {
   title: 'DUPLA',
-  description: 'DUPR Score with Supabase + Next.js 13',
+  description: 'DUPR Match Scoring & Player Management',
 }
 
 export default function RootLayout({
