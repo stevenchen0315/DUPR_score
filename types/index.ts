@@ -1,6 +1,7 @@
 export type player_info = {
   dupr_id: string
   name: string
+  partner_number?: number | null
 }
 
 export type score = {
