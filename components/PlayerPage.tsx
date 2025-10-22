@@ -13,6 +13,7 @@ export default function PlayerPage({ username }: { username: string }) {
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
@@ -20,6 +21,7 @@ export default function PlayerPage({ username }: { username: string }) {
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
 useEffect(() => {
     if (!username) return
@@ -84,9 +86,99 @@ useEffect(() => {
       }
     }
 
-    fetchData()
+    fetchData().then(() => {
+      resubscribe()
+    })
+
+    return () => {
+      if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+    }
+  }, [username])
+
+  useEffect(() => {
+    if (!username) return
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refetchPlayers()
+        if (!playerChannelRef.current) resubscribe()
+      }
+    }
+    const onFocus = () => { refetchPlayers() }
+    const onOnline = () => { refetchPlayers(); resubscribe() }
+    const onPageShow = () => { refetchPlayers(); resubscribe() }
+
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('pageshow', onPageShow)
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('pageshow', onPageShow)
+    }
   }, [username])
   
+  const refetchPlayers = async () => {
+    if (!username) return
+    const { data: users } = await supabase
+      .from('player_info')
+      .select('dupr_id, name, partner_number')
+      .like('dupr_id', `%_${username}`)
+    if (users) {
+      const partners: {[key: string]: number | null} = {}
+      const userListData = users.map(u => {
+        const cleanId = u.dupr_id.replace(`_${username}`, '')
+        partners[u.name] = u.partner_number
+        return {
+          dupr_id: cleanId,
+          name: u.name,
+        }
+      })
+      setUserList(userListData)
+      setPartnerNumbers(partners)
+    }
+  }
+
+  const resubscribe = () => {
+    if (!username) return
+    if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+    setRealtimeConnected(false)
+
+    const playerChannel = supabase
+      .channel(`player-${username}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'player_info'
+        },
+        async (payload: any) => {
+          console.log('Player change detected:', payload)
+          const duprId = payload.new?.dupr_id || payload.old?.dupr_id
+          if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
+            console.log('Refreshing players...')
+            await refetchPlayers()
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Player channel status:', status)
+        if (status === 'SUBSCRIBED') {
+          setTimeout(() => {
+            setRealtimeConnected(true)
+          }, 1000)
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          setTimeout(() => resubscribe(), 3000)
+        }
+      })
+
+    playerChannelRef.current = playerChannel
+  }
+
   // 🚀 一鍵刪除功能
   const handleDeleteAll = async () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
@@ -318,7 +410,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     return null
   }
   
-  if (isLoading) {
+  if (isLoading || !realtimeConnected) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center space-y-4">
