@@ -454,7 +454,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
   
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="max-w-md mx-auto px-4 pt-4 pb-2">
       {/* 輸入區塊 */}
       <div className="mb-6 flex flex-col sm:flex-row gap-3">
         <input
