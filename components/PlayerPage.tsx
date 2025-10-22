@@ -368,10 +368,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         const player1 = userList[selectedArray[0]]
         const player2 = userList[selectedArray[1]]
         
-        // 重新抓取最新的 partner_number 資料
-        await refetchPlayers()
-        
-        // 使用最新資料計算下一個可用的 partner_number
+        // 直接從資料庫查詢最新的 partner_number 資料
         const { data: currentUsers } = await supabase
           .from('player_info')
           .select('partner_number')
@@ -383,6 +380,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         while (usedNumbers.has(nextNumber)) {
           nextNumber++
         }
+        
+        console.log('Used numbers:', Array.from(usedNumbers), 'Next number:', nextNumber)
 
         await supabase
           .from('player_info')
