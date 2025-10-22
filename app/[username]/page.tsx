@@ -84,7 +84,7 @@ export default function UserPage({ params }: any) {
 
       <MarqueeAd />
 
-      <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
+      <footer className="text-center text-gray-500 text-sm mt-4 border-t pt-4">
         Copyright &copy; {new Date().getFullYear()}{' '}
         <a
           href="mailto:steven0315@kimo.com"
