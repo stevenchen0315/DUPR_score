@@ -378,7 +378,7 @@ const addRow = async () => {
 
   const getFilteredOptions = (row: Row, currentIndex: number) => {
     const selected = row.values.filter((v, i) => v && i !== currentIndex)
-    return userList.map((u) => u.name).filter((n) => !selected.includes(n))
+    return userList.map((u) => u.name).filter((n) => !selected.includes(n)).sort()
   }
 
   const exportCSV = () => {
