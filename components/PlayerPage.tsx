@@ -397,8 +397,6 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       }
       
       setSelectedPlayers(new Set())
-      // 操作完成後重新抓取資料確保同步
-      await refetchPlayers()
     } catch (error) {
       console.error('Partner action error:', error)
     }
