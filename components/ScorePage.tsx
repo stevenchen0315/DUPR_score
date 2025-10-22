@@ -412,7 +412,7 @@ const addRow = async () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `export-${today}.csv`
+  a.download = `export_dupr_matches_${username}_${today}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }

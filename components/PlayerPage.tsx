@@ -201,7 +201,10 @@ useEffect(() => {
   
 // 🚀 匯出 CSV
 const exportCSV = () => {
-  const rows = userList.map(u => [u.dupr_id, u.name])
+  const rows = userList.map(u => {
+    const partnerNum = partnerNumbers[u.name]
+    return [u.dupr_id, u.name, partnerNum || '']
+  })
   const csvContent = rows.map(r => r.join(',')).join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
@@ -222,12 +225,23 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target?.result as string
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
 
-    const imported: player_info[] = lines.map(line => {
-      const [dupr_id, name] = line.split(',').map(s => s.trim())
-      return { dupr_id, name }
+    const imported: (player_info & { partner_number?: number | null })[] = lines.map(line => {
+      const parts = line.split(',').map(s => s.trim())
+      const [dupr_id, name] = parts
+      
+      // 支援兩種格式：舊格式 (dupr_id,name) 和新格式 (dupr_id,name,partner_number)
+      let partner_number: number | null = null
+      if (parts.length >= 3 && parts[2]) {
+        const partnerNum = parseInt(parts[2])
+        if (!isNaN(partnerNum) && partnerNum > 0) {
+          partner_number = partnerNum
+        }
+      }
+      
+      return { dupr_id, name, partner_number }
     })
 
-    setUserList(imported)
+    setUserList(imported.map(({ partner_number, ...user }) => user))
     await saveUserToSupabase(imported)
 
     // ✅ 清空 input，避免第二次匯入同檔案不觸發
@@ -237,17 +251,24 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   reader.readAsText(file)
 }
   
-  const saveUserToSupabase = async (list: player_info[]) => {
+  const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
       const transformed = list.map(user => ({
         dupr_id: `${user.dupr_id.toUpperCase()}${suffix}`,
         name: user.name,
-        partner_number: null
+        partner_number: user.partner_number || null
       }))
       const { error } = await supabase
         .from('player_info')
         .upsert(transformed, { onConflict: 'dupr_id' })
       if (error) throw error
+      
+      // 更新本地 partnerNumbers 狀態
+      const newPartners: {[key: string]: number | null} = {}
+      transformed.forEach(user => {
+        newPartners[user.name] = user.partner_number
+      })
+      setPartnerNumbers(newPartners)
     } catch (error: any) {
       console.error('Supabase save error:', error.message)
     }
