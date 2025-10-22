@@ -41,7 +41,7 @@ export default function UserPage({ params }: any) {
   return (
     <div className="px-6 pt-3 pb-6">
       <header className="flex justify-between sm:justify-start sm:relative items-center mb-3 border-b pb-2">
-        <div className="text-2xl font-black text-blue-600" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</div>
+        <a href="/" className="text-2xl font-black text-blue-600 hover:text-blue-700 transition-colors" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</a>
       </header>
 
       <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4 mt-2">
