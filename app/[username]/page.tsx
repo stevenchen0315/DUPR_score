@@ -42,10 +42,11 @@ export default function UserPage({ params }: any) {
     <div className="p-6">
       <header className="flex justify-between sm:justify-center sm:relative items-center mb-6 border-b pb-2">
         <div className="text-2xl font-black text-blue-600 sm:absolute sm:left-0" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</div>
-        <h1 className="text-xl sm:text-2xl font-bold text-blue-600">
-          Organizer: {capitalizeFirstLetter(username)}
-        </h1>
       </header>
+
+      <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4">
+        Organizer: {capitalizeFirstLetter(username)}
+      </h1>
 
       <div className="flex justify-center gap-4 mb-4">
         <button
