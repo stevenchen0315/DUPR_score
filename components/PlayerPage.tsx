@@ -41,7 +41,7 @@ useEffect(() => {
           .from('player_info')
           .select('dupr_id, name, partner_number')
           .like('dupr_id', `%_${username}`)
-          .order('dupr_id')
+          .order('name')
 
         if (userError) throw userError
         if (users) {
@@ -128,7 +128,7 @@ useEffect(() => {
       .from('player_info')
       .select('dupr_id, name, partner_number')
       .like('dupr_id', `%_${username}`)
-      .order('dupr_id')
+      .order('name')
     if (users) {
       const partners: {[key: string]: number | null} = {}
       const userListData = users.map(u => {
