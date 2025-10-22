@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'DUPR Score App',
+  title: 'DUPLA',
   description: 'DUPR Score with Supabase + Next.js 13',
 }
 

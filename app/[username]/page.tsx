@@ -39,13 +39,14 @@ export default function UserPage({ params }: any) {
     str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
-    <div className="p-6">
-      <header className="flex justify-between sm:justify-center sm:relative items-center mb-6 border-b pb-2">
-        <div className="text-2xl font-black text-blue-600 sm:absolute sm:left-0" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</div>
-        <h1 className="text-xl sm:text-2xl font-bold text-blue-600">
-          Organizer: {capitalizeFirstLetter(username)}
-        </h1>
+    <div className="px-6 pt-3 pb-6">
+      <header className="flex justify-between sm:justify-start sm:relative items-center mb-3 border-b pb-2">
+        <div className="text-2xl font-black text-blue-600" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</div>
       </header>
+
+      <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4 mt-2">
+        Organizer: {capitalizeFirstLetter(username)}
+      </h1>
 
       <div className="flex justify-center gap-4 mb-4">
         <button
@@ -83,7 +84,7 @@ export default function UserPage({ params }: any) {
 
       <MarqueeAd />
 
-      <footer className="text-center text-gray-500 text-sm mt-8 border-t pt-4">
+      <footer className="text-center text-gray-500 text-sm mt-4 border-t pt-4">
         Copyright &copy; {new Date().getFullYear()}{' '}
         <a
           href="mailto:steven0315@kimo.com"
