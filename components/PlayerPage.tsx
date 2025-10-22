@@ -368,8 +368,17 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         const player1 = userList[selectedArray[0]]
         const player2 = userList[selectedArray[1]]
         
-        // 固定隊友 - 找到下一個可用的 partner_number
-        const usedNumbers = new Set(Object.values(partnerNumbers).filter(n => n !== null))
+        // 重新抓取最新的 partner_number 資料
+        await refetchPlayers()
+        
+        // 使用最新資料計算下一個可用的 partner_number
+        const { data: currentUsers } = await supabase
+          .from('player_info')
+          .select('partner_number')
+          .like('dupr_id', `%_${username}`)
+          .not('partner_number', 'is', null)
+        
+        const usedNumbers = new Set(currentUsers?.map(u => u.partner_number) || [])
         let nextNumber = 1
         while (usedNumbers.has(nextNumber)) {
           nextNumber++
@@ -380,6 +389,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           .update({ partner_number: nextNumber })
           .in('dupr_id', [`${player1.dupr_id}${suffix}`, `${player2.dupr_id}${suffix}`])
         
+        // 更新本地狀態
         setPartnerNumbers(prev => ({
           ...prev,
           [player1.name]: nextNumber,
@@ -388,6 +398,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       }
       
       setSelectedPlayers(new Set())
+      // 操作完成後重新抓取資料確保同步
+      await refetchPlayers()
     } catch (error) {
       console.error('Partner action error:', error)
     }
