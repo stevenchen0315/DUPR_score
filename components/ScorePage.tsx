@@ -586,22 +586,19 @@ return (
     </button>
   </div>
 
-  {/* Event 設定輸入框 */}
-  <div className="flex items-center space-x-3 mt-2">
-    <label className="text-sm text-gray-600 w-16">Event:</label>
-    <input
-      type="text"
-      value={eventName}
-      onChange={(e) => setEventName(e.target.value)}
-      disabled={deletePassword !== storedPassword}
-      className={`border px-3 py-2 rounded flex-1 text-sm h-10 ${
-        deletePassword !== storedPassword 
-          ? 'bg-gray-100 cursor-not-allowed' 
-          : 'bg-white'
-      }`}
-      placeholder="輸入 Event 名稱"
-    />
-  </div>
+  {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
+  {deletePassword === storedPassword && (
+    <div className="flex items-center space-x-3 mt-2">
+      <label className="text-sm text-gray-600 w-16">Event:</label>
+      <input
+        type="text"
+        value={eventName}
+        onChange={(e) => setEventName(e.target.value)}
+        className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
+        placeholder="輸入 Event 名稱"
+      />
+    </div>
+  )}
 
   {/* 提示訊息 */}
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
