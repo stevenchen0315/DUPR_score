@@ -36,6 +36,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [event, setEvent] = useState('')
+  const [eventName, setEventName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
@@ -52,7 +53,10 @@ useEffect(() => {
         .single()
       if (accountError) throw accountError
       if (account?.password) setStoredPassword(account.password)
-      if (account?.event) setEvent(account.event)
+      if (account?.event) {
+        setEvent(account.event)
+        setEventName(account.event)
+      }
 
       const { data: users, error: userError } = await supabase
         .from('player_info')
@@ -398,7 +402,7 @@ const addRow = async () => {
     const b1User = findUser(b1), b2User = findUser(b2)
 
     return [
-      '', '', '', row.sd, event, today,
+      '', '', '', row.sd, eventName, today,
       a1User.name, a1User.dupr_id, '',
       a2User.name, a2User.dupr_id, '',
       b1User.name, b1User.dupr_id, '',
@@ -581,6 +585,20 @@ return (
       一鍵刪除
     </button>
   </div>
+
+  {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
+  {deletePassword === storedPassword && (
+    <div className="flex items-center space-x-3 mt-2">
+      <label className="text-sm text-gray-600 w-16">Event:</label>
+      <input
+        type="text"
+        value={eventName}
+        onChange={(e) => setEventName(e.target.value)}
+        className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
+        placeholder="輸入 Event 名稱"
+      />
+    </div>
+  )}
 
   {/* 提示訊息 */}
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
