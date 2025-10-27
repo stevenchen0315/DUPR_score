@@ -420,7 +420,18 @@ const addRow = async () => {
   a.click()
   URL.revokeObjectURL(url)
 }
-
+  
+useEffect(() => {
+  if (!isLoading && realtimeConnected && rows.length > 0) {
+    setTimeout(() => {
+      const lastRow = document.querySelector('tbody tr:last-child')
+      if (lastRow) {
+        lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 100)
+  }
+}, [isLoading, realtimeConnected, rows.length])
+  
 if (isLoading || !realtimeConnected) {
   return (
     <div className="flex items-center justify-center min-h-screen">
