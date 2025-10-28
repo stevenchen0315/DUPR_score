@@ -40,6 +40,9 @@ export default function ScorePage({ username }: { username: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
+  
+  // 追蹤本地更新時間戳
+  const lastLocalUpdateRef = useRef<number>(0)
 
 useEffect(() => {
   if (!username) return
@@ -173,6 +176,12 @@ const resubscribe = () => {
       },
       async (payload: any) => {
         console.log('Score change detected:', payload)
+        const now = Date.now()
+        // 如果是 3 秒內的本地更新，就忽略
+        if (now - lastLocalUpdateRef.current < 3000) {
+          console.log('Ignoring own update')
+          return
+        }
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
         if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
           await refetchScores()
@@ -241,6 +250,7 @@ const resubscribe = () => {
   }
   
 const debouncedSave = useDebouncedCallback(async (row: Row) => {
+  lastLocalUpdateRef.current = Date.now() // 記錄更新時間
   const [a1, a2, b1, b2] = row.values
   await supabase.from('score').upsert({
     serial_number: `${row.serial_number}_${username}`,
@@ -252,9 +262,10 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     team_b_score: row.i === '' ? null : parseInt(row.i),
     lock: row.lock === LOCKED
   })
-}, 200)
+}, 500)
   
-  const updateCell = async (rowIndex: number, field: CellField | OtherField, value: string) => {
+  const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
+    // 樂觀更新：立即更新 UI
     const newRows = rows.map((r, i) => {
       if (i !== rowIndex) return r
 
