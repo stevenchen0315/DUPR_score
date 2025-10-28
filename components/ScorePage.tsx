@@ -281,6 +281,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
         (updatedRow as any)[field] = value
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
+        const oldValue = updatedRow.values[colIndex]
         updatedRow.values[colIndex] = value
         
         // 固定隊友自動帶入和防呆邏輯
