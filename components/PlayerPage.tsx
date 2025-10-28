@@ -289,7 +289,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
     setUserList(updated)
     setUserInfo({ dupr_id: '', name: '' })
-    await saveUserToSupabase(updated)
+    
+    // 保留現有的 partner_number 資料
+    const updatedWithPartners = updated.map(user => ({
+      ...user,
+      partner_number: partnerNumbers[user.name] || null
+    }))
+    
+    await saveUserToSupabase(updatedWithPartners)
   }
 
   const editUser = (index: number) => {
@@ -461,9 +468,15 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
           placeholder="DUPR ID"
           value={userInfo.dupr_id}
-          onChange={(e) => updateUserInfo('dupr_id', e.target.value.toUpperCase())}
+          onChange={(e) => {
+            const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
+            if (value.length <= 6) {
+              updateUserInfo('dupr_id', value)
+            }
+          }}
           type="text"
           inputMode="text"
+          maxLength={6}
         />
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
@@ -636,7 +649,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       </div>
 
       {/* 提示訊息 */}
-      {deleteMessage && <div className="text-center text-red-600 mt-2">{deleteMessage}</div>}
+      {deleteMessage && <div className="text-center text-red-600 mt-1">{deleteMessage}</div>}
     </div>
   )
 }
