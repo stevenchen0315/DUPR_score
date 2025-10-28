@@ -664,6 +664,9 @@ return (
               </div>
             </div>
 
+            {/* 分隔線 */}
+            <div className="border-t border-gray-200 my-3"></div>
+
             {/* 分數輸入區 */}
             <div className="grid grid-cols-2 gap-3">
               <div>
