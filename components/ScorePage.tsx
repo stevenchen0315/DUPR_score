@@ -283,7 +283,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
         updatedRow.values[colIndex] = value
         
-和防呆邏輯
+        // 固定隊友自動帶入和防呆邏輯
         if (value && partnerNumbers[value]) {
           // 選擇固定隊友 - 自動帶入
           const partnerNum = partnerNumbers[value]
