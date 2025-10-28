@@ -40,6 +40,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
+  const [showScrollTop, setShowScrollTop] = useState(false)
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
@@ -443,6 +444,21 @@ useEffect(() => {
     }, 200)
   }
 }, [isLoading, realtimeConnected, rows.length])
+
+// 監聽滾動事件，控制回到頂部按鈕顯示
+useEffect(() => {
+  const handleScroll = () => {
+    setShowScrollTop(window.scrollY > 300)
+  }
+  
+  window.addEventListener('scroll', handleScroll)
+  return () => window.removeEventListener('scroll', handleScroll)
+}, [])
+
+// 回到頂部功能
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
   
 if (isLoading || !realtimeConnected) {
   return (
@@ -777,6 +793,19 @@ return (
   {/* 提示訊息 */}
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
   </div>
+
+  {/* 手機版回到頂部按鈕 */}
+  {showScrollTop && (
+    <button
+      onClick={scrollToTop}
+      className="md:hidden fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50"
+      aria-label="回到頂部"
+    >
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+      </svg>
+    </button>
+  )}
   </div>
   )
 }
