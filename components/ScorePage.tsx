@@ -441,12 +441,15 @@ useEffect(() => {
         lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
       // 手機版滾動到最後一張卡片
-      const mobileCards = document.querySelectorAll('.md\\:hidden .space-y-4 > div')
-      const lastCard = mobileCards[mobileCards.length - 1]
-      if (lastCard) {
-        lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const mobileContainer = document.querySelector('.md\\:hidden .space-y-4')
+      if (mobileContainer) {
+        const cards = mobileContainer.children
+        const lastCard = cards[cards.length - 1]
+        if (lastCard) {
+          lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
       }
-    }, 100)
+    }, 200)
   }
 }, [isLoading, realtimeConnected, rows.length])
   
