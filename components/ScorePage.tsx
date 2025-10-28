@@ -440,14 +440,10 @@ useEffect(() => {
       if (lastRow) {
         lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
-      // 手機版滾動到最後一張卡片
-      const mobileContainer = document.querySelector('.md\\:hidden .space-y-4')
-      if (mobileContainer) {
-        const cards = mobileContainer.children
-        const lastCard = cards[cards.length - 1]
-        if (lastCard) {
-          lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
+      // 手機版滾動到「添加比賽」按鈕
+      const addButton = document.getElementById('add-match-button')
+      if (addButton) {
+        addButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }, 200)
   }
@@ -715,6 +711,7 @@ return (
       <div className="flex flex-col items-center mb-6 space-y-4">
   {/* 添加比賽按鈕 */}
   <button
+  id="add-match-button"
   onClick={addRow}
   className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
