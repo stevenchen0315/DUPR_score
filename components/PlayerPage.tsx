@@ -289,7 +289,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     }
     setUserList(updated)
     setUserInfo({ dupr_id: '', name: '' })
-    await saveUserToSupabase(updated)
+    
+    // 保留現有的 partner_number 資料
+    const updatedWithPartners = updated.map(user => ({
+      ...user,
+      partner_number: partnerNumbers[user.name] || null
+    }))
+    
+    await saveUserToSupabase(updatedWithPartners)
   }
 
   const editUser = (index: number) => {
