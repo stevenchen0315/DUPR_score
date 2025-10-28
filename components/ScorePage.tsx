@@ -634,7 +634,7 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">A1 選手</option>
+                    <option value="">--</option>
                     {getFilteredOptions(row, 0).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
@@ -645,7 +645,7 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">A2 選手</option>
+                    <option value="">--</option>
                     {getFilteredOptions(row, 1).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
@@ -682,7 +682,7 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">B1 選手</option>
+                    <option value="">--</option>
                     {getFilteredOptions(row, 2).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
@@ -693,7 +693,7 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">B2 選手</option>
+                    <option value="">--</option>
                     {getFilteredOptions(row, 3).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
