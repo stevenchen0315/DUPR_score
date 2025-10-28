@@ -435,12 +435,7 @@ const addRow = async () => {
 useEffect(() => {
   if (!isLoading && realtimeConnected && rows.length > 0) {
     setTimeout(() => {
-      // 桌面版滾動到表格最後一行
-      const lastRow = document.querySelector('tbody tr:last-child')
-      if (lastRow) {
-        lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-      // 手機版滾動到「添加比賽」按鈕
+      // 桌面版和手機版都滾動到「添加比賽」按鈕
       const addButton = document.getElementById('add-match-button')
       if (addButton) {
         addButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
