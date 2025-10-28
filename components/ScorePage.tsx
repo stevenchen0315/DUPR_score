@@ -606,18 +606,19 @@ return (
               </div>
             </div>
 
-            {/* 選手選擇區 */}
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Team A</label>
-                <div className="space-y-2">
+            {/* Team A 和 Team B 區域 */}
+            <div className="flex">
+              {/* Team A 區域 */}
+              <div className="flex-1 pr-3">
+                <label className="block text-xs font-medium text-gray-600 mb-2">Team A</label>
+                <div className="space-y-2 mb-3">
                   <select
                     value={row.values[0]}
                     disabled={row.lock === 'Locked'}
                     onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">--</option>
+                    <option value="">A1 選手</option>
                     {getFilteredOptions(row, 0).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
@@ -628,23 +629,44 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">--</option>
+                    <option value="">A2 選手</option>
                     {getFilteredOptions(row, 1).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.h}
+                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Team B</label>
-                <div className="space-y-2">
+
+              {/* 垂直分隔線 */}
+              <div className="border-l border-gray-300 mx-3"></div>
+
+              {/* Team B 區域 */}
+              <div className="flex-1 pl-3">
+                <label className="block text-xs font-medium text-gray-600 mb-2">Team B</label>
+                <div className="space-y-2 mb-3">
                   <select
                     value={row.values[2]}
                     disabled={row.lock === 'Locked'}
                     onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">--</option>
+                    <option value="">B1 選手</option>
                     {getFilteredOptions(row, 2).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
@@ -655,51 +677,28 @@ return (
                     onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
                     className="w-full border rounded px-2 py-1 text-sm"
                   >
-                    <option value="">--</option>
+                    <option value="">B2 選手</option>
                     {getFilteredOptions(row, 3).map((opt, idx) => (
                       <option key={idx} value={opt}>{opt}</option>
                     ))}
                   </select>
                 </div>
-              </div>
-            </div>
-
-            {/* 分隔線 */}
-            <div className="border-t border-gray-200 my-3"></div>
-
-            {/* 分數輸入區 */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Team A 分數</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.h}
-                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border rounded px-3 py-2 text-center text-lg font-medium"
-                  placeholder="0"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Team B 分數</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.i}
-                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border rounded px-3 py-2 text-center text-lg font-medium"
-                  placeholder="0"
-                />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.i}
+                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
