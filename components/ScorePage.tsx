@@ -435,9 +435,16 @@ const addRow = async () => {
 useEffect(() => {
   if (!isLoading && realtimeConnected && rows.length > 0) {
     setTimeout(() => {
+      // 桌面版滾動到表格最後一行
       const lastRow = document.querySelector('tbody tr:last-child')
       if (lastRow) {
         lastRow.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+      // 手機版滾動到最後一張卡片
+      const mobileCards = document.querySelectorAll('.md\\:hidden .space-y-4 > div')
+      const lastCard = mobileCards[mobileCards.length - 1]
+      if (lastCard) {
+        lastCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }, 100)
   }
