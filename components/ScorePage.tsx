@@ -445,6 +445,30 @@ const getAvailableOptions = (excludeFields: string[]) => {
   return userList.map(u => u.name).filter(name => !selected.includes(name)).sort()
 }
 
+const validateNewMatch = () => {
+  const { a1, a2, b1, b2, scoreA, scoreB } = newMatch
+  
+  // 計算每隊人數
+  const teamACount = [a1, a2].filter(Boolean).length
+  const teamBCount = [b1, b2].filter(Boolean).length
+  
+  // A與B隊至少要選一位
+  if (teamACount === 0 || teamBCount === 0) return false
+  
+  // 分數不能為空
+  if (!scoreA || !scoreB) return false
+  
+  // 不能有一隊2位，另一隊1位的狀況
+  if ((teamACount === 2 && teamBCount === 1) || (teamACount === 1 && teamBCount === 2)) return false
+  
+  // 1v1只能選A1與B1，不能選A2+B2
+  if (teamACount === 1 && teamBCount === 1) {
+    if (!a1 || !b1 || a2 || b2) return false
+  }
+  
+  return true
+}
+
   const handleDeleteAll = async () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
@@ -854,7 +878,12 @@ return (
             </button>
             <button
               onClick={submitNewMatch}
-              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              disabled={!validateNewMatch()}
+              className={`px-4 py-2 rounded ${
+                validateNewMatch()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               確認新增
             </button>
