@@ -483,9 +483,9 @@ return (
               <th className="border p-1">A2</th>
               <th className="border p-1">B1</th>
               <th className="border p-1">B2</th>
-              <th className="border p-1">S/D</th>
-              <th className="border p-1">A Score</th>
-              <th className="border p-1">B Score</th>
+              <th className="border p-1 text-center w-12">S/D</th>
+              <th className="border p-1 text-center w-20">A Score</th>
+              <th className="border p-1 text-center w-20">B Score</th>
               <th className="border p-1">Status</th>
               <th className="border p-1">Action</th>
             </tr>
@@ -508,7 +508,7 @@ return (
                     </select>
                   </td>
                 ))}
-                <td className="border p-1">{row.sd}</td>
+                <td className="border p-1 text-center">{row.sd}</td>
                 <td className="border p-1">
                   <input
                     type="number"
@@ -520,7 +520,7 @@ return (
                     value={row.h}
                     onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
                     disabled={row.lock === 'Locked'}
-                    className="w-full border px-1"
+                    className="w-full border px-1 text-center"
                   />
                 </td>
                 <td className="border p-1">
@@ -534,7 +534,7 @@ return (
                     value={row.i}
                     onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
                     disabled={row.lock === 'Locked'}
-                    className="w-full border px-1"
+                    className="w-full border px-1 text-center"
                   />
                 </td>
                 <td className="border p-1 text-center">
