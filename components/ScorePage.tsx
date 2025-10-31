@@ -795,7 +795,7 @@ return (
                   onChange={(e) => handleNewMatchChange('a1', e.target.value)}
                   className="w-full border rounded px-3 py-3 text-base"
                 >
-                  <option value="">選擇 A1</option>
+                  <option value="">--</option>
                   {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
@@ -805,7 +805,7 @@ return (
                   onChange={(e) => handleNewMatchChange('a2', e.target.value)}
                   className="w-full border rounded px-3 py-3 text-base"
                 >
-                  <option value="">選擇 A2</option>
+                  <option value="">--</option>
                   {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
@@ -840,7 +840,7 @@ return (
                   onChange={(e) => handleNewMatchChange('b1', e.target.value)}
                   className="w-full border rounded px-3 py-3 text-base"
                 >
-                  <option value="">選擇 B1</option>
+                  <option value="">--</option>
                   {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
@@ -850,7 +850,7 @@ return (
                   onChange={(e) => handleNewMatchChange('b2', e.target.value)}
                   className="w-full border rounded px-3 py-3 text-base"
                 >
-                  <option value="">選擇 B2</option>
+                  <option value="">--</option>
                   {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
