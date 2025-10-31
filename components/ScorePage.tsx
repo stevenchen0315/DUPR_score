@@ -524,16 +524,18 @@ const validateNewMatch = () => {
 }
   
 useEffect(() => {
-  if (!isLoading && realtimeConnected && rows.length > 0) {
+  if (!isLoading && realtimeConnected) {
     setTimeout(() => {
-      // 桌面版和手機版都滾動到「添加比賽」按鈕
-      const addButton = document.getElementById('add-match-button')
-      if (addButton) {
-        addButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // 滾動到添加比賽按鈕
+      const mobileButton = document.getElementById('add-match-button-mobile')
+      const desktopButton = document.getElementById('add-match-button-desktop')
+      const targetButton = mobileButton || desktopButton
+      if (targetButton) {
+        targetButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }, 200)
   }
-}, [isLoading, realtimeConnected, rows.length])
+}, [isLoading, realtimeConnected])
 
 // 監聽滾動事件，控制回到頂部按鈕顯示
 useEffect(() => {
