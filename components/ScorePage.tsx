@@ -475,7 +475,7 @@ return (
     <div className="px-2 sm:px-4">
       {/* 統一表格佈局 */}
       <div className="overflow-x-auto">
-        <table className="w-full border text-sm mb-6 table-auto">
+        <table className="w-full border text-sm mb-6">
           <thead>
             <tr>
               <th className="border p-1">#</th>
@@ -500,7 +500,6 @@ return (
                       value={val}
                       disabled={row.lock === 'Locked'}
                       onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                      className="w-full text-xs px-1 py-1"
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (
@@ -509,7 +508,7 @@ return (
                     </select>
                   </td>
                 ))}
-                <td className="border p-1 text-center">{row.sd}</td>
+                <td className="border p-1">{row.sd}</td>
                 <td className="border p-1">
                   <input
                     type="number"
@@ -521,7 +520,7 @@ return (
                     value={row.h}
                     onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
                     disabled={row.lock === 'Locked'}
-                    className="w-full border px-1 text-center"
+                    className="w-full border px-1"
                   />
                 </td>
                 <td className="border p-1">
@@ -535,7 +534,7 @@ return (
                     value={row.i}
                     onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
                     disabled={row.lock === 'Locked'}
-                    className="w-full border px-1 text-center"
+                    className="w-full border px-1"
                   />
                 </td>
                 <td className="border p-1 text-center">
@@ -558,7 +557,7 @@ return (
                     }`}
                     disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
                   >
-                    {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
+                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
                   </button>
                 </td>
                 <td className="border p-1 text-center">
@@ -567,7 +566,7 @@ return (
                     disabled={row.lock === 'Locked'}
                     className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </td>
               </tr>
