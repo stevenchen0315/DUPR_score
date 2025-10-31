@@ -793,7 +793,7 @@ return (
                 <select
                   value={newMatch.a1}
                   onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                  className="w-full border rounded px-2 py-1 text-sm"
+                  className="w-full border rounded px-3 py-3 text-base"
                 >
                   <option value="">選擇 A1</option>
                   {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
@@ -803,7 +803,7 @@ return (
                 <select
                   value={newMatch.a2}
                   onChange={(e) => handleNewMatchChange('a2', e.target.value)}
-                  className="w-full border rounded px-2 py-1 text-sm"
+                  className="w-full border rounded px-3 py-3 text-base"
                 >
                   <option value="">選擇 A2</option>
                   {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
@@ -835,7 +835,7 @@ return (
                 <select
                   value={newMatch.b1}
                   onChange={(e) => handleNewMatchChange('b1', e.target.value)}
-                  className="w-full border rounded px-2 py-1 text-sm"
+                  className="w-full border rounded px-3 py-3 text-base"
                 >
                   <option value="">選擇 B1</option>
                   {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
@@ -845,7 +845,7 @@ return (
                 <select
                   value={newMatch.b2}
                   onChange={(e) => handleNewMatchChange('b2', e.target.value)}
-                  className="w-full border rounded px-2 py-1 text-sm"
+                  className="w-full border rounded px-3 py-3 text-base"
                 >
                   <option value="">選擇 B2</option>
                   {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
