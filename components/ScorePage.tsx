@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
@@ -45,6 +45,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [newMatch, setNewMatch] = useState({
     a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: ''
   })
+  const [selectedPlayerFilter, setSelectedPlayerFilter] = useState<string>('')
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
@@ -232,6 +233,14 @@ const resubscribe = () => {
   scoreChannelRef.current = scoreChannel
   playerChannelRef.current = playerChannel
 }
+
+// 過濾後的資料
+const filteredRows = useMemo(() => {
+  if (!selectedPlayerFilter) return rows
+  return rows.filter(row => 
+    row.values.some(player => player === selectedPlayerFilter)
+  )
+}, [rows, selectedPlayerFilter])
   
   const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => {
@@ -271,8 +280,10 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
   
   const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
     // 樂觀更新：立即更新 UI
+    const targetRow = filteredRows[rowIndex]
+    const originalIndex = rows.findIndex(r => r.serial_number === targetRow.serial_number)
     const newRows = rows.map((r, i) => {
-      if (i !== rowIndex) return r
+      if (i !== originalIndex) return r
 
       const updatedRow: Row = {
         ...r,
@@ -351,16 +362,17 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
 
     setRows(newRows)
 
-    const row = newRows[rowIndex]
+    const row = newRows[originalIndex]
     const [a1, a2, b1, b2] = row.values
     
     debouncedSave(row)
   }
 
 const deleteRow = async (index: number) => {
-  const row = rows[index]
+  const row = filteredRows[index]
+  const originalIndex = rows.findIndex(r => r.serial_number === row.serial_number)
   // 先更新本地
-  const updated = [...rows]; updated.splice(index, 1); setRows(updated)
+  const updated = [...rows]; updated.splice(originalIndex, 1); setRows(updated)
   // 僅刪除單列（避免整表抖動與資料競爭）
   await supabase.from('score').delete()
     .eq('serial_number', `${row.serial_number}_${username}`)
@@ -583,7 +595,7 @@ return (
           </tr>
         </thead>
         <tbody>
-          {rows.map((row, rowIndex) => (
+          {filteredRows.map((row, rowIndex) => (
             <tr key={rowIndex}>
               <td className="border p-1 text-center font-medium">{row.serial_number}</td>
               {row.values.map((val, i) => (
@@ -668,6 +680,31 @@ return (
     </div>
 
     <div className="flex flex-col items-center mb-6 space-y-4">
+      {/* 篩選選手下拉選單 */}
+      <div className="flex items-center space-x-3 mb-2">
+        <label className="text-sm font-medium text-gray-700">篩選選手：</label>
+        <select 
+          value={selectedPlayerFilter}
+          onChange={(e) => setSelectedPlayerFilter(e.target.value)}
+          className="border rounded px-3 py-2 min-w-[150px] text-sm"
+        >
+          <option value="">全部選手</option>
+          {userList.map(user => (
+            <option key={user.dupr_id} value={user.name}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+        {selectedPlayerFilter && (
+          <button
+            onClick={() => setSelectedPlayerFilter('')}
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            清除
+          </button>
+        )}
+      </div>
+
       {/* 手機版添加比賽按鈕 - 打開 Modal */}
       <button
         id="add-match-button-mobile"
