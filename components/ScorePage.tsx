@@ -41,6 +41,10 @@ export default function ScorePage({ username }: { username: string }) {
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newMatch, setNewMatch] = useState({
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: ''
+  })
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
@@ -362,21 +366,55 @@ const deleteRow = async (index: number) => {
     .eq('serial_number', `${row.serial_number}_${username}`)
 }
 
-const addRow = async () => {
+const openAddModal = () => {
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+  setShowAddModal(true)
+}
+
+const closeAddModal = () => {
+  setShowAddModal(false)
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+}
+
+const submitNewMatch = async () => {
   const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
   const payload = {
     serial_number: `${nextSerial}_${username}`,
-    player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-    team_a_score: null, team_b_score: null, lock: false,
+    player_a1: newMatch.a1,
+    player_a2: newMatch.a2,
+    player_b1: newMatch.b1,
+    player_b2: newMatch.b2,
+    team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
+    team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
+    lock: false,
   }
-  const { data, error } = await supabase.from('score').insert(payload).select().single()
-  if (!error && data) {
-    // 讓本地立即顯示（但其實等 realtime 回來也會更新一次）
-    setRows(prev => [...prev, {
-      serial_number: nextSerial, values: ['', '', '', ''],
-      sd: '', h: '', i: '', lock: 'Unlocked'
-    }])
+  const { error } = await supabase.from('score').insert(payload)
+  if (!error) {
+    closeAddModal()
   }
+}
+
+const handleNewMatchChange = (field: string, value: string) => {
+  setNewMatch(prev => ({ ...prev, [field]: value }))
+  
+  if (['a1', 'a2', 'b1', 'b2'].includes(field) && value && partnerNumbers[value]) {
+    const partnerNum = partnerNumbers[value]
+    const partnerName = Object.keys(partnerNumbers).find(name => 
+      name !== value && partnerNumbers[name] === partnerNum
+    )
+    
+    if (partnerName) {
+      if (field === 'a1') setNewMatch(prev => ({ ...prev, a2: partnerName }))
+      else if (field === 'a2') setNewMatch(prev => ({ ...prev, a1: partnerName }))
+      else if (field === 'b1') setNewMatch(prev => ({ ...prev, b2: partnerName }))
+      else if (field === 'b2') setNewMatch(prev => ({ ...prev, b1: partnerName }))
+    }
+  }
+}
+
+const getAvailableOptions = (excludeFields: string[]) => {
+  const selected = excludeFields.map(field => newMatch[field as keyof typeof newMatch]).filter(Boolean)
+  return userList.map(u => u.name).filter(name => !selected.includes(name)).sort()
 }
 
   const handleDeleteAll = async () => {
@@ -581,7 +619,7 @@ return (
   {/* 添加比賽按鈕 */}
   <button
   id="add-match-button"
-  onClick={addRow}
+  onClick={openAddModal}
   className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
   <div className="flex items-center">
@@ -661,6 +699,119 @@ return (
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
       </svg>
     </button>
+  )}
+
+  {/* 新增比賽 Modal */}
+  {showAddModal && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-lg font-semibold">新增比賽</h2>
+          <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="p-4">
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            {/* Team A */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+              <div className="space-y-2">
+                <select
+                  value={newMatch.a1}
+                  onChange={(e) => handleNewMatchChange('a1', e.target.value)}
+                  className="w-full border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">選擇 A1</option>
+                  {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={newMatch.a2}
+                  onChange={(e) => handleNewMatchChange('a2', e.target.value)}
+                  className="w-full border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">選擇 A2</option>
+                  {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="21"
+                  value={newMatch.scoreA}
+                  onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* Team B */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
+              <div className="space-y-2">
+                <select
+                  value={newMatch.b1}
+                  onChange={(e) => handleNewMatchChange('b1', e.target.value)}
+                  className="w-full border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">選擇 B1</option>
+                  {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={newMatch.b2}
+                  onChange={(e) => handleNewMatchChange('b2', e.target.value)}
+                  className="w-full border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">選擇 B2</option>
+                  {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="21"
+                  value={newMatch.scoreB}
+                  onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={closeAddModal}
+              className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+            >
+              取消
+            </button>
+            <button
+              onClick={submitNewMatch}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              確認新增
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )}
   </div>
   )
