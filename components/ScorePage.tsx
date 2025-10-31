@@ -472,106 +472,112 @@ if (isLoading || !realtimeConnected) {
 }
 
 return (
-<div>
-      <table className="w-full border text-sm mb-6">
-        <thead>
-          <tr>
-            <th className="border p-1">#</th> {/* serial number */}
-            <th className="border p-1">A1</th>
-            <th className="border p-1">A2</th>
-            <th className="border p-1">B1</th>
-            <th className="border p-1">B2</th>
-            <th className="border p-1">S/D</th>
-            <th className="border p-1">A Score</th>
-            <th className="border p-1">B Score</th>
-            <th className="border p-1">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td className="border p-1 text-center font-medium">{row.serial_number}</td> {/* ← 顯示 serial_number */}
-              {row.values.map((val, i) => (
-                <td key={i} className="border p-1">
-                  <select
-                    value={val}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, i).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </td>
-              ))}
-              <td className="border p-1">{row.sd}</td>
-              <td className="border p-1">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.h}
-                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border px-1"
-                />
-              </td>
-              <td className="border p-1">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.i}
-                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border px-1"
-                />
-              </td>
-              <td className="border p-1 text-center">                
-                <button
-                  onClick={() => {
-                    if (row.lock === 'Locked') {
-                    if (deletePassword === storedPassword) {
-                      updateCell(rowIndex, 'lock', 'Unlocked')
-                    }
-                    } else {
-                      updateCell(rowIndex, 'lock', 'Locked')
-                    }
-                  }}
-                  className={`px-2 py-1 rounded text-white ${
-                    row.lock === 'Locked'
-                      ? deletePassword === storedPassword
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-green-400 hover:bg-green-500'
-                  }`}
-                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                >
-                  {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
-                </button>                
-              </td>
-              <td className="border p-1 text-center">
-                <button
-                  onClick={() => deleteRow(rowIndex)}
-                  disabled={row.lock === 'Locked'}
-                  className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </td>
+    <div className="px-2 sm:px-4">
+      {/* 統一表格佈局 */}
+      <div className="overflow-x-auto">
+        <table className="w-full border text-sm mb-6">
+          <thead>
+            <tr>
+              <th className="border p-1">#</th>
+              <th className="border p-1">A1</th>
+              <th className="border p-1">A2</th>
+              <th className="border p-1">B1</th>
+              <th className="border p-1">B2</th>
+              <th className="border p-1 text-center w-12">S/D</th>
+              <th className="border p-1 text-center w-20">A Score</th>
+              <th className="border p-1 text-center w-20">B Score</th>
+              <th className="border p-1">Status</th>
+              <th className="border p-1">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="border p-1 text-center font-medium">{row.serial_number}</td>
+                {row.values.map((val, i) => (
+                  <td key={i} className="border p-1">
+                    <select
+                      value={val}
+                      disabled={row.lock === 'Locked'}
+                      onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
+                    >
+                      <option value="">--</option>
+                      {getFilteredOptions(row, i).map((opt, idx) => (
+                        <option key={idx} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </td>
+                ))}
+                <td className="border p-1 text-center">{row.sd}</td>
+                <td className="border p-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.h}
+                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border px-1 text-center"
+                  />
+                </td>
+                <td className="border p-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.i}
+                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border px-1 text-center"
+                  />
+                </td>
+                <td className="border p-1 text-center">
+                  <button
+                    onClick={() => {
+                      if (row.lock === 'Locked') {
+                        if (deletePassword === storedPassword) {
+                          updateCell(rowIndex, 'lock', 'Unlocked')
+                        }
+                      } else {
+                        updateCell(rowIndex, 'lock', 'Locked')
+                      }
+                    }}
+                    className={`px-2 py-1 rounded text-white ${
+                      row.lock === 'Locked'
+                        ? deletePassword === storedPassword
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-green-400 hover:bg-green-500'
+                    }`}
+                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                  >
+                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                  </button>
+                </td>
+                <td className="border p-1 text-center">
+                  <button
+                    onClick={() => deleteRow(rowIndex)}
+                    disabled={row.lock === 'Locked'}
+                    className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-  <div className="flex flex-col items-center mb-6 space-y-4">
+
+
+      <div className="flex flex-col items-center mb-6 space-y-4">
   {/* 添加比賽按鈕 */}
   <button
   id="add-match-button"
