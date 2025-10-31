@@ -475,7 +475,7 @@ return (
     <div className="px-2 sm:px-4">
       {/* 統一表格佈局 */}
       <div className="overflow-x-auto">
-        <table className="w-full border text-sm mb-6">
+        <table className="min-w-[800px] w-full border text-sm mb-6">
           <thead>
             <tr>
               <th className="border p-1">#</th>
@@ -500,7 +500,7 @@ return (
                       value={val}
                       disabled={row.lock === 'Locked'}
                       onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                      className="w-full text-xs"
+                      className="w-full min-w-[120px] text-xs px-1 py-1"
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (
