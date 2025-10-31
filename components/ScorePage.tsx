@@ -371,6 +371,16 @@ const openAddModal = () => {
   setShowAddModal(true)
 }
 
+const addRow = async () => {
+  const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+  const payload = {
+    serial_number: `${nextSerial}_${username}`,
+    player_a1: '', player_a2: '', player_b1: '', player_b2: '',
+    team_a_score: null, team_b_score: null, lock: false,
+  }
+  const { error } = await supabase.from('score').insert(payload)
+}
+
 const closeAddModal = () => {
   setShowAddModal(false)
   setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
@@ -386,7 +396,7 @@ const submitNewMatch = async () => {
     player_b2: newMatch.b2,
     team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
-    lock: false,
+    lock: true,
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -619,7 +629,7 @@ return (
   {/* 添加比賽按鈕 */}
   <button
   id="add-match-button"
-  onClick={openAddModal}
+  onClick={() => window.innerWidth < 768 ? openAddModal() : addRow()}
   className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
   <div className="flex items-center">
@@ -701,8 +711,8 @@ return (
     </button>
   )}
 
-  {/* 新增比賽 Modal */}
-  {showAddModal && (
+  {/* 新增比賽 Modal - 只在手機版顯示 */}
+  {showAddModal && window.innerWidth < 768 && (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b flex justify-between items-center">
