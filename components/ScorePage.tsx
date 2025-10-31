@@ -41,6 +41,10 @@ export default function ScorePage({ username }: { username: string }) {
   const [realtimeConnected, setRealtimeConnected] = useState(false)
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const [showScrollTop, setShowScrollTop] = useState(false)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newMatch, setNewMatch] = useState({
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: ''
+  })
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
@@ -362,6 +366,11 @@ const deleteRow = async (index: number) => {
     .eq('serial_number', `${row.serial_number}_${username}`)
 }
 
+const openAddModal = () => {
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+  setShowAddModal(true)
+}
+
 const addRow = async () => {
   const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
   const payload = {
@@ -369,14 +378,95 @@ const addRow = async () => {
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
     team_a_score: null, team_b_score: null, lock: false,
   }
-  const { data, error } = await supabase.from('score').insert(payload).select().single()
-  if (!error && data) {
-    // 讓本地立即顯示（但其實等 realtime 回來也會更新一次）
-    setRows(prev => [...prev, {
-      serial_number: nextSerial, values: ['', '', '', ''],
-      sd: '', h: '', i: '', lock: 'Unlocked'
-    }])
+  const { error } = await supabase.from('score').insert(payload)
+}
+
+const closeAddModal = () => {
+  setShowAddModal(false)
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+}
+
+const submitNewMatch = async () => {
+  const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+  const payload = {
+    serial_number: `${nextSerial}_${username}`,
+    player_a1: newMatch.a1,
+    player_a2: newMatch.a2,
+    player_b1: newMatch.b1,
+    player_b2: newMatch.b2,
+    team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
+    team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
+    lock: true,
   }
+  const { error } = await supabase.from('score').insert(payload)
+  if (!error) {
+    closeAddModal()
+  }
+}
+
+const handleNewMatchChange = (field: string, value: string) => {
+  // 分數驗證邏輯與桌面版一致
+  if ((field === 'scoreA' || field === 'scoreB') && value !== '') {
+    if (!/^\d{1,2}$/.test(value) || +value > 21) return
+  }
+  
+  setNewMatch(prev => ({ ...prev, [field]: value }))
+  
+  // 固定隊友自動帶入邏輯
+  if (['a1', 'a2', 'b1', 'b2'].includes(field) && value && partnerNumbers[value]) {
+    const partnerNum = partnerNumbers[value]
+    const partnerName = Object.keys(partnerNumbers).find(name => 
+      name !== value && partnerNumbers[name] === partnerNum
+    )
+    
+    if (partnerName) {
+      if (field === 'a1') setNewMatch(prev => ({ ...prev, a2: partnerName }))
+      else if (field === 'a2') setNewMatch(prev => ({ ...prev, a1: partnerName }))
+      else if (field === 'b1') setNewMatch(prev => ({ ...prev, b2: partnerName }))
+      else if (field === 'b2') setNewMatch(prev => ({ ...prev, b1: partnerName }))
+    }
+  } else if (['a1', 'a2', 'b1', 'b2'].includes(field) && value && !partnerNumbers[value]) {
+    // 選擇非固定隊友時，清空對應的固定隊友
+    const currentMatch = { ...newMatch, [field]: value }
+    if (field === 'a1' && currentMatch.a2 && partnerNumbers[currentMatch.a2]) {
+      setNewMatch(prev => ({ ...prev, a2: '' }))
+    } else if (field === 'a2' && currentMatch.a1 && partnerNumbers[currentMatch.a1]) {
+      setNewMatch(prev => ({ ...prev, a1: '' }))
+    } else if (field === 'b1' && currentMatch.b2 && partnerNumbers[currentMatch.b2]) {
+      setNewMatch(prev => ({ ...prev, b2: '' }))
+    } else if (field === 'b2' && currentMatch.b1 && partnerNumbers[currentMatch.b1]) {
+      setNewMatch(prev => ({ ...prev, b1: '' }))
+    }
+  }
+}
+
+const getAvailableOptions = (excludeFields: string[]) => {
+  const selected = excludeFields.map(field => newMatch[field as keyof typeof newMatch]).filter(Boolean)
+  return userList.map(u => u.name).filter(name => !selected.includes(name)).sort()
+}
+
+const validateNewMatch = () => {
+  const { a1, a2, b1, b2, scoreA, scoreB } = newMatch
+  
+  // 計算每隊人數
+  const teamACount = [a1, a2].filter(Boolean).length
+  const teamBCount = [b1, b2].filter(Boolean).length
+  
+  // A與B隊至少要選一位
+  if (teamACount === 0 || teamBCount === 0) return false
+  
+  // 分數不能為空
+  if (!scoreA || !scoreB) return false
+  
+  // 不能有一隊2位，另一隊1位的狀況
+  if ((teamACount === 2 && teamBCount === 1) || (teamACount === 1 && teamBCount === 2)) return false
+  
+  // 1v1只能選A1與B1，不能選A2+B2
+  if (teamACount === 1 && teamBCount === 1) {
+    if (!a1 || !b1 || a2 || b2) return false
+  }
+  
+  return true
 }
 
   const handleDeleteAll = async () => {
@@ -434,16 +524,18 @@ const addRow = async () => {
 }
   
 useEffect(() => {
-  if (!isLoading && realtimeConnected && rows.length > 0) {
+  if (!isLoading && realtimeConnected) {
     setTimeout(() => {
-      // 桌面版和手機版都滾動到「添加比賽」按鈕
-      const addButton = document.getElementById('add-match-button')
-      if (addButton) {
-        addButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // 滾動到添加比賽按鈕
+      const mobileButton = document.getElementById('add-match-button-mobile')
+      const desktopButton = document.getElementById('add-match-button-desktop')
+      const targetButton = mobileButton || desktopButton
+      if (targetButton) {
+        targetButton.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     }, 200)
   }
-}, [isLoading, realtimeConnected, rows.length])
+}, [isLoading, realtimeConnected])
 
 // 監聽滾動事件，控制回到頂部按鈕顯示
 useEffect(() => {
@@ -473,8 +565,8 @@ if (isLoading || !realtimeConnected) {
 
 return (
     <div className="px-2 sm:px-4">
-      {/* 桌面版表格 */}
-      <div className="hidden md:block">
+      {/* 統一表格佈局 */}
+      <div className="overflow-x-auto">
         <table className="w-full border text-sm mb-6">
           <thead>
             <tr>
@@ -483,9 +575,9 @@ return (
               <th className="border p-1">A2</th>
               <th className="border p-1">B1</th>
               <th className="border p-1">B2</th>
-              <th className="border p-1">S/D</th>
-              <th className="border p-1">A Score</th>
-              <th className="border p-1">B Score</th>
+              <th className="border p-1 text-center w-12">S/D</th>
+              <th className="border p-1 text-center w-20">A Score</th>
+              <th className="border p-1 text-center w-20">B Score</th>
               <th className="border p-1">Status</th>
               <th className="border p-1">Action</th>
             </tr>
@@ -500,11 +592,10 @@ return (
                       value={val}
                       disabled={row.lock === 'Locked'}
                       onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                      className="w-full text-xs"
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (
-                        <option key={idx} value={opt}>{opt}</option>
+                        <option key={idx} value={opt}>{opt.trim()}</option>
                       ))}
                     </select>
                   </td>
@@ -558,7 +649,7 @@ return (
                     }`}
                     disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
                   >
-                    {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
+                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
                   </button>
                 </td>
                 <td className="border p-1 text-center">
@@ -567,7 +658,7 @@ return (
                     disabled={row.lock === 'Locked'}
                     className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={16} />
                   </button>
                 </td>
               </tr>
@@ -576,165 +667,37 @@ return (
         </table>
       </div>
 
-      {/* 手機版卡片設計 */}
-      <div className="md:hidden space-y-4 mb-6">
-        {rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="border rounded-lg p-3 bg-white shadow-sm">
-            {/* 標題列 */}
-            <div className="flex justify-between items-center mb-3">
-              <span className="font-medium text-lg">#{row.serial_number}</span>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  row.sd === 'S' ? 'bg-blue-100 text-blue-800' : 
-                  row.sd === 'D' ? 'bg-green-100 text-green-800' : 
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {row.sd || '--'}
-                </span>
-                <button
-                  onClick={() => {
-                    if (row.lock === 'Locked') {
-                      if (deletePassword === storedPassword) {
-                        updateCell(rowIndex, 'lock', 'Unlocked')
-                      }
-                    } else {
-                      updateCell(rowIndex, 'lock', 'Locked')
-                    }
-                  }}
-                  className={`p-2 rounded ${
-                    row.lock === 'Locked'
-                      ? deletePassword === storedPassword
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-300 text-gray-500'
-                      : 'bg-green-400 text-white'
-                  }`}
-                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                >
-                  {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
-                </button>
-                <button
-                  onClick={() => deleteRow(rowIndex)}
-                  disabled={row.lock === 'Locked'}
-                  className={`p-2 rounded ${row.lock === 'Locked' ? 'bg-gray-300 text-gray-500' : 'bg-red-600 text-white'}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
 
-            {/* Team A 和 Team B 區域 */}
-            <div className="flex">
-              {/* Team A 區域 */}
-              <div className="flex-1 pr-3">
-                <label className="block text-xs font-medium text-gray-600 mb-2">Team A</label>
-                <div className="space-y-2 mb-3">
-                  <select
-                    value={row.values[0]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 0).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={row.values[1]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 1).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.h}
-                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              {/* 垂直分隔線 */}
-              <div className="border-l border-gray-300 mx-3"></div>
-
-              {/* Team B 區域 */}
-              <div className="flex-1 pl-3">
-                <label className="block text-xs font-medium text-gray-600 mb-2">Team B</label>
-                <div className="space-y-2 mb-3">
-                  <select
-                    value={row.values[2]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 2).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={row.values[3]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 3).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.i}
-                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       <div className="flex flex-col items-center mb-6 space-y-4">
-  {/* 添加比賽按鈕 */}
+  {/* 手機版添加比賽按鈕 - 打開 Modal */}
   <button
-  id="add-match-button"
-  onClick={addRow}
-  className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+    id="add-match-button-mobile"
+    onClick={openAddModal}
+    className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
-  <div className="flex items-center">
-    <Plus size={16} className="mr-2" />
-    <div className="leading-tight text-left">
-      <div>添加比賽</div>
-      <div className="text-xs">(Add Match)</div>
+    <div className="flex items-center">
+      <Plus size={16} className="mr-2" />
+      <div className="leading-tight text-left">
+        <div>添加比賽</div>
+        <div className="text-xs">(Add Match)</div>
+      </div>
     </div>
-  </div>
+  </button>
+
+  {/* 桌面版添加比賽按鈕 - 直接新增行 */}
+  <button
+    id="add-match-button-desktop"
+    onClick={addRow}
+    className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
+  >
+    <div className="flex items-center">
+      <Plus size={16} className="mr-2" />
+      <div className="leading-tight text-left">
+        <div>添加比賽</div>
+        <div className="text-xs">(Add Match)</div>
+      </div>
+    </div>
   </button>
     
   {/* 分隔線 */}
@@ -794,17 +757,145 @@ return (
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
   </div>
 
-  {/* 手機版回到頂部按鈕 */}
+  {/* 回到頂部按鈕 */}
   {showScrollTop && (
     <button
       onClick={scrollToTop}
-      className="md:hidden fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
+      className="fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
       aria-label="回到頂部"
     >
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
       </svg>
     </button>
+  )}
+
+  {/* 新增比賽 Modal - 只在手機版顯示 */}
+  {showAddModal && (
+    <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-lg font-semibold">新增比賽</h2>
+          <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="p-4">
+          <div className="flex gap-4 mb-4">
+            {/* Team A */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+              <div className="space-y-2">
+                <select
+                  value={newMatch.a1}
+                  onChange={(e) => handleNewMatchChange('a1', e.target.value)}
+                  className="w-full border rounded px-3 py-3 text-base"
+                >
+                  <option value="">--</option>
+                  {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={newMatch.a2}
+                  onChange={(e) => handleNewMatchChange('a2', e.target.value)}
+                  className="w-full border rounded px-3 py-3 text-base"
+                >
+                  <option value="">--</option>
+                  {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={newMatch.scoreA}
+                  onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* 垂直分隔線 */}
+            <div className="border-l border-gray-300 mx-2"></div>
+
+            {/* Team B */}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
+              <div className="space-y-2">
+                <select
+                  value={newMatch.b1}
+                  onChange={(e) => handleNewMatchChange('b1', e.target.value)}
+                  className="w-full border rounded px-3 py-3 text-base"
+                >
+                  <option value="">--</option>
+                  {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+                <select
+                  value={newMatch.b2}
+                  onChange={(e) => handleNewMatchChange('b2', e.target.value)}
+                  className="w-full border rounded px-3 py-3 text-base"
+                >
+                  <option value="">--</option>
+                  {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={newMatch.scoreB}
+                  onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <button
+              onClick={closeAddModal}
+              className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+            >
+              取消
+            </button>
+            <button
+              onClick={submitNewMatch}
+              disabled={!validateNewMatch()}
+              className={`px-4 py-2 rounded ${
+                validateNewMatch()
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              確認新增
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )}
   </div>
   )
