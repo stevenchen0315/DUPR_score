@@ -626,19 +626,34 @@ return (
 
 
       <div className="flex flex-col items-center mb-6 space-y-4">
-  {/* 添加比賽按鈕 */}
+  {/* 手機版添加比賽按鈕 - 打開 Modal */}
   <button
-  id="add-match-button"
-  onClick={() => window.innerWidth < 768 ? openAddModal() : addRow()}
-  className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+    id="add-match-button-mobile"
+    onClick={openAddModal}
+    className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
   >
-  <div className="flex items-center">
-    <Plus size={16} className="mr-2" />
-    <div className="leading-tight text-left">
-      <div>添加比賽</div>
-      <div className="text-xs">(Add Match)</div>
+    <div className="flex items-center">
+      <Plus size={16} className="mr-2" />
+      <div className="leading-tight text-left">
+        <div>添加比賽</div>
+        <div className="text-xs">(Add Match)</div>
+      </div>
     </div>
-  </div>
+  </button>
+
+  {/* 桌面版添加比賽按鈕 - 直接新增行 */}
+  <button
+    id="add-match-button-desktop"
+    onClick={addRow}
+    className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
+  >
+    <div className="flex items-center">
+      <Plus size={16} className="mr-2" />
+      <div className="leading-tight text-left">
+        <div>添加比賽</div>
+        <div className="text-xs">(Add Match)</div>
+      </div>
+    </div>
   </button>
     
   {/* 分隔線 */}
@@ -712,8 +727,9 @@ return (
   )}
 
   {/* 新增比賽 Modal - 只在手機版顯示 */}
-  {showAddModal && window.innerWidth < 768 && (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+  {showAddModal && (
+    <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+
       <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-semibold">新增比賽</h2>
