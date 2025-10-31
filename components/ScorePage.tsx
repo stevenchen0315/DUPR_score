@@ -785,9 +785,9 @@ return (
         </div>
         
         <div className="p-4">
-          <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex gap-4 mb-4">
             {/* Team A */}
-            <div>
+            <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
               <div className="space-y-2">
                 <select
@@ -828,8 +828,11 @@ return (
               </div>
             </div>
 
+            {/* 垂直分隔線 */}
+            <div className="border-l border-gray-300 mx-2"></div>
+
             {/* Team B */}
-            <div>
+            <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
               <div className="space-y-2">
                 <select
