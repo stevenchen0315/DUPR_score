@@ -405,8 +405,14 @@ const submitNewMatch = async () => {
 }
 
 const handleNewMatchChange = (field: string, value: string) => {
+  // 分數驗證邏輯與桌面版一致
+  if ((field === 'scoreA' || field === 'scoreB') && value !== '') {
+    if (!/^\d{1,2}$/.test(value) || +value > 21) return
+  }
+  
   setNewMatch(prev => ({ ...prev, [field]: value }))
   
+  // 固定隊友自動帶入邏輯
   if (['a1', 'a2', 'b1', 'b2'].includes(field) && value && partnerNumbers[value]) {
     const partnerNum = partnerNumbers[value]
     const partnerName = Object.keys(partnerNumbers).find(name => 
@@ -418,6 +424,18 @@ const handleNewMatchChange = (field: string, value: string) => {
       else if (field === 'a2') setNewMatch(prev => ({ ...prev, a1: partnerName }))
       else if (field === 'b1') setNewMatch(prev => ({ ...prev, b2: partnerName }))
       else if (field === 'b2') setNewMatch(prev => ({ ...prev, b1: partnerName }))
+    }
+  } else if (['a1', 'a2', 'b1', 'b2'].includes(field) && value && !partnerNumbers[value]) {
+    // 選擇非固定隊友時，清空對應的固定隊友
+    const currentMatch = { ...newMatch, [field]: value }
+    if (field === 'a1' && currentMatch.a2 && partnerNumbers[currentMatch.a2]) {
+      setNewMatch(prev => ({ ...prev, a2: '' }))
+    } else if (field === 'a2' && currentMatch.a1 && partnerNumbers[currentMatch.a1]) {
+      setNewMatch(prev => ({ ...prev, a1: '' }))
+    } else if (field === 'b1' && currentMatch.b2 && partnerNumbers[currentMatch.b2]) {
+      setNewMatch(prev => ({ ...prev, b2: '' }))
+    } else if (field === 'b2' && currentMatch.b1 && partnerNumbers[currentMatch.b1]) {
+      setNewMatch(prev => ({ ...prev, b1: '' }))
     }
   }
 }
@@ -771,8 +789,11 @@ return (
                 <label className="block text-xs text-gray-600 mb-1">分數</label>
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="0"
                   max="21"
+                  step="1"
                   value={newMatch.scoreA}
                   onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
                   className="w-full border rounded px-3 py-2 text-center text-lg"
@@ -810,8 +831,11 @@ return (
                 <label className="block text-xs text-gray-600 mb-1">分數</label>
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="0"
                   max="21"
+                  step="1"
                   value={newMatch.scoreB}
                   onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
                   className="w-full border rounded px-3 py-2 text-center text-lg"
