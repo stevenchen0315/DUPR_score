@@ -473,8 +473,8 @@ if (isLoading || !realtimeConnected) {
 
 return (
     <div className="px-2 sm:px-4">
-      {/* 桌面版表格 */}
-      <div className="hidden md:block">
+      {/* 統一表格佈局 */}
+      <div className="overflow-x-auto">
         <table className="w-full border text-sm mb-6">
           <thead>
             <tr>
@@ -576,150 +576,7 @@ return (
         </table>
       </div>
 
-      {/* 手機版卡片設計 */}
-      <div className="md:hidden space-y-4 mb-6">
-        {rows.map((row, rowIndex) => (
-          <div key={rowIndex} className="border rounded-lg p-3 bg-white shadow-sm">
-            {/* 標題列 */}
-            <div className="flex justify-between items-center mb-3">
-              <span className="font-medium text-lg">#{row.serial_number}</span>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
-                  row.sd === 'S' ? 'bg-blue-100 text-blue-800' : 
-                  row.sd === 'D' ? 'bg-green-100 text-green-800' : 
-                  'bg-gray-100 text-gray-600'
-                }`}>
-                  {row.sd || '--'}
-                </span>
-                <button
-                  onClick={() => {
-                    if (row.lock === 'Locked') {
-                      if (deletePassword === storedPassword) {
-                        updateCell(rowIndex, 'lock', 'Unlocked')
-                      }
-                    } else {
-                      updateCell(rowIndex, 'lock', 'Locked')
-                    }
-                  }}
-                  className={`p-2 rounded ${
-                    row.lock === 'Locked'
-                      ? deletePassword === storedPassword
-                        ? 'bg-red-500 text-white'
-                        : 'bg-gray-300 text-gray-500'
-                      : 'bg-green-400 text-white'
-                  }`}
-                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                >
-                  {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
-                </button>
-                <button
-                  onClick={() => deleteRow(rowIndex)}
-                  disabled={row.lock === 'Locked'}
-                  className={`p-2 rounded ${row.lock === 'Locked' ? 'bg-gray-300 text-gray-500' : 'bg-red-600 text-white'}`}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
 
-            {/* Team A 和 Team B 區域 */}
-            <div className="flex">
-              {/* Team A 區域 */}
-              <div className="flex-1 pr-3">
-                <label className="block text-xs font-medium text-gray-600 mb-2">Team A</label>
-                <div className="space-y-2 mb-3">
-                  <select
-                    value={row.values[0]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 0).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={row.values[1]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 1).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.h}
-                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              {/* 垂直分隔線 */}
-              <div className="border-l border-gray-300 mx-3"></div>
-
-              {/* Team B 區域 */}
-              <div className="flex-1 pl-3">
-                <label className="block text-xs font-medium text-gray-600 mb-2">Team B</label>
-                <div className="space-y-2 mb-3">
-                  <select
-                    value={row.values[2]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 2).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  <select
-                    value={row.values[3]}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
-                    className="w-full border rounded px-2 py-1 text-sm"
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, 3).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">分數</label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.i}
-                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="w-full border rounded px-3 py-3 text-center text-xl font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       <div className="flex flex-col items-center mb-6 space-y-4">
   {/* 添加比賽按鈕 */}
@@ -794,11 +651,11 @@ return (
   {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
   </div>
 
-  {/* 手機版回到頂部按鈕 */}
+  {/* 回到頂部按鈕 */}
   {showScrollTop && (
     <button
       onClick={scrollToTop}
-      className="md:hidden fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
+      className="fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
       aria-label="回到頂部"
     >
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
