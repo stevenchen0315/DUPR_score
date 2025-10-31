@@ -234,6 +234,9 @@ const resubscribe = () => {
   playerChannelRef.current = playerChannel
 }
 
+// localStorage key
+const FILTER_STORAGE_KEY = `playerFilter_${username}`
+
 // 過濾後的資料
 const filteredRows = useMemo(() => {
   if (!selectedPlayerFilter) return rows
@@ -241,6 +244,26 @@ const filteredRows = useMemo(() => {
     row.values.some(player => player === selectedPlayerFilter)
   )
 }, [rows, selectedPlayerFilter])
+
+// 從 localStorage 讀取篩選設定
+useEffect(() => {
+  if (username && userList.length > 0) {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (saved && userList.some(user => user.name === saved)) {
+      setSelectedPlayerFilter(saved)
+    }
+  }
+}, [username, userList])
+
+// 處理篩選變更並儲存到 localStorage
+const handleFilterChange = (value: string) => {
+  setSelectedPlayerFilter(value)
+  if (value) {
+    localStorage.setItem(FILTER_STORAGE_KEY, value)
+  } else {
+    localStorage.removeItem(FILTER_STORAGE_KEY)
+  }
+}
   
   const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => {
@@ -685,7 +708,7 @@ return (
         <label className="text-sm font-medium text-gray-700">篩選選手：</label>
         <select 
           value={selectedPlayerFilter}
-          onChange={(e) => setSelectedPlayerFilter(e.target.value)}
+          onChange={(e) => handleFilterChange(e.target.value)}
           className="border rounded px-3 py-2 min-w-[150px] text-sm"
         >
           <option value="">全部選手</option>
@@ -697,7 +720,7 @@ return (
         </select>
         {selectedPlayerFilter && (
           <button
-            onClick={() => setSelectedPlayerFilter('')}
+            onClick={() => handleFilterChange('')}
             className="text-gray-500 hover:text-gray-700 text-sm"
           >
             清除
