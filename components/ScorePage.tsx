@@ -503,7 +503,7 @@ return (
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (
-                        <option key={idx} value={opt}>{opt}</option>
+                        <option key={idx} value={opt}>{opt.trim()}</option>
                       ))}
                     </select>
                   </td>
