@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
@@ -45,6 +45,7 @@ export default function ScorePage({ username }: { username: string }) {
   const [newMatch, setNewMatch] = useState({
     a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: ''
   })
+  const [selectedPlayerFilter, setSelectedPlayerFilter] = useState<string>('')
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
@@ -232,6 +233,37 @@ const resubscribe = () => {
   scoreChannelRef.current = scoreChannel
   playerChannelRef.current = playerChannel
 }
+
+// localStorage key
+const FILTER_STORAGE_KEY = `playerFilter_${username}`
+
+// 過濾後的資料
+const filteredRows = useMemo(() => {
+  if (!selectedPlayerFilter) return rows
+  return rows.filter(row => 
+    row.values.some(player => player === selectedPlayerFilter)
+  )
+}, [rows, selectedPlayerFilter])
+
+// 從 localStorage 讀取篩選設定
+useEffect(() => {
+  if (username && userList.length > 0) {
+    const saved = localStorage.getItem(FILTER_STORAGE_KEY)
+    if (saved && userList.some(user => user.name === saved)) {
+      setSelectedPlayerFilter(saved)
+    }
+  }
+}, [username, userList])
+
+// 處理篩選變更並儲存到 localStorage
+const handleFilterChange = (value: string) => {
+  setSelectedPlayerFilter(value)
+  if (value) {
+    localStorage.setItem(FILTER_STORAGE_KEY, value)
+  } else {
+    localStorage.removeItem(FILTER_STORAGE_KEY)
+  }
+}
   
   const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => {
@@ -271,8 +303,10 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
   
   const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
     // 樂觀更新：立即更新 UI
+    const targetRow = filteredRows[rowIndex]
+    const originalIndex = rows.findIndex(r => r.serial_number === targetRow.serial_number)
     const newRows = rows.map((r, i) => {
-      if (i !== rowIndex) return r
+      if (i !== originalIndex) return r
 
       const updatedRow: Row = {
         ...r,
@@ -351,16 +385,17 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
 
     setRows(newRows)
 
-    const row = newRows[rowIndex]
+    const row = newRows[originalIndex]
     const [a1, a2, b1, b2] = row.values
     
     debouncedSave(row)
   }
 
 const deleteRow = async (index: number) => {
-  const row = rows[index]
+  const row = filteredRows[index]
+  const originalIndex = rows.findIndex(r => r.serial_number === row.serial_number)
   // 先更新本地
-  const updated = [...rows]; updated.splice(index, 1); setRows(updated)
+  const updated = [...rows]; updated.splice(originalIndex, 1); setRows(updated)
   // 僅刪除單列（避免整表抖動與資料競爭）
   await supabase.from('score').delete()
     .eq('serial_number', `${row.serial_number}_${username}`)
@@ -564,239 +599,261 @@ if (isLoading || !realtimeConnected) {
 }
 
 return (
-    <div className="px-2 sm:px-4">
-      {/* 統一表格佈局 */}
-      <div className="overflow-x-auto">
-        <table className="w-full border text-sm mb-6">
-          <thead>
-            <tr>
-              <th className="border p-1">#</th>
-              <th className="border p-1">A1</th>
-              <th className="border p-1">A2</th>
-              <th className="border p-1">B1</th>
-              <th className="border p-1">B2</th>
-              <th className="border p-1 text-center w-12">S/D</th>
-              <th className="border p-1 text-center w-20">A Score</th>
-              <th className="border p-1 text-center w-20">B Score</th>
-              <th className="border p-1">Status</th>
-              <th className="border p-1">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                <td className="border p-1 text-center font-medium">{row.serial_number}</td>
-                {row.values.map((val, i) => (
-                  <td key={i} className="border p-1">
-                    <select
-                      value={val}
-                      disabled={row.lock === 'Locked'}
-                      onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                    >
-                      <option value="">--</option>
-                      {getFilteredOptions(row, i).map((opt, idx) => (
-                        <option key={idx} value={opt}>{opt.trim()}</option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
-                <td className="border p-1 text-center">{row.sd}</td>
-                <td className="border p-1">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.h}
-                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+  <div className="px-2 sm:px-4">
+    {/* 統一表格佈局 */}
+    <div className="overflow-x-auto">
+      <table className="w-full border text-sm mb-6">
+        <thead>
+          <tr>
+            <th className="border p-1">#</th>
+            <th className="border p-1">A1</th>
+            <th className="border p-1">A2</th>
+            <th className="border p-1">B1</th>
+            <th className="border p-1">B2</th>
+            <th className="border p-1 text-center w-12">S/D</th>
+            <th className="border p-1 text-center w-20">A Score</th>
+            <th className="border p-1 text-center w-20">B Score</th>
+            <th className="border p-1">Status</th>
+            <th className="border p-1">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredRows.map((row, rowIndex) => (
+            <tr key={rowIndex}>
+              <td className="border p-1 text-center font-medium">{row.serial_number}</td>
+              {row.values.map((val, i) => (
+                <td key={i} className="border p-1">
+                  <select
+                    value={val}
                     disabled={row.lock === 'Locked'}
-                    className="w-full border px-1 text-center"
-                  />
+                    onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
+                  >
+                    <option value="">--</option>
+                    {getFilteredOptions(row, i).map((opt, idx) => (
+                      <option key={idx} value={opt}>{opt.trim()}</option>
+                    ))}
+                  </select>
                 </td>
-                <td className="border p-1">
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    min="0"
-                    max="21"
-                    step="1"
-                    value={row.i}
-                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="w-full border px-1 text-center"
-                  />
-                </td>
-                <td className="border p-1 text-center">
-                  <button
-                    onClick={() => {
-                      if (row.lock === 'Locked') {
-                        if (deletePassword === storedPassword) {
-                          updateCell(rowIndex, 'lock', 'Unlocked')
-                        }
-                      } else {
-                        updateCell(rowIndex, 'lock', 'Locked')
+              ))}
+              <td className="border p-1 text-center">{row.sd}</td>
+              <td className="border p-1">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={row.h}
+                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                  disabled={row.lock === 'Locked'}
+                  className="w-full border px-1 text-center"
+                />
+              </td>
+              <td className="border p-1">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={row.i}
+                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                  disabled={row.lock === 'Locked'}
+                  className="w-full border px-1 text-center"
+                />
+              </td>
+              <td className="border p-1 text-center">
+                <button
+                  onClick={() => {
+                    if (row.lock === 'Locked') {
+                      if (deletePassword === storedPassword) {
+                        updateCell(rowIndex, 'lock', 'Unlocked')
                       }
-                    }}
-                    className={`px-2 py-1 rounded text-white ${
-                      row.lock === 'Locked'
-                        ? deletePassword === storedPassword
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-green-400 hover:bg-green-500'
-                    }`}
-                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                  >
-                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
-                  </button>
-                </td>
-                <td className="border p-1 text-center">
-                  <button
-                    onClick={() => deleteRow(rowIndex)}
-                    disabled={row.lock === 'Locked'}
-                    className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-
-
-      <div className="flex flex-col items-center mb-6 space-y-4">
-  {/* 手機版添加比賽按鈕 - 打開 Modal */}
-  <button
-    id="add-match-button-mobile"
-    onClick={openAddModal}
-    className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
-  >
-    <div className="flex items-center">
-      <Plus size={16} className="mr-2" />
-      <div className="leading-tight text-left">
-        <div>添加比賽</div>
-        <div className="text-xs">(Add Match)</div>
-      </div>
-    </div>
-  </button>
-
-  {/* 桌面版添加比賽按鈕 - 直接新增行 */}
-  <button
-    id="add-match-button-desktop"
-    onClick={addRow}
-    className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
-  >
-    <div className="flex items-center">
-      <Plus size={16} className="mr-2" />
-      <div className="leading-tight text-left">
-        <div>添加比賽</div>
-        <div className="text-xs">(Add Match)</div>
-      </div>
-    </div>
-  </button>
-    
-  {/* 分隔線 */}
-  <div className="relative w-full my-4">
-  <hr className="border-t border-gray-300" />
-  <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
-    Organizer only
-  </span>
-  </div>
-    
-  {/* 輸出與刪除功能排成一列 */}
-  <div className="flex items-center space-x-3">
-    {/* 密碼輸入框 */}
-    <input
-      type="password"
-      placeholder="Password"
-      value={deletePassword}
-      onChange={(e) => setDeletePassword(e.target.value)}
-      className="border px-3 py-2 rounded w-24 text-sm h-10"
-    />
-    
-    <button
-      onClick={exportCSV}
-      className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
-    >
-      <Download size={18} className="mr-2" /> 匯出 CSV
-    </button>
-
-    <button
-      onClick={handleDeleteAll}
-      disabled={storedPassword === null || deletePassword !== storedPassword}
-      className={`px-3 py-2 rounded text-white text-sm h-10 ${
-        deletePassword === storedPassword
-          ? 'bg-red-600 hover:bg-red-700'
-          : 'bg-gray-300 cursor-not-allowed'
-      }`}
-    >
-      一鍵刪除
-    </button>
-  </div>
-
-  {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
-  {deletePassword === storedPassword && (
-    <div className="flex items-center space-x-3 mt-2">
-      <label className="text-sm text-gray-600 w-16">Event:</label>
-      <input
-        type="text"
-        value={eventName}
-        onChange={(e) => setEventName(e.target.value)}
-        className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
-        placeholder="輸入 Event 名稱"
-      />
-    </div>
-  )}
-
-  {/* 提示訊息 */}
-  {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
-  </div>
-
-  {/* 回到頂部按鈕 */}
-  {showScrollTop && (
-    <button
-      onClick={scrollToTop}
-      className="fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
-      aria-label="回到頂部"
-    >
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-      </svg>
-    </button>
-  )}
-
-  {/* 新增比賽 Modal - 只在手機版顯示 */}
-  {showAddModal && (
-    <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-lg font-semibold">新增比賽</h2>
-          <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-        
-        <div className="p-4">
-          <div className="flex gap-4 mb-4">
-            {/* Team A */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
-              <div className="space-y-2">
-                <select
-                  value={newMatch.a1}
-                  onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                  className="w-full border rounded px-3 py-3 text-base"
+                    } else {
+                      updateCell(rowIndex, 'lock', 'Locked')
+                    }
+                  }}
+                  className={`px-2 py-1 rounded text-white ${
+                    row.lock === 'Locked'
+                      ? deletePassword === storedPassword
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-green-400 hover:bg-green-500'
+                  }`}
+                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
                 >
-                  <option value="">--</option>
-                  {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
+                  {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                </button>
+              </td>
+              <td className="border p-1 text-center">
+                <button
+                  onClick={() => deleteRow(rowIndex)}
+                  disabled={row.lock === 'Locked'}
+                  className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div className="flex flex-col items-center mb-6 space-y-4">
+      {/* 篩選選手下拉選單 */}
+      <div className="flex items-center space-x-3 mb-2">
+        <label className="text-sm font-medium text-gray-700">篩選選手：</label>
+        <select 
+          value={selectedPlayerFilter}
+          onChange={(e) => handleFilterChange(e.target.value)}
+          className="border rounded px-3 py-2 min-w-[150px] text-sm"
+        >
+          <option value="">全部選手</option>
+          {userList.map(user => (
+            <option key={user.dupr_id} value={user.name}>
+              {user.name}
+            </option>
+          ))}
+        </select>
+        {selectedPlayerFilter && (
+          <button
+            onClick={() => handleFilterChange('')}
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            清除
+          </button>
+        )}
+      </div>
+
+      {/* 手機版添加比賽按鈕 - 打開 Modal */}
+      <button
+        id="add-match-button-mobile"
+        onClick={openAddModal}
+        className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+      >
+        <div className="flex items-center">
+          <Plus size={16} className="mr-2" />
+          <div className="leading-tight text-left">
+            <div>添加比賽</div>
+            <div className="text-xs">(Add Match)</div>
+          </div>
+        </div>
+      </button>
+
+      {/* 桌面版添加比賽按鈕 - 直接新增行 */}
+      <button
+        id="add-match-button-desktop"
+        onClick={addRow}
+        className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
+      >
+        <div className="flex items-center">
+          <Plus size={16} className="mr-2" />
+          <div className="leading-tight text-left">
+            <div>添加比賽</div>
+            <div className="text-xs">(Add Match)</div>
+          </div>
+        </div>
+      </button>
+        
+      {/* 分隔線 */}
+      <div className="relative w-full my-4">
+        <hr className="border-t border-gray-300" />
+        <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+          Organizer only
+        </span>
+      </div>
+        
+      {/* 輸出與刪除功能排成一列 */}
+      <div className="flex items-center space-x-3">
+        {/* 密碼輸入框 */}
+        <input
+          type="password"
+          placeholder="Password"
+          value={deletePassword}
+          onChange={(e) => setDeletePassword(e.target.value)}
+          className="border px-3 py-2 rounded w-24 text-sm h-10"
+        />
+        
+        <button
+          onClick={exportCSV}
+          className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
+        >
+          <Download size={18} className="mr-2" /> 匯出 CSV
+        </button>
+
+        <button
+          onClick={handleDeleteAll}
+          disabled={storedPassword === null || deletePassword !== storedPassword}
+          className={`px-3 py-2 rounded text-white text-sm h-10 ${
+            deletePassword === storedPassword
+              ? 'bg-red-600 hover:bg-red-700'
+              : 'bg-gray-300 cursor-not-allowed'
+          }`}
+        >
+          一鍵刪除
+        </button>
+      </div>
+
+      {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
+      {deletePassword === storedPassword && (
+        <div className="flex items-center space-x-3 mt-2">
+          <label className="text-sm text-gray-600 w-16">Event:</label>
+          <input
+            type="text"
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
+            className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
+            placeholder="輸入 Event 名稱"
+          />
+        </div>
+      )}
+
+      {/* 提示訊息 */}
+      {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+    </div>
+
+    {/* 回到頂部按鈕 */}
+    {showScrollTop && (
+      <button
+        onClick={scrollToTop}
+        className="fixed bottom-6 right-6 bg-black/30 hover:bg-black/50 backdrop-blur-sm text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50 border border-white/20"
+        aria-label="回到頂部"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+        </svg>
+      </button>
+    )}
+
+    {/* 新增比賽 Modal - 只在手機版顯示 */}
+    {showAddModal && (
+      <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="text-lg font-semibold">新增比賽</h2>
+            <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          <div className="p-4">
+            <div className="flex gap-4 mb-4">
+              {/* Team A */}
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+                <div className="space-y-2">
+                  <select
+                    value={newMatch.a1}
+                    onChange={(e) => handleNewMatchChange('a1', e.target.value)}
+                    className="w-full border rounded px-3 py-3 text-base"
+                  >
+                    <option value="">--</option>
+                    {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
                     <option key={name} value={name}>{name}</option>
                   ))}
                 </select>
