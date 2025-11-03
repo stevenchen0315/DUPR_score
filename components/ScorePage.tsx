@@ -625,10 +625,10 @@ return (
         </thead>
         <tbody>
           {filteredRows.map((row, rowIndex) => (
-            <tr key={rowIndex} className={`${isPlayerInRow(row, selectedPlayerFilter) ? 'bg-yellow-100' : ''}`}>
+            <tr key={rowIndex}>
               <td className="border p-1 text-center font-medium">{row.serial_number}</td>
               {row.values.map((val, i) => (
-                <td key={i} className="border p-1">
+                <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
                   <select
                     value={val}
                     disabled={row.lock === 'Locked'}
