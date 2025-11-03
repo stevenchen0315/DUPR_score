@@ -264,6 +264,12 @@ const handleFilterChange = (value: string) => {
     localStorage.removeItem(FILTER_STORAGE_KEY)
   }
 }
+
+// 檢查該行是否包含篩選的選手
+const isPlayerInRow = (row: Row, playerName: string) => {
+  if (!playerName) return false
+  return row.values.some((val: string) => val.trim() === playerName)
+}
   
   const formatScores = (scores: score[]): Row[] => {
     return scores.map((item: score) => {
@@ -619,7 +625,7 @@ return (
         </thead>
         <tbody>
           {filteredRows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
+            <tr key={rowIndex} className={`${isPlayerInRow(row, selectedPlayerFilter) ? 'bg-yellow-100' : ''}`}>
               <td className="border p-1 text-center font-medium">{row.serial_number}</td>
               {row.values.map((val, i) => (
                 <td key={i} className="border p-1">
