@@ -263,12 +263,12 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         .upsert(transformed, { onConflict: 'dupr_id' })
       if (error) throw error
       
-      // 更新本地 partnerNumbers 狀態
-      const newPartners: {[key: string]: number | null} = {}
+      // 更新本地 partnerNumbers 狀態（只更新傳入的選手）
+      const updatedPartners = { ...partnerNumbers }
       transformed.forEach(user => {
-        newPartners[user.name] = user.partner_number
+        updatedPartners[user.name] = user.partner_number
       })
-      setPartnerNumbers(newPartners)
+      setPartnerNumbers(updatedPartners)
     } catch (error: any) {
       console.error('Supabase save error:', error.message)
     }
@@ -281,22 +281,45 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   const addUser = async () => {
     if (!userInfo.dupr_id || !userInfo.name) return
     const updated = [...userList]
+    
     if (editIndex !== null) {
+      // 編輯模式：需要處理 DUPR ID 變更的情況
+      const oldUser = updated[editIndex]
+      const oldDuprId = `${oldUser.dupr_id.toUpperCase()}${suffix}`
+      const newDuprId = `${userInfo.dupr_id.toUpperCase()}${suffix}`
+      
       updated[editIndex] = userInfo
+      setUserList(updated)
       setEditIndex(null)
+      setUserInfo({ dupr_id: '', name: '' })
+      
+      // 如果 DUPR ID 改變了，需要先刪除舊記錄
+      if (oldDuprId !== newDuprId) {
+        await supabase
+          .from('player_info')
+          .delete()
+          .eq('dupr_id', oldDuprId)
+      }
+      
+      // 插入/更新新記錄
+      const userWithPartner = {
+        ...userInfo,
+        partner_number: partnerNumbers[oldUser.name] || null
+      }
+      await saveUserToSupabase([userWithPartner])
     } else {
+      // 新增模式：新增選手
       updated.push(userInfo)
+      setUserList(updated)
+      setUserInfo({ dupr_id: '', name: '' })
+      
+      // 只新增這一個選手到資料庫
+      const userWithPartner = {
+        ...userInfo,
+        partner_number: null
+      }
+      await saveUserToSupabase([userWithPartner])
     }
-    setUserList(updated)
-    setUserInfo({ dupr_id: '', name: '' })
-    
-    // 保留現有的 partner_number 資料
-    const updatedWithPartners = updated.map(user => ({
-      ...user,
-      partner_number: partnerNumbers[user.name] || null
-    }))
-    
-    await saveUserToSupabase(updatedWithPartners)
   }
 
   const editUser = (index: number) => {
