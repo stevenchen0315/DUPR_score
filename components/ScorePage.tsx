@@ -723,7 +723,7 @@ return (
             onClick={() => handleFilterChange('')}
             className="text-gray-500 hover:text-gray-700 text-sm"
           >
-            清除
+            清除(Clear)
           </button>
         )}
       </div>
