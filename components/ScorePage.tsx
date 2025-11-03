@@ -705,13 +705,13 @@ return (
     <div className="flex flex-col items-center mb-6 space-y-4">
       {/* 篩選選手下拉選單 */}
       <div className="flex items-center space-x-3 mb-2">
-        <label className="text-sm font-medium text-gray-700">篩選選手：</label>
+        <label className="text-sm font-medium text-gray-700">篩選選手(Filter)：</label>
         <select 
           value={selectedPlayerFilter}
           onChange={(e) => handleFilterChange(e.target.value)}
-          className="border rounded px-3 py-2 min-w-[150px] text-sm"
+          className="border rounded px-3 py-2 min-w-[100px] text-sm"
         >
-          <option value="">全部選手</option>
+          <option value="">--</option>
           {userList.map(user => (
             <option key={user.dupr_id} value={user.name}>
               {user.name}
@@ -723,7 +723,7 @@ return (
             onClick={() => handleFilterChange('')}
             className="text-gray-500 hover:text-gray-700 text-sm"
           >
-            清除
+            清除(Clear)
           </button>
         )}
       </div>
@@ -833,7 +833,7 @@ return (
       <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-lg font-semibold">新增比賽</h2>
+            <h2 className="text-lg font-semibold">新增比賽(New Match)</h2>
             <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -869,7 +869,7 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -914,7 +914,7 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
