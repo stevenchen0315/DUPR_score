@@ -709,7 +709,7 @@ return (
         <select 
           value={selectedPlayerFilter}
           onChange={(e) => handleFilterChange(e.target.value)}
-          className="border rounded px-3 py-2 min-w-[150px] text-sm"
+          className="border rounded px-3 py-2 min-w-[100px] text-sm"
         >
           <option value="">--</option>
           {userList.map(user => (
