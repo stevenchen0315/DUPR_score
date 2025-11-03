@@ -619,8 +619,8 @@ return (
             <th className="border p-1 text-center w-12">S/D</th>
             <th className="border p-1 text-center w-20">A Score</th>
             <th className="border p-1 text-center w-20">B Score</th>
-            <th className="border p-1">Status</th>
-            <th className="border p-1">Action</th>
+            <th className="border p-1">Lock</th>
+            <th className="border p-1">Delete</th>
           </tr>
         </thead>
         <tbody>
