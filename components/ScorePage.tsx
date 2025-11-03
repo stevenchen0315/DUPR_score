@@ -833,7 +833,7 @@ return (
       <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="p-4 border-b flex justify-between items-center">
-            <h2 className="text-lg font-semibold">新增比賽</h2>
+            <h2 className="text-lg font-semibold">新增比賽(New Match)</h2>
             <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -869,7 +869,7 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -914,7 +914,7 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數</label>
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
