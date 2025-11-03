@@ -705,13 +705,13 @@ return (
     <div className="flex flex-col items-center mb-6 space-y-4">
       {/* 篩選選手下拉選單 */}
       <div className="flex items-center space-x-3 mb-2">
-        <label className="text-sm font-medium text-gray-700">篩選選手：</label>
+        <label className="text-sm font-medium text-gray-700">篩選選手(Filter)：</label>
         <select 
           value={selectedPlayerFilter}
           onChange={(e) => handleFilterChange(e.target.value)}
           className="border rounded px-3 py-2 min-w-[150px] text-sm"
         >
-          <option value="">全部選手</option>
+          <option value="">--</option>
           {userList.map(user => (
             <option key={user.dupr_id} value={user.name}>
               {user.name}
