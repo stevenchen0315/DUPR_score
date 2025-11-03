@@ -283,14 +283,25 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const updated = [...userList]
     
     if (editIndex !== null) {
-      // 編輯模式：只更新單一選手
+      // 編輯模式：需要處理 DUPR ID 變更的情況
       const oldUser = updated[editIndex]
+      const oldDuprId = `${oldUser.dupr_id.toUpperCase()}${suffix}`
+      const newDuprId = `${userInfo.dupr_id.toUpperCase()}${suffix}`
+      
       updated[editIndex] = userInfo
       setUserList(updated)
       setEditIndex(null)
       setUserInfo({ dupr_id: '', name: '' })
       
-      // 只更新這一個選手到資料庫
+      // 如果 DUPR ID 改變了，需要先刪除舊記錄
+      if (oldDuprId !== newDuprId) {
+        await supabase
+          .from('player_info')
+          .delete()
+          .eq('dupr_id', oldDuprId)
+      }
+      
+      // 插入/更新新記錄
       const userWithPartner = {
         ...userInfo,
         partner_number: partnerNumbers[oldUser.name] || null
