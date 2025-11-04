@@ -528,6 +528,18 @@ const validateNewMatch = () => {
     return userList.map((u) => u.name).filter((n) => !selected.includes(n)).sort()
   }
 
+  const getPlayersInTable = () => {
+    const playersInTable = new Set<string>()
+    rows.forEach(row => {
+      row.values.forEach(playerName => {
+        if (playerName && playerName.trim()) {
+          playersInTable.add(playerName.trim())
+        }
+      })
+    })
+    return Array.from(playersInTable).sort()
+  }
+
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10)
 
@@ -607,26 +619,57 @@ if (isLoading || !realtimeConnected) {
 return (
   <div className="px-2 sm:px-4">
     {/* 統一表格佈局 */}
-    <div className="overflow-x-auto">
+    <div 
+      className="overflow-auto max-h-[70vh] relative"
+      onWheel={(e) => {
+        const container = e.currentTarget
+        const { scrollTop, scrollHeight, clientHeight } = container
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+        const isAtTop = scrollTop <= 1
+        
+        if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
+          e.preventDefault()
+          window.scrollBy(0, e.deltaY)
+        }
+      }}
+      onTouchStart={(e) => {
+        const touch = e.touches[0]
+        e.currentTarget.dataset.startY = touch.clientY.toString()
+      }}
+      onTouchMove={(e) => {
+        const container = e.currentTarget
+        const { scrollTop, scrollHeight, clientHeight } = container
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+        const isAtTop = scrollTop <= 1
+        const startY = parseFloat(container.dataset.startY || '0')
+        const currentY = e.touches[0].clientY
+        const deltaY = startY - currentY
+        
+        if ((isAtBottom && deltaY > 0) || (isAtTop && deltaY < 0)) {
+          e.preventDefault()
+          window.scrollBy(0, deltaY * 0.5)
+        }
+      }}
+    >
       <table className="w-full border text-sm mb-6">
         <thead>
           <tr>
-            <th className="border p-1">#</th>
-            <th className="border p-1">A1</th>
-            <th className="border p-1">A2</th>
-            <th className="border p-1">B1</th>
-            <th className="border p-1">B2</th>
-            <th className="border p-1 text-center w-12">S/D</th>
-            <th className="border p-1 text-center w-20">A Score</th>
-            <th className="border p-1 text-center w-20">B Score</th>
-            <th className="border p-1">Lock</th>
-            <th className="border p-1">Delete</th>
+            <th className="border p-1 sticky top-0 left-0 bg-white z-20">#</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">A1</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">A2</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">B1</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">B2</th>
+            <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
+            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
+            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
           </tr>
         </thead>
         <tbody>
           {filteredRows.map((row, rowIndex) => (
             <tr key={rowIndex}>
-              <td className="border p-1 text-center font-medium">{row.serial_number}</td>
+              <td className="border p-1 text-center font-medium sticky left-0 bg-white z-10">{row.serial_number}</td>
               {row.values.map((val, i) => (
                 <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
                   <select
@@ -718,9 +761,9 @@ return (
           className="border rounded px-3 py-2 min-w-[100px] text-sm"
         >
           <option value="">--</option>
-          {userList.map(user => (
-            <option key={user.dupr_id} value={user.name}>
-              {user.name}
+          {getPlayersInTable().map(playerName => (
+            <option key={playerName} value={playerName}>
+              {playerName}
             </option>
           ))}
         </select>
