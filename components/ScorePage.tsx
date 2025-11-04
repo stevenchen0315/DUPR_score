@@ -619,7 +619,21 @@ if (isLoading || !realtimeConnected) {
 return (
   <div className="px-2 sm:px-4">
     {/* 統一表格佈局 */}
-    <div className="overflow-auto max-h-[70vh] relative">
+    <div 
+      className="overflow-auto max-h-[70vh] relative"
+      onWheel={(e) => {
+        const container = e.currentTarget
+        const { scrollTop, scrollHeight, clientHeight } = container
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+        const isAtTop = scrollTop <= 1
+        
+        // 如果在底部且向下滾動，或在頂部且向上滾動，允許事件冒泡到外層
+        if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
+          // 不阻止事件，讓它傳遞到外層
+          return
+        }
+      }}
+    >
       <table className="w-full border text-sm mb-6">
         <thead>
           <tr>
