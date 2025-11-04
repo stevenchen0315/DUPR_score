@@ -625,10 +625,29 @@ return (
         const container = e.currentTarget
         const { scrollTop, scrollHeight, clientHeight } = container
         const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+        const isAtTop = scrollTop <= 1
         
-        if (isAtBottom && e.deltaY > 0) {
+        if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
           e.preventDefault()
           window.scrollBy(0, e.deltaY)
+        }
+      }}
+      onTouchStart={(e) => {
+        const touch = e.touches[0]
+        e.currentTarget.dataset.startY = touch.clientY.toString()
+      }}
+      onTouchMove={(e) => {
+        const container = e.currentTarget
+        const { scrollTop, scrollHeight, clientHeight } = container
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+        const isAtTop = scrollTop <= 1
+        const startY = parseFloat(container.dataset.startY || '0')
+        const currentY = e.touches[0].clientY
+        const deltaY = startY - currentY
+        
+        if ((isAtBottom && deltaY > 0) || (isAtTop && deltaY < 0)) {
+          e.preventDefault()
+          window.scrollBy(0, deltaY * 0.5)
         }
       }}
     >
