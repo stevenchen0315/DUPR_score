@@ -607,26 +607,26 @@ if (isLoading || !realtimeConnected) {
 return (
   <div className="px-2 sm:px-4">
     {/* 統一表格佈局 */}
-    <div className="overflow-x-auto">
+    <div className="overflow-auto max-h-[70vh] relative">
       <table className="w-full border text-sm mb-6">
         <thead>
           <tr>
-            <th className="border p-1">#</th>
-            <th className="border p-1">A1</th>
-            <th className="border p-1">A2</th>
-            <th className="border p-1">B1</th>
-            <th className="border p-1">B2</th>
-            <th className="border p-1 text-center w-12">S/D</th>
-            <th className="border p-1 text-center w-20">A Score</th>
-            <th className="border p-1 text-center w-20">B Score</th>
-            <th className="border p-1">Lock</th>
-            <th className="border p-1">Delete</th>
+            <th className="border p-1 sticky top-0 left-0 bg-white z-20">#</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">A1</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">A2</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">B1</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">B2</th>
+            <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
+            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
+            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
+            <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
           </tr>
         </thead>
         <tbody>
           {filteredRows.map((row, rowIndex) => (
             <tr key={rowIndex}>
-              <td className="border p-1 text-center font-medium">{row.serial_number}</td>
+              <td className="border p-1 text-center font-medium sticky left-0 bg-white z-10">{row.serial_number}</td>
               {row.values.map((val, i) => (
                 <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
                   <select
