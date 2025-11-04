@@ -528,6 +528,18 @@ const validateNewMatch = () => {
     return userList.map((u) => u.name).filter((n) => !selected.includes(n)).sort()
   }
 
+  const getPlayersInTable = () => {
+    const playersInTable = new Set<string>()
+    rows.forEach(row => {
+      row.values.forEach(playerName => {
+        if (playerName && playerName.trim()) {
+          playersInTable.add(playerName.trim())
+        }
+      })
+    })
+    return Array.from(playersInTable).sort()
+  }
+
   const exportCSV = () => {
     const today = new Date().toISOString().slice(0, 10)
 
@@ -718,9 +730,9 @@ return (
           className="border rounded px-3 py-2 min-w-[100px] text-sm"
         >
           <option value="">--</option>
-          {userList.map(user => (
-            <option key={user.dupr_id} value={user.name}>
-              {user.name}
+          {getPlayersInTable().map(playerName => (
+            <option key={playerName} value={playerName}>
+              {playerName}
             </option>
           ))}
         </select>
