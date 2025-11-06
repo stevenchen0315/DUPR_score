@@ -786,16 +786,16 @@ return (
           </div>
 
           {/* 隊伍對戰 */}
-          <div className="grid grid-cols-3 gap-3 items-center">
+          <div className="flex gap-4">
             {/* Team A */}
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-600 text-center">Team A</div>
-              <div className="space-y-1">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+              <div className="space-y-2">
                 <select
                   value={row.values[0]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
-                  className={`w-full text-xs border rounded px-2 py-1 ${
+                  className={`w-full border rounded px-3 py-3 text-base ${
                     row.values[0] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -808,7 +808,7 @@ return (
                   value={row.values[1]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
-                  className={`w-full text-xs border rounded px-2 py-1 ${
+                  className={`w-full border rounded px-3 py-3 text-base ${
                     row.values[1] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -818,35 +818,33 @@ return (
                   ))}
                 </select>
               </div>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                min="0"
-                max="21"
-                step="1"
-                value={row.h}
-                onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                disabled={row.lock === 'Locked'}
-                className="w-full border rounded px-2 py-2 text-center text-lg font-bold"
-                placeholder="0"
-              />
-            </div>
-
-            {/* VS 分隔 */}
-            <div className="text-center">
-              <div className="text-lg font-bold text-gray-400">VS</div>
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={row.h}
+                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                  disabled={row.lock === 'Locked'}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
             </div>
 
             {/* Team B */}
-            <div className="space-y-2">
-              <div className="text-xs font-medium text-gray-600 text-center">Team B</div>
-              <div className="space-y-1">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
+              <div className="space-y-2">
                 <select
                   value={row.values[2]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
-                  className={`w-full text-xs border rounded px-2 py-1 ${
+                  className={`w-full border rounded px-3 py-3 text-base ${
                     row.values[2] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -859,7 +857,7 @@ return (
                   value={row.values[3]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
-                  className={`w-full text-xs border rounded px-2 py-1 ${
+                  className={`w-full border rounded px-3 py-3 text-base ${
                     row.values[3] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -869,19 +867,22 @@ return (
                   ))}
                 </select>
               </div>
-              <input
-                type="number"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                min="0"
-                max="21"
-                step="1"
-                value={row.i}
-                onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                disabled={row.lock === 'Locked'}
-                className="w-full border rounded px-2 py-2 text-center text-lg font-bold"
-                placeholder="0"
-              />
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  min="0"
+                  max="21"
+                  step="1"
+                  value={row.i}
+                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                  disabled={row.lock === 'Locked'}
+                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  placeholder="0"
+                />
+              </div>
             </div>
           </div>
         </div>
