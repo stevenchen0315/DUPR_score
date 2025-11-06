@@ -736,7 +736,7 @@ return (
     </div>
 
     {/* 手機版卡片佈局 */}
-    <div className="md:hidden max-h-[70vh] overflow-y-auto space-y-3 mb-6">
+    <div className="md:hidden space-y-3 mb-6">
       {filteredRows.map((row, rowIndex) => (
         <div key={rowIndex} className={`bg-white border rounded-lg shadow-sm p-4 ${
           row.values.some(val => val === selectedPlayerFilter && selectedPlayerFilter) ? 'ring-2 ring-yellow-300' : ''
