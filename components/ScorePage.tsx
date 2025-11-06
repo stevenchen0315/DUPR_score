@@ -818,7 +818,6 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -870,7 +869,6 @@ return (
                 </select>
               </div>
               <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
                 <input
                   type="number"
                   inputMode="numeric"
