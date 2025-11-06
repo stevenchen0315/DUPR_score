@@ -618,137 +618,274 @@ if (isLoading || !realtimeConnected) {
 
 return (
   <div className="px-2 sm:px-4">
-    {/* 統一表格佈局 */}
-    <div 
-      className="overflow-auto max-h-[70vh] relative"
-      onWheel={(e) => {
-        const container = e.currentTarget
-        const { scrollTop, scrollHeight, clientHeight } = container
-        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
-        const isAtTop = scrollTop <= 1
-        
-        if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
-          e.preventDefault()
-          window.scrollBy(0, e.deltaY)
-        }
-      }}
-      onTouchStart={(e) => {
-        const touch = e.touches[0]
-        e.currentTarget.dataset.startY = touch.clientY.toString()
-      }}
-      onTouchMove={(e) => {
-        const container = e.currentTarget
-        const { scrollTop, scrollHeight, clientHeight } = container
-        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
-        const isAtTop = scrollTop <= 1
-        const startY = parseFloat(container.dataset.startY || '0')
-        const currentY = e.touches[0].clientY
-        const deltaY = startY - currentY
-        
-        if ((isAtBottom && deltaY > 0) || (isAtTop && deltaY < 0)) {
-          e.preventDefault()
-          window.scrollBy(0, deltaY * 0.5)
-        }
-      }}
-    >
-      <table className="w-full border text-sm mb-6">
-        <thead>
-          <tr>
-            <th className="border p-1 sticky top-0 left-0 bg-white z-20">#</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">A1</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">A2</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">B1</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">B2</th>
-            <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
-            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
-            <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
-            <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredRows.map((row, rowIndex) => (
-            <tr key={rowIndex}>
-              <td className="border p-1 text-center font-medium sticky left-0 bg-white z-10">{row.serial_number}</td>
-              {row.values.map((val, i) => (
-                <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
-                  <select
-                    value={val}
-                    disabled={row.lock === 'Locked'}
-                    onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
-                  >
-                    <option value="">--</option>
-                    {getFilteredOptions(row, i).map((opt, idx) => (
-                      <option key={idx} value={opt}>{opt.trim()}</option>
-                    ))}
-                  </select>
-                </td>
-              ))}
-              <td className="border p-1 text-center">{row.sd}</td>
-              <td className="border p-1">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.h}
-                  onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border px-1 text-center"
-                />
-              </td>
-              <td className="border p-1">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={row.i}
-                  onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                  disabled={row.lock === 'Locked'}
-                  className="w-full border px-1 text-center"
-                />
-              </td>
-              <td className="border p-1 text-center">
-                <button
-                  onClick={() => {
-                    if (row.lock === 'Locked') {
-                      if (deletePassword === storedPassword) {
-                        updateCell(rowIndex, 'lock', 'Unlocked')
-                      }
-                    } else {
-                      updateCell(rowIndex, 'lock', 'Locked')
-                    }
-                  }}
-                  className={`px-2 py-1 rounded text-white ${
-                    row.lock === 'Locked'
-                      ? deletePassword === storedPassword
-                        ? 'bg-red-500 hover:bg-red-600'
-                        : 'bg-gray-300 cursor-not-allowed'
-                      : 'bg-green-400 hover:bg-green-500'
-                  }`}
-                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                >
-                  {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
-                </button>
-              </td>
-              <td className="border p-1 text-center">
-                <button
-                  onClick={() => deleteRow(rowIndex)}
-                  disabled={row.lock === 'Locked'}
-                  className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                >
-                  <Trash2 size={16} />
-                </button>
-              </td>
+    {/* 桌面版表格佈局 */}
+    <div className="hidden md:block">
+      <div 
+        className="overflow-auto max-h-[70vh] relative"
+        onWheel={(e) => {
+          const container = e.currentTarget
+          const { scrollTop, scrollHeight, clientHeight } = container
+          const isAtBottom = scrollTop + clientHeight >= scrollHeight - 1
+          const isAtTop = scrollTop <= 1
+          
+          if ((isAtBottom && e.deltaY > 0) || (isAtTop && e.deltaY < 0)) {
+            e.preventDefault()
+            window.scrollBy(0, e.deltaY)
+          }
+        }}
+      >
+        <table className="w-full border text-sm mb-6">
+          <thead>
+            <tr>
+              <th className="border p-1 sticky top-0 left-0 bg-white z-20">#</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">A1</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">A2</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">B1</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">B2</th>
+              <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
+              <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
+              <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredRows.map((row, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="border p-1 text-center font-medium sticky left-0 bg-white z-10">{row.serial_number}</td>
+                {row.values.map((val, i) => (
+                  <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
+                    <select
+                      value={val}
+                      disabled={row.lock === 'Locked'}
+                      onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
+                    >
+                      <option value="">--</option>
+                      {getFilteredOptions(row, i).map((opt, idx) => (
+                        <option key={idx} value={opt}>{opt.trim()}</option>
+                      ))}
+                    </select>
+                  </td>
+                ))}
+                <td className="border p-1 text-center">{row.sd}</td>
+                <td className="border p-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.h}
+                    onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border px-1 text-center"
+                  />
+                </td>
+                <td className="border p-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={row.i}
+                    onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="w-full border px-1 text-center"
+                  />
+                </td>
+                <td className="border p-1 text-center">
+                  <button
+                    onClick={() => {
+                      if (row.lock === 'Locked') {
+                        if (deletePassword === storedPassword) {
+                          updateCell(rowIndex, 'lock', 'Unlocked')
+                        }
+                      } else {
+                        updateCell(rowIndex, 'lock', 'Locked')
+                      }
+                    }}
+                    className={`px-2 py-1 rounded text-white ${
+                      row.lock === 'Locked'
+                        ? deletePassword === storedPassword
+                          ? 'bg-red-500 hover:bg-red-600'
+                          : 'bg-gray-300 cursor-not-allowed'
+                        : 'bg-green-400 hover:bg-green-500'
+                    }`}
+                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                  >
+                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                  </button>
+                </td>
+                <td className="border p-1 text-center">
+                  <button
+                    onClick={() => deleteRow(rowIndex)}
+                    disabled={row.lock === 'Locked'}
+                    className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {/* 手機版卡片佈局 */}
+    <div className="md:hidden max-h-[70vh] overflow-y-auto space-y-3 mb-6">
+      {filteredRows.map((row, rowIndex) => (
+        <div key={rowIndex} className={`bg-white border rounded-lg shadow-sm p-4 ${
+          row.values.some(val => val === selectedPlayerFilter && selectedPlayerFilter) ? 'ring-2 ring-yellow-300' : ''
+        }`}>
+          {/* 卡片標題 */}
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-lg font-bold text-gray-800">#{row.serial_number}</span>
+              <span className={`px-2 py-1 rounded text-xs font-medium ${
+                row.sd === 'S' ? 'bg-blue-100 text-blue-800' : 
+                row.sd === 'D' ? 'bg-green-100 text-green-800' : 
+                'bg-gray-100 text-gray-600'
+              }`}>
+                {row.sd || '--'}
+              </span>
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => {
+                  if (row.lock === 'Locked') {
+                    if (deletePassword === storedPassword) {
+                      updateCell(rowIndex, 'lock', 'Unlocked')
+                    }
+                  } else {
+                    updateCell(rowIndex, 'lock', 'Locked')
+                  }
+                }}
+                className={`p-2 rounded text-white ${
+                  row.lock === 'Locked'
+                    ? deletePassword === storedPassword
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-green-400 hover:bg-green-500'
+                }`}
+                disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+              >
+                {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
+              </button>
+              <button
+                onClick={() => deleteRow(rowIndex)}
+                disabled={row.lock === 'Locked'}
+                className={`p-2 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* 隊伍對戰 */}
+          <div className="grid grid-cols-3 gap-3 items-center">
+            {/* Team A */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600 text-center">Team A</div>
+              <div className="space-y-1">
+                <select
+                  value={row.values[0]}
+                  disabled={row.lock === 'Locked'}
+                  onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
+                  className={`w-full text-xs border rounded px-2 py-1 ${
+                    row.values[0] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
+                  }`}
+                >
+                  <option value="">--</option>
+                  {getFilteredOptions(row, 0).map((opt, idx) => (
+                    <option key={idx} value={opt}>{opt.trim()}</option>
+                  ))}
+                </select>
+                <select
+                  value={row.values[1]}
+                  disabled={row.lock === 'Locked'}
+                  onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
+                  className={`w-full text-xs border rounded px-2 py-1 ${
+                    row.values[1] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
+                  }`}
+                >
+                  <option value="">--</option>
+                  {getFilteredOptions(row, 1).map((opt, idx) => (
+                    <option key={idx} value={opt}>{opt.trim()}</option>
+                  ))}
+                </select>
+              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="0"
+                max="21"
+                step="1"
+                value={row.h}
+                onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
+                disabled={row.lock === 'Locked'}
+                className="w-full border rounded px-2 py-2 text-center text-lg font-bold"
+                placeholder="0"
+              />
+            </div>
+
+            {/* VS 分隔 */}
+            <div className="text-center">
+              <div className="text-lg font-bold text-gray-400">VS</div>
+            </div>
+
+            {/* Team B */}
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-600 text-center">Team B</div>
+              <div className="space-y-1">
+                <select
+                  value={row.values[2]}
+                  disabled={row.lock === 'Locked'}
+                  onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
+                  className={`w-full text-xs border rounded px-2 py-1 ${
+                    row.values[2] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
+                  }`}
+                >
+                  <option value="">--</option>
+                  {getFilteredOptions(row, 2).map((opt, idx) => (
+                    <option key={idx} value={opt}>{opt.trim()}</option>
+                  ))}
+                </select>
+                <select
+                  value={row.values[3]}
+                  disabled={row.lock === 'Locked'}
+                  onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
+                  className={`w-full text-xs border rounded px-2 py-1 ${
+                    row.values[3] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
+                  }`}
+                >
+                  <option value="">--</option>
+                  {getFilteredOptions(row, 3).map((opt, idx) => (
+                    <option key={idx} value={opt}>{opt.trim()}</option>
+                  ))}
+                </select>
+              </div>
+              <input
+                type="number"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                min="0"
+                max="21"
+                step="1"
+                value={row.i}
+                onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
+                disabled={row.lock === 'Locked'}
+                className="w-full border rounded px-2 py-2 text-center text-lg font-bold"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
 
     <div className="flex flex-col items-center mb-6 space-y-4">
