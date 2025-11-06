@@ -325,6 +325,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   const editUser = (index: number) => {
     setUserInfo(userList[index])
     setEditIndex(index)
+    // 滾動到頂部的更新選手按鈕
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const deleteUser = async (index: number) => {
