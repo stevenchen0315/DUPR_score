@@ -785,7 +785,6 @@ return (
             </div>
           </div>
 
-          {/* 隊伍對戰 */}
           <div className="flex gap-4">
             {/* Team A */}
             <div className="flex-1">
@@ -835,6 +834,9 @@ return (
                 />
               </div>
             </div>
+
+            {/* 垂直分隔線 */}
+            <div className="border-l border-gray-300 mx-2"></div>
 
             {/* Team B */}
             <div className="flex-1">
