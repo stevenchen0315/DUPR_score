@@ -1053,7 +1053,7 @@ return (
                   </select>
                 </div>
                 <div className="w-20">
-                  <label className="block text-xs text-gray-600 mb-1 text-center">分數</label>
+                  <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
                   <input
                     type="number"
                     inputMode="numeric"
@@ -1100,7 +1100,7 @@ return (
                   </select>
                 </div>
                 <div className="w-20">
-                  <label className="block text-xs text-gray-600 mb-1 text-center">分數</label>
+                  <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
                   <input
                     type="number"
                     inputMode="numeric"
