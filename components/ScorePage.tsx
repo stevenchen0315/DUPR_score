@@ -785,9 +785,7 @@ return (
             </div>
           </div>
 
-          {/* Team A */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
             <div className="flex items-center gap-3">
               <div className="flex-1 space-y-2">
                 <select
@@ -818,7 +816,6 @@ return (
                 </select>
               </div>
               <div className="w-20">
-                <label className="block text-xs text-gray-600 mb-1 text-center">分數</label>
                 <input
                   type="number"
                   inputMode="numeric"
@@ -836,12 +833,9 @@ return (
             </div>
           </div>
 
-          {/* 分隔線 */}
           <div className="border-t border-gray-300 my-4"></div>
 
-          {/* Team B */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
             <div className="flex items-center gap-3">
               <div className="flex-1 space-y-2">
                 <select
@@ -872,7 +866,6 @@ return (
                 </select>
               </div>
               <div className="w-20">
-                <label className="block text-xs text-gray-600 mb-1 text-center">分數</label>
                 <input
                   type="number"
                   inputMode="numeric"
