@@ -785,16 +785,14 @@ return (
             </div>
           </div>
 
-          <div className="flex gap-4">
-            {/* Team A */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
-              <div className="space-y-2">
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-2">
                 <select
                   value={row.values[0]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
-                  className={`w-full border rounded px-3 py-3 text-base ${
+                  className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[0] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -807,7 +805,7 @@ return (
                   value={row.values[1]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
-                  className={`w-full border rounded px-3 py-3 text-base ${
+                  className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[1] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -817,7 +815,7 @@ return (
                   ))}
                 </select>
               </div>
-              <div className="mt-3">
+              <div className="w-20">
                 <input
                   type="number"
                   inputMode="numeric"
@@ -828,24 +826,23 @@ return (
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
                   disabled={row.lock === 'Locked'}
-                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
               </div>
             </div>
+          </div>
 
-            {/* 垂直分隔線 */}
-            <div className="border-l border-gray-300 mx-2"></div>
+          <div className="border-t border-gray-300 my-4"></div>
 
-            {/* Team B */}
-            <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
-              <div className="space-y-2">
+          <div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-2">
                 <select
                   value={row.values[2]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
-                  className={`w-full border rounded px-3 py-3 text-base ${
+                  className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[2] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -858,7 +855,7 @@ return (
                   value={row.values[3]}
                   disabled={row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
-                  className={`w-full border rounded px-3 py-3 text-base ${
+                  className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[3] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
                   }`}
                 >
@@ -868,7 +865,7 @@ return (
                   ))}
                 </select>
               </div>
-              <div className="mt-3">
+              <div className="w-20">
                 <input
                   type="number"
                   inputMode="numeric"
@@ -879,7 +876,7 @@ return (
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
                   disabled={row.lock === 'Locked'}
-                  className="w-full border rounded px-3 py-2 text-center text-lg"
+                  className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
               </div>
@@ -1029,96 +1026,99 @@ return (
           </div>
           
           <div className="p-4">
-            <div className="flex gap-4 mb-4">
-              {/* Team A */}
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
-                <div className="space-y-2">
+            {/* Team A */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-3">
                   <select
                     value={newMatch.a1}
                     onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                    className="w-full border rounded px-3 py-3 text-base"
+                    className="w-full border rounded px-4 py-3 text-base"
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  value={newMatch.a2}
-                  onChange={(e) => handleNewMatchChange('a2', e.target.value)}
-                  className="w-full border rounded px-3 py-3 text-base"
-                >
-                  <option value="">--</option>
-                  {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={newMatch.scoreA}
-                  onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
-                  className="w-full border rounded px-3 py-2 text-center text-lg"
-                  placeholder="0"
-                />
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={newMatch.a2}
+                    onChange={(e) => handleNewMatchChange('a2', e.target.value)}
+                    className="w-full border rounded px-4 py-3 text-base"
+                  >
+                    <option value="">--</option>
+                    {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-20">
+                  <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={newMatch.scoreA}
+                    onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* 垂直分隔線 */}
-            <div className="border-l border-gray-300 mx-2"></div>
+            {/* 分隔線 */}
+            <div className="border-t border-gray-300 my-4"></div>
 
             {/* Team B */}
-            <div className="flex-1">
+            <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
-              <div className="space-y-2">
-                <select
-                  value={newMatch.b1}
-                  onChange={(e) => handleNewMatchChange('b1', e.target.value)}
-                  className="w-full border rounded px-3 py-3 text-base"
-                >
-                  <option value="">--</option>
-                  {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-                <select
-                  value={newMatch.b2}
-                  onChange={(e) => handleNewMatchChange('b2', e.target.value)}
-                  className="w-full border rounded px-3 py-3 text-base"
-                >
-                  <option value="">--</option>
-                  {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
-                    <option key={name} value={name}>{name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="mt-3">
-                <label className="block text-xs text-gray-600 mb-1">分數(Score)</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  min="0"
-                  max="21"
-                  step="1"
-                  value={newMatch.scoreB}
-                  onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
-                  className="w-full border rounded px-3 py-2 text-center text-lg"
-                  placeholder="0"
-                />
+              <div className="flex items-center gap-3">
+                <div className="flex-1 space-y-3">
+                  <select
+                    value={newMatch.b1}
+                    onChange={(e) => handleNewMatchChange('b1', e.target.value)}
+                    className="w-full border rounded px-4 py-3 text-base"
+                  >
+                    <option value="">--</option>
+                    {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={newMatch.b2}
+                    onChange={(e) => handleNewMatchChange('b2', e.target.value)}
+                    className="w-full border rounded px-4 py-3 text-base"
+                  >
+                    <option value="">--</option>
+                    {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-20">
+                  <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    min="0"
+                    max="21"
+                    step="1"
+                    value={newMatch.scoreB}
+                    onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
+                    className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
+                    placeholder="0"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end space-x-3 p-4 border-t">
             <button
               onClick={closeAddModal}
               className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
@@ -1139,8 +1139,7 @@ return (
           </div>
         </div>
       </div>
-    </div>
-  )}
+    )}
   </div>
-  )
+)
 }
