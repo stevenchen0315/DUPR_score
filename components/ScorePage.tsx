@@ -1030,11 +1030,11 @@ return (
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
               <div className="flex items-center gap-3">
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-3">
                   <select
                     value={newMatch.a1}
                     onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                    className="w-full border rounded px-3 py-2 text-sm"
+                    className="w-full border rounded px-4 py-3 text-base"
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
@@ -1044,7 +1044,7 @@ return (
                   <select
                     value={newMatch.a2}
                     onChange={(e) => handleNewMatchChange('a2', e.target.value)}
-                    className="w-full border rounded px-3 py-2 text-sm"
+                    className="w-full border rounded px-4 py-3 text-base"
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
@@ -1077,11 +1077,11 @@ return (
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
               <div className="flex items-center gap-3">
-                <div className="flex-1 space-y-2">
+                <div className="flex-1 space-y-3">
                   <select
                     value={newMatch.b1}
                     onChange={(e) => handleNewMatchChange('b1', e.target.value)}
-                    className="w-full border rounded px-3 py-2 text-sm"
+                    className="w-full border rounded px-4 py-3 text-base"
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
@@ -1091,7 +1091,7 @@ return (
                   <select
                     value={newMatch.b2}
                     onChange={(e) => handleNewMatchChange('b2', e.target.value)}
-                    className="w-full border rounded px-3 py-2 text-sm"
+                    className="w-full border rounded px-4 py-3 text-base"
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
