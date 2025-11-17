@@ -10,22 +10,28 @@ import { supabase } from '@/lib/supabase'
 export default function UserPage({ params }: any) {
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
+  const [webEvent, setWebEvent] = useState<string>('')
   const username = params.username
 
-  // 🔄 讀取 account 資料表中的所有 username
+  // 🔄 讀取 account 資料表中的所有 username 和 web_event
   useEffect(() => {
     const fetchUsernames = async () => {
-      const { data, error } = await supabase.from('account').select('username')
+      const { data, error } = await supabase.from('account').select('username, web_event')
       if (error) {
         console.error('Failed to fetch usernames:', error)
         setAllowedUsernames([])
       } else {
         setAllowedUsernames(data.map((d) => d.username))
+        // 找到對應的 web_event
+        const userAccount = data.find((d) => d.username === username)
+        if (userAccount?.web_event) {
+          setWebEvent(userAccount.web_event)
+        }
       }
     }
 
     fetchUsernames()
-  }, [])
+  }, [username])
 
   // ✅ 還沒載入完成就先不顯示頁面
   if (allowedUsernames === null) return null
@@ -45,7 +51,7 @@ export default function UserPage({ params }: any) {
       </header>
 
       <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4 mt-2">
-        Organizer: {capitalizeFirstLetter(username)}
+        Organizer: {webEvent || capitalizeFirstLetter(username)}
       </h1>
 
       <div className="flex justify-center gap-4 mb-4">
