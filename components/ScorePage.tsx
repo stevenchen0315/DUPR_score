@@ -654,8 +654,8 @@ return (
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
               <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
-              <th className="border p-1 sticky top-0 bg-white z-10">Check</th>
               <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">Check</th>
             </tr>
           </thead>
           <tbody>
@@ -729,14 +729,6 @@ return (
                   </button>
                 </td>
                 <td className="border p-1 text-center">
-                  <input
-                    type="checkbox"
-                    checked={row.check}
-                    onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
-                    className="w-4 h-4"
-                  />
-                </td>
-                <td className="border p-1 text-center">
                   <button
                     onClick={() => deleteRow(rowIndex)}
                     disabled={row.lock === 'Locked'}
@@ -744,6 +736,14 @@ return (
                   >
                     <Trash2 size={16} />
                   </button>
+                </td>
+                <td className="border p-1 text-center">
+                  <input
+                    type="checkbox"
+                    checked={row.check}
+                    onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
+                    className="w-4 h-4"
+                  />
                 </td>
               </tr>
             ))}
