@@ -83,8 +83,15 @@ useEffect(() => {
         setPartnerNumbers(partners)
       }
 
-      // 初次全量抓一次
-      await refetchScores()
+      // 初次全量抓一次，明確指定欄位確保包含 check
+      const { data: scores } = await supabase
+        .from('score')
+        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+        .like('serial_number', `%_${username}`)
+      if (scores) {
+        const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
+        setRows(formatScores(sorted))
+      }
       setIsLoading(false)
     } catch (error) {
       console.error('Fetch error:', error)
@@ -139,7 +146,7 @@ const refetchScores = async () => {
   if (!username) return
   const { data } = await supabase
     .from('score')
-    .select('*')
+    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
     .like('serial_number', `%_${username}`)
   if (data) {
     const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
