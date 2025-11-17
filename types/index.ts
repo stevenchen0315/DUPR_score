@@ -13,4 +13,5 @@ export type score = {
   team_a_score: number
   team_b_score: number
   lock: boolean
+  check: boolean
 }

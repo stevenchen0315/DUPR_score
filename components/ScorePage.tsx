@@ -10,7 +10,7 @@ const LOCKED = 'Locked'
 const UNLOCKED = 'Unlocked'
 
 type CellField = 'D' | 'E' | 'F' | 'G'
-type OtherField = 'h' | 'i' | 'lock' | 'sd'
+type OtherField = 'h' | 'i' | 'lock' | 'sd' | 'check'
 
 type Row = {
   serial_number: number
@@ -19,6 +19,7 @@ type Row = {
   h: string
   i: string
   lock: string
+  check: boolean
 }
 
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay = 200) {
@@ -82,8 +83,15 @@ useEffect(() => {
         setPartnerNumbers(partners)
       }
 
-      // 初次全量抓一次
-      await refetchScores()
+      // 初次全量抓一次，明確指定欄位確保包含 check
+      const { data: scores } = await supabase
+        .from('score')
+        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+        .like('serial_number', `%_${username}`)
+      if (scores) {
+        const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
+        setRows(formatScores(sorted))
+      }
       setIsLoading(false)
     } catch (error) {
       console.error('Fetch error:', error)
@@ -138,7 +146,7 @@ const refetchScores = async () => {
   if (!username) return
   const { data } = await supabase
     .from('score')
-    .select('*')
+    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
     .like('serial_number', `%_${username}`)
   if (data) {
     const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
@@ -280,6 +288,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         h: item.team_a_score?.toString() ?? '',
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? LOCKED : UNLOCKED,
+        check: item.check ?? false,
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
           [item.player_b1, item.player_b2].filter(Boolean).length === 1
@@ -303,7 +312,8 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     player_b2: b2,
     team_a_score: row.h === '' ? null : parseInt(row.h),
     team_b_score: row.i === '' ? null : parseInt(row.i),
-    lock: row.lock === LOCKED
+    lock: row.lock === LOCKED,
+    check: row.check
   })
 }, 500)
   
@@ -319,11 +329,15 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
         values: [...r.values]
       }
 
-      if (['h', 'i', 'lock'].includes(field)) {
+      if (['h', 'i', 'lock', 'check'].includes(field)) {
         if ((field === 'h' || field === 'i') && value !== '') {
           if (!/^\d{1,2}$/.test(value) || +value > 99) return r
         }
-        (updatedRow as any)[field] = value
+        if (field === 'check') {
+          updatedRow.check = value === 'true'
+        } else {
+          (updatedRow as any)[field] = value
+        }
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
         const oldValue = updatedRow.values[colIndex]
@@ -417,7 +431,7 @@ const addRow = async () => {
   const payload = {
     serial_number: `${nextSerial}_${username}`,
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-    team_a_score: null, team_b_score: null, lock: false,
+    team_a_score: null, team_b_score: null, lock: false, check: false,
   }
   const { error } = await supabase.from('score').insert(payload)
 }
@@ -438,6 +452,7 @@ const submitNewMatch = async () => {
     team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
     lock: true,
+    check: false,
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -647,6 +662,7 @@ return (
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
               <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
               <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
+              <th className="border p-1 sticky top-0 bg-white z-10">Check</th>
             </tr>
           </thead>
           <tbody>
@@ -727,6 +743,14 @@ return (
                   >
                     <Trash2 size={16} />
                   </button>
+                </td>
+                <td className="border p-1 text-center">
+                  <input
+                    type="checkbox"
+                    checked={row.check}
+                    onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
+                    className="w-4 h-4"
+                  />
                 </td>
               </tr>
             ))}
