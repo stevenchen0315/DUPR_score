@@ -296,7 +296,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         h: item.team_a_score?.toString() ?? '',
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? LOCKED : UNLOCKED,
-        check: item.check ?? false,
+        check: Boolean(item.check),
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
           [item.player_b1, item.player_b2].filter(Boolean).length === 1
