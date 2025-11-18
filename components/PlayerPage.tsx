@@ -249,6 +249,17 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       return { dupr_id, name, partner_number }
     })
 
+    // 先清空所有現有選手
+    await supabase
+      .from('player_info')
+      .delete()
+      .like('dupr_id', `%_${username}`)
+    
+    // 清空本地狀態
+    setUserList([])
+    setPartnerNumbers({})
+    
+    // 再匯入新的選手名單
     setUserList(imported.map(({ partner_number, ...user }) => user))
     await saveUserToSupabase(imported)
 
