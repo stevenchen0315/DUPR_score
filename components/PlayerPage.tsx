@@ -233,20 +233,34 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target?.result as string
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
 
-    const imported: (player_info & { partner_number?: number | null })[] = lines.map(line => {
+    const imported: (player_info & { partner_number?: number | null })[] = []
+
+    lines.forEach(line => {
       const parts = line.split(',').map(s => s.trim())
-      const [dupr_id, name] = parts
       
-      // 支援兩種格式：舊格式 (dupr_id,name) 和新格式 (dupr_id,name,partner_number)
-      let partner_number: number | null = null
-      if (parts.length >= 3 && parts[2]) {
-        const partnerNum = parseInt(parts[2])
-        if (!isNaN(partnerNum) && partnerNum > 0) {
-          partner_number = partnerNum
+      if (parts.length === 5) {
+        // 配對格式：name1, dupr_id1, name2, dupr_id2, partner_number
+        const [name1, dupr_id1, name2, dupr_id2, partner_number] = parts
+        const partnerNum = parseInt(partner_number)
+        
+        imported.push(
+          { dupr_id: dupr_id1, name: name1, partner_number: partnerNum },
+          { dupr_id: dupr_id2, name: name2, partner_number: partnerNum }
+        )
+      } else {
+        // 原有格式：dupr_id, name [, partner_number]
+        const [dupr_id, name] = parts
+        let partner_number: number | null = null
+        
+        if (parts.length >= 3 && parts[2]) {
+          const partnerNum = parseInt(parts[2])
+          if (!isNaN(partnerNum) && partnerNum > 0) {
+            partner_number = partnerNum
+          }
         }
+        
+        imported.push({ dupr_id, name, partner_number })
       }
-      
-      return { dupr_id, name, partner_number }
     })
 
     // 先清空所有現有選手
