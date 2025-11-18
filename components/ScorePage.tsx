@@ -206,7 +206,10 @@ const resubscribe = () => {
         }
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
         if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
-          await refetchScores()
+          // 延遲一點再重新抓取，確保資料庫已更新
+          setTimeout(async () => {
+            await refetchScores()
+          }, 100)
         }
       }
     )
