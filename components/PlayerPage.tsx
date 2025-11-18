@@ -563,7 +563,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             className="hidden"
           />
         </div>
-      </div>
+        </div>
+      )}
 
       {/* 固定隊友按鈕 - 只在管理員模式下顯示 */}
       {showEditFeatures && deletePassword === storedPassword && getButtonText() && (
