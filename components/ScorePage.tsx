@@ -442,6 +442,19 @@ const addRow = async () => {
     team_a_score: null, team_b_score: null, lock: false, check: false,
   }
   const { error } = await supabase.from('score').insert(payload)
+  if (!error) {
+    // 立即更新本地狀態
+    const newRow: Row = {
+      serial_number: nextSerial,
+      values: ['', '', '', ''],
+      h: '',
+      i: '',
+      lock: UNLOCKED,
+      check: false,
+      sd: ''
+    }
+    setRows(prev => [...prev, newRow])
+  }
 }
 
 const closeAddModal = () => {
@@ -464,6 +477,21 @@ const submitNewMatch = async () => {
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
+    // 立即更新本地狀態
+    const teamACount = [newMatch.a1, newMatch.a2].filter(Boolean).length
+    const teamBCount = [newMatch.b1, newMatch.b2].filter(Boolean).length
+    const sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+    
+    const newRow: Row = {
+      serial_number: nextSerial,
+      values: [newMatch.a1, newMatch.a2, newMatch.b1, newMatch.b2],
+      h: newMatch.scoreA,
+      i: newMatch.scoreB,
+      lock: LOCKED,
+      check: false,
+      sd: sd
+    }
+    setRows(prev => [...prev, newRow])
     closeAddModal()
   }
 }
