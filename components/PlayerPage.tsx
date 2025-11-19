@@ -24,9 +24,11 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
+  const [hasActiveScores, setHasActiveScores] = useState(false)
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const scoreChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
   // 控制編輯功能顯示
   const showEditFeatures = !readonly
@@ -34,6 +36,20 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
 useEffect(() => {
     if (!username) return
   
+  const checkActiveScores = async () => {
+    try {
+      const { data: scores } = await supabase
+        .from('score')
+        .select('serial_number')
+        .like('serial_number', `%_${username}`)
+        .limit(1)
+      
+      setHasActiveScores(scores && scores.length > 0)
+    } catch (error) {
+      console.error('Check scores error:', error)
+    }
+  }
+
   const fetchData = async () => {
       try {
         // 讀取密碼
@@ -44,6 +60,9 @@ useEffect(() => {
           .single()
         if (accountError) throw accountError
         if (account?.password) setStoredPassword(account.password)
+        
+        // 檢查是否有比分資料
+        await checkActiveScores()
         // 讀取 player_info 名單
         const { data: users, error: userError } = await supabase
           .from('player_info')
@@ -101,6 +120,7 @@ useEffect(() => {
 
     return () => {
       if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+      if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
     }
   }, [username])
 
@@ -155,6 +175,7 @@ useEffect(() => {
   const resubscribe = () => {
     if (!username) return
     if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+    if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
     setRealtimeConnected(false)
 
     const playerChannel = supabase
@@ -186,7 +207,26 @@ useEffect(() => {
         }
       })
 
+    const scoreChannel = supabase
+      .channel(`score-${username}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'score'
+        },
+        async (payload: any) => {
+          const serialNumber = payload.new?.serial_number || payload.old?.serial_number
+          if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
+            await checkActiveScores()
+          }
+        }
+      )
+      .subscribe()
+
     playerChannelRef.current = playerChannel
+    scoreChannelRef.current = scoreChannel
   }
 
   // 🚀 一鍵刪除功能
@@ -574,9 +614,10 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             <Download size={18} />
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-blue-600 hover:text-blue-800"
-            title="匯入 CSV"
+            onClick={() => hasActiveScores ? null : fileInputRef.current?.click()}
+            disabled={hasActiveScores}
+            className={`${hasActiveScores ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+            title={hasActiveScores ? "比賽進行中，無法匯入選手名單" : "匯入 CSV"}
           >
             <Upload size={18} />
           </button>
@@ -586,7 +627,13 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             accept=".csv"
             onChange={importCSV}
             className="hidden"
+            disabled={hasActiveScores}
           />
+          {hasActiveScores && (
+            <div className="text-xs text-red-500 mt-1">
+              ⚠️ 比賽進行中，無法匯入選手名單
+            </div>
+          )}
         </div>
         </div>
       )}
