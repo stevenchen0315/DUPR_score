@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
 import { notFound } from 'next/navigation'
@@ -10,22 +11,38 @@ import { supabase } from '@/lib/supabase'
 export default function UserPage({ params }: any) {
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
+  const [webEvent, setWebEvent] = useState<string>('')
+  const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
   const username = params.username
+  const searchParams = useSearchParams()
+  
+  // 決定最終模式
+  const modeParam = searchParams.get('mode')
+  const finalMode = modeParam || defaultMode
+  const isReadOnly = finalMode === 'readonly'
 
-  // 🔄 讀取 account 資料表中的所有 username
+  // 🔄 讀取 account 資料表中的所有 username、web_event 和 default_mode
   useEffect(() => {
     const fetchUsernames = async () => {
-      const { data, error } = await supabase.from('account').select('username')
+      const { data, error } = await supabase.from('account').select('username, web_event, default_mode')
       if (error) {
         console.error('Failed to fetch usernames:', error)
         setAllowedUsernames([])
       } else {
         setAllowedUsernames(data.map((d) => d.username))
+        // 找到對應的 web_event 和 default_mode
+        const userAccount = data.find((d) => d.username === username)
+        if (userAccount?.web_event) {
+          setWebEvent(userAccount.web_event)
+        }
+        // NULL 或空字串都視為管理員模式
+        const mode = userAccount?.default_mode === 'readonly' ? 'readonly' : 'admin'
+        setDefaultMode(mode)
       }
     }
 
     fetchUsernames()
-  }, [])
+  }, [username])
 
   // ✅ 還沒載入完成就先不顯示頁面
   if (allowedUsernames === null) return null
@@ -45,7 +62,7 @@ export default function UserPage({ params }: any) {
       </header>
 
       <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4 mt-2">
-        Organizer: {capitalizeFirstLetter(username)}
+        Organizer: {webEvent || capitalizeFirstLetter(username)}
       </h1>
 
       <div className="flex justify-center gap-4 mb-4">
@@ -78,8 +95,8 @@ export default function UserPage({ params }: any) {
       </div>
 
       <div className="flex-grow">
-        {tab === 'players' && <PlayerPage username={username} />}
-        {tab === 'scores' && <ScorePage username={username} />}
+        {tab === 'players' && <PlayerPage username={username} readonly={isReadOnly} />}
+        {tab === 'scores' && <ScorePage username={username} readonly={isReadOnly} />}
       </div>
 
       <MarqueeAd />

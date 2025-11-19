@@ -30,7 +30,12 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
   }
 }
 
-export default function ScorePage({ username }: { username: string }) {
+interface ScorePageProps {
+  username: string
+  readonly?: boolean
+}
+
+export default function ScorePage({ username, readonly = false }: ScorePageProps) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
@@ -50,6 +55,9 @@ export default function ScorePage({ username }: { username: string }) {
   
   // 追蹤本地更新時間戳
   const lastLocalUpdateRef = useRef<number>(0)
+  
+  // 控制編輯功能顯示
+  const showEditFeatures = !readonly
 
 useEffect(() => {
   if (!username) return
@@ -198,7 +206,10 @@ const resubscribe = () => {
         }
         const serialNumber = payload.new?.serial_number || payload.old?.serial_number
         if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
-          await refetchScores()
+          // 延遲一點再重新抓取，確保資料庫已更新
+          setTimeout(async () => {
+            await refetchScores()
+          }, 100)
         }
       }
     )
@@ -288,7 +299,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         h: item.team_a_score?.toString() ?? '',
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? LOCKED : UNLOCKED,
-        check: item.check ?? false,
+        check: Boolean(item.check),
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
           [item.player_b1, item.player_b2].filter(Boolean).length === 1
@@ -434,6 +445,19 @@ const addRow = async () => {
     team_a_score: null, team_b_score: null, lock: false, check: false,
   }
   const { error } = await supabase.from('score').insert(payload)
+  if (!error) {
+    // 立即更新本地狀態
+    const newRow: Row = {
+      serial_number: nextSerial,
+      values: ['', '', '', ''],
+      h: '',
+      i: '',
+      lock: UNLOCKED,
+      check: false,
+      sd: ''
+    }
+    setRows(prev => [...prev, newRow])
+  }
 }
 
 const closeAddModal = () => {
@@ -456,6 +480,21 @@ const submitNewMatch = async () => {
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
+    // 立即更新本地狀態
+    const teamACount = [newMatch.a1, newMatch.a2].filter(Boolean).length
+    const teamBCount = [newMatch.b1, newMatch.b2].filter(Boolean).length
+    const sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+    
+    const newRow: Row = {
+      serial_number: nextSerial,
+      values: [newMatch.a1, newMatch.a2, newMatch.b1, newMatch.b2],
+      h: newMatch.scoreA,
+      i: newMatch.scoreB,
+      lock: LOCKED,
+      check: false,
+      sd: sd
+    }
+    setRows(prev => [...prev, newRow])
     closeAddModal()
   }
 }
@@ -660,9 +699,9 @@ return (
               <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
-              <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>
-              <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>
-              <th className="border p-1 sticky top-0 bg-white z-10">Check</th>
+              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
+              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
+              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
             </tr>
           </thead>
           <tbody>
@@ -673,7 +712,7 @@ return (
                   <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
                     <select
                       value={val}
-                      disabled={row.lock === 'Locked'}
+                      disabled={readonly || row.lock === 'Locked'}
                       onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
                     >
                       <option value="">--</option>
@@ -694,7 +733,7 @@ return (
                     step="1"
                     value={row.h}
                     onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                    disabled={row.lock === 'Locked'}
+                    disabled={readonly || row.lock === 'Locked'}
                     className="w-full border px-1 text-center"
                   />
                 </td>
@@ -708,50 +747,57 @@ return (
                     step="1"
                     value={row.i}
                     onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                    disabled={row.lock === 'Locked'}
+                    disabled={readonly || row.lock === 'Locked'}
                     className="w-full border px-1 text-center"
                   />
                 </td>
-                <td className="border p-1 text-center">
-                  <button
-                    onClick={() => {
-                      if (row.lock === 'Locked') {
-                        if (deletePassword === storedPassword) {
-                          updateCell(rowIndex, 'lock', 'Unlocked')
+                {showEditFeatures && (
+                  <td className="border p-1 text-center">
+                    <button
+                      onClick={() => {
+                        if (row.lock === 'Locked') {
+                          if (deletePassword === storedPassword) {
+                            updateCell(rowIndex, 'lock', 'Unlocked')
+                          }
+                        } else {
+                          updateCell(rowIndex, 'lock', 'Locked')
                         }
-                      } else {
-                        updateCell(rowIndex, 'lock', 'Locked')
-                      }
-                    }}
-                    className={`px-2 py-1 rounded text-white ${
-                      row.lock === 'Locked'
-                        ? deletePassword === storedPassword
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-green-400 hover:bg-green-500'
-                    }`}
-                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                  >
-                    {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
-                  </button>
-                </td>
-                <td className="border p-1 text-center">
-                  <button
-                    onClick={() => deleteRow(rowIndex)}
-                    disabled={row.lock === 'Locked'}
-                    className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </td>
-                <td className="border p-1 text-center">
-                  <input
-                    type="checkbox"
-                    checked={row.check}
-                    onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
-                    className="w-4 h-4"
-                  />
-                </td>
+                      }}
+                      className={`px-2 py-1 rounded text-white ${
+                        row.lock === 'Locked'
+                          ? deletePassword === storedPassword
+                            ? 'bg-red-500 hover:bg-red-600'
+                            : 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-green-400 hover:bg-green-500'
+                      }`}
+                      disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                    >
+                      {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
+                    </button>
+                  </td>
+                )}
+                {showEditFeatures && (
+                  <td className="border p-1 text-center">
+                    <button
+                      onClick={() => deleteRow(rowIndex)}
+                      disabled={row.lock === 'Locked'}
+                      className={`px-2 py-1 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                )}
+                {showEditFeatures && (
+                  <td className="border p-1 text-center">
+                    <input
+                      type="checkbox"
+                      checked={row.check}
+                      onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
+                      disabled={readonly}
+                      className="w-4 h-4"
+                    />
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -777,36 +823,38 @@ return (
                 {row.sd || '--'}
               </span>
             </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => {
-                  if (row.lock === 'Locked') {
-                    if (deletePassword === storedPassword) {
-                      updateCell(rowIndex, 'lock', 'Unlocked')
+            {showEditFeatures && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => {
+                    if (row.lock === 'Locked') {
+                      if (deletePassword === storedPassword) {
+                        updateCell(rowIndex, 'lock', 'Unlocked')
+                      }
+                    } else {
+                      updateCell(rowIndex, 'lock', 'Locked')
                     }
-                  } else {
-                    updateCell(rowIndex, 'lock', 'Locked')
-                  }
-                }}
-                className={`p-2 rounded text-white ${
-                  row.lock === 'Locked'
-                    ? deletePassword === storedPassword
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-gray-300 cursor-not-allowed'
-                    : 'bg-green-400 hover:bg-green-500'
-                }`}
-                disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-              >
-                {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
-              </button>
-              <button
-                onClick={() => deleteRow(rowIndex)}
-                disabled={row.lock === 'Locked'}
-                className={`p-2 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
+                  }}
+                  className={`p-2 rounded text-white ${
+                    row.lock === 'Locked'
+                      ? deletePassword === storedPassword
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-gray-300 cursor-not-allowed'
+                      : 'bg-green-400 hover:bg-green-500'
+                  }`}
+                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                >
+                  {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
+                </button>
+                <button
+                  onClick={() => deleteRow(rowIndex)}
+                  disabled={row.lock === 'Locked'}
+                  className={`p-2 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="mb-4">
@@ -814,7 +862,7 @@ return (
               <div className="flex-1 space-y-2">
                 <select
                   value={row.values[0]}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'D', e.target.value)}
                   className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[0] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
@@ -827,7 +875,7 @@ return (
                 </select>
                 <select
                   value={row.values[1]}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'E', e.target.value)}
                   className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[1] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
@@ -849,7 +897,7 @@ return (
                   step="1"
                   value={row.h}
                   onChange={(e) => updateCell(rowIndex, 'h', e.target.value)}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
@@ -864,7 +912,7 @@ return (
               <div className="flex-1 space-y-2">
                 <select
                   value={row.values[2]}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'F', e.target.value)}
                   className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[2] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
@@ -877,7 +925,7 @@ return (
                 </select>
                 <select
                   value={row.values[3]}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   onChange={(e) => updateCell(rowIndex, 'G', e.target.value)}
                   className={`w-full border rounded px-3 py-2 text-sm ${
                     row.values[3] === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''
@@ -899,7 +947,7 @@ return (
                   step="1"
                   value={row.i}
                   onChange={(e) => updateCell(rowIndex, 'i', e.target.value)}
-                  disabled={row.lock === 'Locked'}
+                  disabled={readonly || row.lock === 'Locked'}
                   className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
@@ -937,90 +985,99 @@ return (
       </div>
 
       {/* 手機版添加比賽按鈕 - 打開 Modal */}
-      <button
-        id="add-match-button-mobile"
-        onClick={openAddModal}
-        className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
-      >
-        <div className="flex items-center">
-          <Plus size={16} className="mr-2" />
-          <div className="leading-tight text-left">
-            <div>添加比賽</div>
-            <div className="text-xs">(Add Match)</div>
-          </div>
-        </div>
-      </button>
-
-      {/* 桌面版添加比賽按鈕 - 直接新增行 */}
-      <button
-        id="add-match-button-desktop"
-        onClick={addRow}
-        className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
-      >
-        <div className="flex items-center">
-          <Plus size={16} className="mr-2" />
-          <div className="leading-tight text-left">
-            <div>添加比賽</div>
-            <div className="text-xs">(Add Match)</div>
-          </div>
-        </div>
-      </button>
-        
-      {/* 分隔線 */}
-      <div className="relative w-full my-4">
-        <hr className="border-t border-gray-300" />
-        <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
-          Organizer only
-        </span>
-      </div>
-        
-      {/* 輸出與刪除功能排成一列 */}
-      <div className="flex items-center space-x-3">
-        {/* 密碼輸入框 */}
-        <input
-          type="password"
-          placeholder="Password"
-          value={deletePassword}
-          onChange={(e) => setDeletePassword(e.target.value)}
-          className="border px-3 py-2 rounded w-24 text-sm h-10"
-        />
-        
+      {showEditFeatures && (
         <button
-          onClick={exportCSV}
-          className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
+          id="add-match-button-mobile"
+          onClick={openAddModal}
+          className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
         >
-          <Download size={18} className="mr-2" /> 匯出 CSV
+          <div className="flex items-center">
+            <Plus size={16} className="mr-2" />
+            <div className="leading-tight text-left">
+              <div>添加比賽</div>
+              <div className="text-xs">(Add Match)</div>
+            </div>
+          </div>
         </button>
-
-        <button
-          onClick={handleDeleteAll}
-          disabled={storedPassword === null || deletePassword !== storedPassword}
-          className={`px-3 py-2 rounded text-white text-sm h-10 ${
-            deletePassword === storedPassword
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'bg-gray-300 cursor-not-allowed'
-          }`}
-        >
-          一鍵刪除
-        </button>
-      </div>
-
-      {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
-      {deletePassword === storedPassword && (
-        <div className="flex items-center space-x-3 mt-2">
-          <label className="text-sm text-gray-600 w-16">Event:</label>
-          <input
-            type="text"
-            value={eventName}
-            onChange={(e) => setEventName(e.target.value)}
-            className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
-            placeholder="輸入 Event 名稱"
-          />
-        </div>
       )}
 
-      {/* 提示訊息 */}
-      {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+      {/* 桌面版添加比賽按鈕 - 直接新增行 */}
+      {showEditFeatures && (
+        <button
+          id="add-match-button-desktop"
+          onClick={addRow}
+          className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
+        >
+          <div className="flex items-center">
+            <Plus size={16} className="mr-2" />
+            <div className="leading-tight text-left">
+              <div>添加比賽</div>
+              <div className="text-xs">(Add Match)</div>
+            </div>
+          </div>
+        </button>
+      )}
+        
+      {/* 管理員專用區塊 */}
+      {showEditFeatures && (
+        <>
+          {/* 分隔線 */}
+          <div className="relative w-full my-4">
+            <hr className="border-t border-gray-300" />
+            <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+              Organizer only
+            </span>
+          </div>
+            
+          {/* 輸出與刪除功能排成一列 */}
+          <div className="flex items-center space-x-3">
+            {/* 密碼輸入框 */}
+            <input
+              type="password"
+              placeholder="Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="border px-3 py-2 rounded w-24 text-sm h-10"
+            />
+            
+            <button
+              onClick={exportCSV}
+              className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
+            >
+              <Download size={18} className="mr-2" /> 匯出 CSV
+            </button>
+
+            <button
+              onClick={handleDeleteAll}
+              disabled={storedPassword === null || deletePassword !== storedPassword}
+              className={`px-3 py-2 rounded text-white text-sm h-10 ${
+                deletePassword === storedPassword
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
+            >
+              一鍵刪除
+            </button>
+          </div>
+
+          {/* Event 設定輸入框 - 只在密碼正確時顯示 */}
+          {deletePassword === storedPassword && (
+            <div className="flex items-center space-x-3 mt-2">
+              <label className="text-sm text-gray-600 w-16">Event:</label>
+              <input
+                type="text"
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
+                className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
+                placeholder="輸入 Event 名稱"
+              />
+            </div>
+          )}
+
+          {/* 提示訊息 */}
+          {deleteMessage && <div className="text-red-600">{deleteMessage}</div>}
+        </>
+      )}
     </div>
 
     {/* 回到頂部按鈕 */}
@@ -1036,8 +1093,8 @@ return (
       </button>
     )}
 
-    {/* 新增比賽 Modal - 只在手機版顯示 */}
-    {showAddModal && (
+    {/* 新增比賽 Modal - 只在手機版且管理員模式下顯示 */}
+    {showEditFeatures && showAddModal && (
       <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
           <div className="p-4 border-b flex justify-between items-center">

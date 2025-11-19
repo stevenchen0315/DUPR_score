@@ -6,7 +6,12 @@ import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
 
-export default function PlayerPage({ username }: { username: string }) {
+interface PlayerPageProps {
+  username: string
+  readonly?: boolean
+}
+
+export default function PlayerPage({ username, readonly = false }: PlayerPageProps) {
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
@@ -19,13 +24,32 @@ export default function PlayerPage({ username }: { username: string }) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
+  const [hasActiveScores, setHasActiveScores] = useState(false)
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const scoreChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  
+  // 控制編輯功能顯示
+  const showEditFeatures = !readonly
+  
+  const checkActiveScores = async () => {
+    try {
+      const { data: scores } = await supabase
+        .from('score')
+        .select('serial_number')
+        .like('serial_number', `%_${username}`)
+        .limit(1)
+      
+      setHasActiveScores(Boolean(scores && scores.length > 0))
+    } catch (error) {
+      console.error('Check scores error:', error)
+    }
+  }
   
 useEffect(() => {
     if (!username) return
-  
+
   const fetchData = async () => {
       try {
         // 讀取密碼
@@ -36,6 +60,9 @@ useEffect(() => {
           .single()
         if (accountError) throw accountError
         if (account?.password) setStoredPassword(account.password)
+        
+        // 檢查是否有比分資料
+        await checkActiveScores()
         // 讀取 player_info 名單
         const { data: users, error: userError } = await supabase
           .from('player_info')
@@ -93,6 +120,7 @@ useEffect(() => {
 
     return () => {
       if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+      if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
     }
   }, [username])
 
@@ -147,6 +175,7 @@ useEffect(() => {
   const resubscribe = () => {
     if (!username) return
     if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
+    if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
     setRealtimeConnected(false)
 
     const playerChannel = supabase
@@ -178,7 +207,26 @@ useEffect(() => {
         }
       })
 
+    const scoreChannel = supabase
+      .channel(`score-${username}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'score'
+        },
+        async (payload: any) => {
+          const serialNumber = payload.new?.serial_number || payload.old?.serial_number
+          if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
+            await checkActiveScores()
+          }
+        }
+      )
+      .subscribe()
+
     playerChannelRef.current = playerChannel
+    scoreChannelRef.current = scoreChannel
   }
 
   // 🚀 一鍵刪除功能
@@ -225,22 +273,47 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = event.target?.result as string
     const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
 
-    const imported: (player_info & { partner_number?: number | null })[] = lines.map(line => {
+    const imported: (player_info & { partner_number?: number | null })[] = []
+
+    lines.forEach(line => {
       const parts = line.split(',').map(s => s.trim())
-      const [dupr_id, name] = parts
       
-      // 支援兩種格式：舊格式 (dupr_id,name) 和新格式 (dupr_id,name,partner_number)
-      let partner_number: number | null = null
-      if (parts.length >= 3 && parts[2]) {
-        const partnerNum = parseInt(parts[2])
-        if (!isNaN(partnerNum) && partnerNum > 0) {
-          partner_number = partnerNum
+      if (parts.length === 5) {
+        // 配對格式：name1, dupr_id1, name2, dupr_id2, partner_number
+        const [name1, dupr_id1, name2, dupr_id2, partner_number] = parts
+        const partnerNum = parseInt(partner_number)
+        
+        imported.push(
+          { dupr_id: dupr_id1, name: name1, partner_number: partnerNum },
+          { dupr_id: dupr_id2, name: name2, partner_number: partnerNum }
+        )
+      } else {
+        // 原有格式：dupr_id, name [, partner_number]
+        const [dupr_id, name] = parts
+        let partner_number: number | null = null
+        
+        if (parts.length >= 3 && parts[2]) {
+          const partnerNum = parseInt(parts[2])
+          if (!isNaN(partnerNum) && partnerNum > 0) {
+            partner_number = partnerNum
+          }
         }
+        
+        imported.push({ dupr_id, name, partner_number })
       }
-      
-      return { dupr_id, name, partner_number }
     })
 
+    // 先清空所有現有選手
+    await supabase
+      .from('player_info')
+      .delete()
+      .like('dupr_id', `%_${username}`)
+    
+    // 清空本地狀態
+    setUserList([])
+    setPartnerNumbers({})
+    
+    // 再匯入新的選手名單
     setUserList(imported.map(({ partner_number, ...user }) => user))
     await saveUserToSupabase(imported)
 
@@ -487,8 +560,9 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   return (
     <div className="max-w-md mx-auto px-4 pt-4">
-      {/* 輸入區塊 */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+      {/* 輸入區塊 - 只在管理員模式下顯示 */}
+      {showEditFeatures && (
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
           placeholder="DUPR ID"
@@ -540,9 +614,10 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             <Download size={18} />
           </button>
           <button
-            onClick={() => fileInputRef.current?.click()}
-            className="text-blue-600 hover:text-blue-800"
-            title="匯入 CSV"
+            onClick={() => hasActiveScores ? null : fileInputRef.current?.click()}
+            disabled={hasActiveScores}
+            className={`${hasActiveScores ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
+            title={hasActiveScores ? "比賽進行中，無法匯入選手名單" : "匯入 CSV"}
           >
             <Upload size={18} />
           </button>
@@ -552,12 +627,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             accept=".csv"
             onChange={importCSV}
             className="hidden"
+            disabled={hasActiveScores}
           />
         </div>
-      </div>
+        </div>
+      )}
 
-      {/* 固定隊友按鈕 */}
-      {deletePassword === storedPassword && getButtonText() && (
+      {/* 固定隊友按鈕 - 只在管理員模式下顯示 */}
+      {showEditFeatures && deletePassword === storedPassword && getButtonText() && (
         <div className="mb-4 text-center">
           <button
             onClick={handlePartnerAction}
@@ -580,8 +657,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           const partnerNum = partnerNumbers[user.name]
           const isAdmin = deletePassword === storedPassword
           
-          // 檢查是否可點選
-          const canSelect = isAdmin && (() => {
+          // 檢查是否可點選 - 只讀模式下禁用
+          const canSelect = showEditFeatures && isAdmin && (() => {
             if (selectedPlayers.size === 0) return true
             if (isSelected) return true
             
@@ -615,66 +692,73 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
                 {partnerNum && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Team {partnerNum}</span>}
               </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    editUser(idx)
-                  }}
-                  disabled={loadingLockedNames || isLocked}
-                  className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
-                  aria-label={`編輯 ${user.name}`}
-                >
-                  <Pencil size={20} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteUser(idx)
-                  }}
-                  disabled={loadingLockedNames || isLocked}
-                  className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
-                  aria-label={`刪除 ${user.name}`}
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
+              {showEditFeatures && (
+                <div className="flex gap-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      editUser(idx)
+                    }}
+                    disabled={loadingLockedNames || isLocked}
+                    className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    aria-label={`編輯 ${user.name}`}
+                  >
+                    <Pencil size={20} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteUser(idx)
+                    }}
+                    disabled={loadingLockedNames || isLocked}
+                    className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    aria-label={`刪除 ${user.name}`}
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              )}
             </li>
           )
         })}
       </ul>
-      {/* 分隔線 */}
-      <div className="relative w-full my-6">
-        <hr className="border-t border-gray-300" />
-        <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
-          Organizer only
-        </span>
-      </div>
+      {/* 管理員專用區塊 - 只在管理員模式下顯示 */}
+      {showEditFeatures && (
+        <>
+          {/* 分隔線 */}
+          <div className="relative w-full my-6">
+            <hr className="border-t border-gray-300" />
+            <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
+              Organizer only
+            </span>
+          </div>
 
-      {/* 一鍵刪除區塊 */}
-      <div className="flex items-center space-x-3 justify-center">
-        <input
-          type="password"
-          placeholder="Password"
-          value={deletePassword}
-          onChange={(e) => setDeletePassword(e.target.value)}
-          className="border px-3 py-2 rounded w-28 text-sm h-10"
-        />
-        <button
-          onClick={handleDeleteAll}
-          disabled={storedPassword === null || deletePassword !== storedPassword}
-          className={`px-3 py-2 rounded text-white text-sm h-10 ${
-            deletePassword === storedPassword
-              ? 'bg-red-600 hover:bg-red-700'
-              : 'bg-gray-300 cursor-not-allowed'
-          }`}
-        >
-          一鍵刪除
-        </button>
-      </div>
+          {/* 一鍵刪除區塊 */}
+          <div className="flex items-center space-x-3 justify-center">
+            <input
+              type="password"
+              placeholder="Password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="border px-3 py-2 rounded w-28 text-sm h-10"
+            />
+            <button
+              onClick={handleDeleteAll}
+              disabled={storedPassword === null || deletePassword !== storedPassword}
+              className={`px-3 py-2 rounded text-white text-sm h-10 ${
+                deletePassword === storedPassword
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
+            >
+              一鍵刪除
+            </button>
+          </div>
 
-      {/* 提示訊息 */}
-      {deleteMessage && <div className="text-center text-red-600 mt-1">{deleteMessage}</div>}
+          {/* 提示訊息 */}
+          {deleteMessage && <div className="text-center text-red-600 mt-1">{deleteMessage}</div>}
+        </>
+      )}
     </div>
   )
 }
