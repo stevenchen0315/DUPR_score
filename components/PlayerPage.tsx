@@ -629,11 +629,6 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             className="hidden"
             disabled={hasActiveScores}
           />
-          {hasActiveScores && (
-            <div className="text-xs text-red-500 mt-1">
-              ⚠️ 比賽進行中，無法匯入選手名單
-            </div>
-          )}
         </div>
         </div>
       )}
