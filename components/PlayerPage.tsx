@@ -33,9 +33,6 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   // 控制編輯功能顯示
   const showEditFeatures = !readonly
   
-useEffect(() => {
-    if (!username) return
-  
   const checkActiveScores = async () => {
     try {
       const { data: scores } = await supabase
@@ -44,11 +41,14 @@ useEffect(() => {
         .like('serial_number', `%_${username}`)
         .limit(1)
       
-      setHasActiveScores(scores && scores.length > 0)
+      setHasActiveScores(Boolean(scores && scores.length > 0))
     } catch (error) {
       console.error('Check scores error:', error)
     }
   }
+  
+useEffect(() => {
+    if (!username) return
 
   const fetchData = async () => {
       try {
