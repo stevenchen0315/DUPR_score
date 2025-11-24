@@ -537,7 +537,13 @@ const handleNewMatchChange = (field: string, value: string) => {
 
 const getAvailableOptions = (excludeFields: string[]) => {
   const selected = excludeFields.map(field => newMatch[field as keyof typeof newMatch]).filter(Boolean)
-  return userList.map(u => u.name).filter(name => !selected.includes(name)).sort()
+  return userList.map(u => u.name).filter(name => !selected.includes(name))
+    .sort((a, b) => {
+      const aPartner = partnerNumbers[a] || 999
+      const bPartner = partnerNumbers[b] || 999
+      if (aPartner !== bPartner) return aPartner - bPartner
+      return a.localeCompare(b)
+    })
 }
 
 const validateNewMatch = () => {
