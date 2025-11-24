@@ -651,76 +651,177 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
       {/* 玩家列表 */}
       <ul className="space-y-4">
-        {userList.map((user, idx) => {
-          const isLocked = lockedNames.has(user.name)
-          const isSelected = selectedPlayers.has(idx)
-          const partnerNum = partnerNumbers[user.name]
-          const isAdmin = deletePassword === storedPassword
+        {(() => {
+          const partneredGroups: { [key: number]: any[] } = {}
+          const singlePlayers: any[] = []
+          const processedIndices = new Set()
           
-          // 檢查是否可點選 - 只讀模式下禁用
-          const canSelect = showEditFeatures && isAdmin && (() => {
-            if (selectedPlayers.size === 0) return true
-            if (isSelected) return true
+          // 分組處理
+          userList.forEach((user, idx) => {
+            if (processedIndices.has(idx)) return
             
-            const firstSelectedIndex = Array.from(selectedPlayers)[0]
-            const firstSelectedUser = userList[firstSelectedIndex]
-            const firstPartnerNum = partnerNumbers[firstSelectedUser.name]
-            
-            // 如果第一個選擇是固定隊友，其他人都不能選
-            if (firstPartnerNum) return false
-            
-            // 如果第一個選擇是非固定隊友，則固定隊友不能選
-            if (partnerNum) return false
-            
-            // 已選擇兩個非固定隊友，不能再選
-            if (selectedPlayers.size >= 2) return false
-            
-            return true
-          })()
-
-          return (
-            <li 
-              key={idx} 
-              className={`flex justify-between items-center rounded-lg shadow p-4 transition ${
-                isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
-              } ${
-                canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
-              }`}
-              onClick={() => canSelect && togglePlayerSelection(idx)}
-            >
-              <div className="text-base font-medium text-gray-800">
-                {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
-                {partnerNum && <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Team {partnerNum}</span>}
-              </div>
-              {showEditFeatures && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      editUser(idx)
-                    }}
-                    disabled={loadingLockedNames || isLocked}
-                    className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    aria-label={`編輯 ${user.name}`}
+            const partnerNum = partnerNumbers[user.name]
+            if (partnerNum) {
+              if (!partneredGroups[partnerNum]) partneredGroups[partnerNum] = []
+              partneredGroups[partnerNum].push({ ...user, idx })
+            } else {
+              singlePlayers.push({ ...user, idx })
+            }
+          })
+          
+          const renderItems = []
+          
+          // 渲染固定隊友組（在同一個表格內）
+          Object.entries(partneredGroups).forEach(([partnerNum, players]) => {
+            if (players.length === 2) {
+              const [player1, player2] = players
+              const isSelected = selectedPlayers.has(player1.idx) || selectedPlayers.has(player2.idx)
+              const isLocked = lockedNames.has(player1.name) || lockedNames.has(player2.name)
+              const isAdmin = deletePassword === storedPassword
+              const canSelect = showEditFeatures && isAdmin && !isLocked
+              
+              renderItems.push(
+                <li 
+                  key={`team-${partnerNum}`}
+                  className={`rounded-lg shadow transition ${
+                    isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
+                  }`}
+                >
+                  {/* 第一個選手 */}
+                  <div 
+                    className={`flex justify-between items-center p-4 border-b border-gray-100 ${
+                      canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
+                    }`}
+                    onClick={() => canSelect && togglePlayerSelection(player1.idx)}
                   >
-                    <Pencil size={20} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteUser(idx)
-                    }}
-                    disabled={loadingLockedNames || isLocked}
-                    className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
-                    aria-label={`刪除 ${user.name}`}
+                    <div className="text-base font-medium text-gray-800">
+                      {player1.name} <span className="text-sm text-gray-500">({player1.dupr_id})</span>
+                    </div>
+                    {showEditFeatures && (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            editUser(player1.idx)
+                          }}
+                          disabled={loadingLockedNames || isLocked}
+                          className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <Pencil size={20} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteUser(player1.idx)
+                          }}
+                          disabled={loadingLockedNames || isLocked}
+                          className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 第二個選手 + Team 標籤 */}
+                  <div 
+                    className={`flex justify-between items-center p-4 ${
+                      canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
+                    }`}
+                    onClick={() => canSelect && togglePlayerSelection(player2.idx)}
                   >
-                    <Trash2 size={20} />
-                  </button>
+                    <div className="text-base font-medium text-gray-800">
+                      {player2.name} <span className="text-sm text-gray-500">({player2.dupr_id})</span>
+                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Team {partnerNum}</span>
+                    </div>
+                    {showEditFeatures && (
+                      <div className="flex gap-3">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            editUser(player2.idx)
+                          }}
+                          disabled={loadingLockedNames || isLocked}
+                          className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <Pencil size={20} />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            deleteUser(player2.idx)
+                          }}
+                          disabled={loadingLockedNames || isLocked}
+                          className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 size={20} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </li>
+              )
+              
+              processedIndices.add(player1.idx)
+              processedIndices.add(player2.idx)
+            }
+          })
+          
+          // 渲染單獨選手
+          singlePlayers.forEach((user) => {
+            const isSelected = selectedPlayers.has(user.idx)
+            const isLocked = lockedNames.has(user.name)
+            const isAdmin = deletePassword === storedPassword
+            const canSelect = showEditFeatures && isAdmin && (() => {
+              if (selectedPlayers.size === 0) return true
+              if (isSelected) return true
+              if (selectedPlayers.size >= 2) return false
+              return true
+            })()
+            
+            renderItems.push(
+              <li 
+                key={user.idx}
+                className={`flex justify-between items-center rounded-lg shadow p-4 transition ${
+                  isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
+                } ${
+                  canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
+                }`}
+                onClick={() => canSelect && togglePlayerSelection(user.idx)}
+              >
+                <div className="text-base font-medium text-gray-800">
+                  {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
                 </div>
-              )}
-            </li>
-          )
-        })}
+                {showEditFeatures && (
+                  <div className="flex gap-3">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        editUser(user.idx)
+                      }}
+                      disabled={loadingLockedNames || isLocked}
+                      className="text-blue-500 hover:text-blue-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <Pencil size={20} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteUser(user.idx)
+                      }}
+                      disabled={loadingLockedNames || isLocked}
+                      className="text-red-500 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                )}
+              </li>
+            )
+          })
+          
+          return renderItems
+        })()}
       </ul>
       {/* 管理員專用區塊 - 只在管理員模式下顯示 */}
       {showEditFeatures && (
