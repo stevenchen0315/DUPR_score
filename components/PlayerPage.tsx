@@ -683,13 +683,18 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
               renderItems.push(
                 <li 
                   key={`team-${partnerNum}`}
-                  className={`rounded-lg shadow transition ${
+                  className={`relative rounded-lg shadow transition ${
                     isSelected ? 'bg-blue-100 border-2 border-blue-500' : 'bg-white'
                   }`}
                 >
+                  {/* Team 標籤 - 放在左上角 */}
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded font-medium border border-green-200">Team {partnerNum}</span>
+                  </div>
+                  
                   {/* 第一個選手 */}
                   <div 
-                    className={`flex justify-between items-center p-4 ${
+                    className={`flex justify-between items-center p-4 pt-8 border-b border-gray-100 ${
                       canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
                     }`}
                     onClick={() => canSelect && togglePlayerSelection(player1.idx)}
@@ -721,11 +726,6 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                         </button>
                       </div>
                     )}
-                  </div>
-                  
-                  {/* Team 標籤 - 放在中間 */}
-                  <div className="flex justify-center py-2 bg-gray-50">
-                    <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">Team {partnerNum}</span>
                   </div>
                   
                   {/* 第二個選手 */}
