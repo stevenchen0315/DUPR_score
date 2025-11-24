@@ -689,7 +689,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 >
                   {/* 第一個選手 */}
                   <div 
-                    className={`flex justify-between items-center p-4 border-b border-gray-100 ${
+                    className={`flex justify-between items-center p-4 ${
                       canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
                     }`}
                     onClick={() => canSelect && togglePlayerSelection(player1.idx)}
@@ -723,7 +723,12 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                     )}
                   </div>
                   
-                  {/* 第二個選手 + Team 標籤 */}
+                  {/* Team 標籤 - 放在中間 */}
+                  <div className="flex justify-center py-2 bg-gray-50">
+                    <span className="text-xs bg-green-100 text-green-800 px-3 py-1 rounded-full font-medium">Team {partnerNum}</span>
+                  </div>
+                  
+                  {/* 第二個選手 */}
                   <div 
                     className={`flex justify-between items-center p-4 ${
                       canSelect ? 'cursor-pointer hover:bg-gray-50' : 'cursor-not-allowed'
@@ -732,7 +737,6 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                   >
                     <div className="text-base font-medium text-gray-800">
                       {player2.name} <span className="text-sm text-gray-500">({player2.dupr_id})</span>
-                      <span className="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded">Team {partnerNum}</span>
                     </div>
                     {showEditFeatures && (
                       <div className="flex gap-3">
