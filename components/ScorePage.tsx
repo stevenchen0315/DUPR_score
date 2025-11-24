@@ -1119,7 +1119,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                   <select
@@ -1129,7 +1131,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1166,7 +1170,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                   <select
@@ -1176,7 +1182,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
