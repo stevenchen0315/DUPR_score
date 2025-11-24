@@ -669,7 +669,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             }
           })
           
-          const renderItems = []
+          const renderItems: JSX.Element[] = []
           
           // 渲染固定隊友組（在同一個表格內）
           Object.entries(partneredGroups).forEach(([partnerNum, players]) => {
