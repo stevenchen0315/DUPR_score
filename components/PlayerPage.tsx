@@ -671,10 +671,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           
           const renderItems: React.ReactElement[] = []
           
-          // 渲染固定隊友組（在同一個表格內）
-          Object.entries(partneredGroups).forEach(([partnerNum, players]) => {
+          // 渲染固定隊友組（在同一個表格內）- 按 Team Number 排序
+          Object.entries(partneredGroups)
+            .sort(([a], [b]) => parseInt(a) - parseInt(b))
+            .forEach(([partnerNum, players]) => {
             if (players.length === 2) {
-              const [player1, player2] = players
+              // 固定隊友組內也按名字排序
+              const sortedPlayers = players.sort((a, b) => a.name.localeCompare(b.name))
+              const [player1, player2] = sortedPlayers
               const isSelected = selectedPlayers.has(player1.idx) || selectedPlayers.has(player2.idx)
               const isLocked = lockedNames.has(player1.name) || lockedNames.has(player2.name)
               const isAdmin = deletePassword === storedPassword
@@ -771,8 +775,10 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             }
           })
           
-          // 渲染單獨選手
-          singlePlayers.forEach((user) => {
+          // 渲染單獨選手 - 按名字排序
+          singlePlayers
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .forEach((user) => {
             const isSelected = selectedPlayers.has(user.idx)
             const isLocked = lockedNames.has(user.name)
             const isAdmin = deletePassword === storedPassword
