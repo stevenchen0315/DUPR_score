@@ -537,7 +537,13 @@ const handleNewMatchChange = (field: string, value: string) => {
 
 const getAvailableOptions = (excludeFields: string[]) => {
   const selected = excludeFields.map(field => newMatch[field as keyof typeof newMatch]).filter(Boolean)
-  return userList.map(u => u.name).filter(name => !selected.includes(name)).sort()
+  return userList.map(u => u.name).filter(name => !selected.includes(name))
+    .sort((a, b) => {
+      const aPartner = partnerNumbers[a] || 999
+      const bPartner = partnerNumbers[b] || 999
+      if (aPartner !== bPartner) return aPartner - bPartner
+      return a.localeCompare(b)
+    })
 }
 
 const validateNewMatch = () => {
@@ -1119,7 +1125,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                   <select
@@ -1129,7 +1137,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1166,7 +1176,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                   <select
@@ -1176,7 +1188,9 @@ return (
                   >
                     <option value="">--</option>
                     {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
-                      <option key={name} value={name}>{name}</option>
+                      <option key={name} value={name}>
+                        {name}{partnerNumbers[name] ? ` (${partnerNumbers[name]})` : ''}
+                      </option>
                     ))}
                   </select>
                 </div>
