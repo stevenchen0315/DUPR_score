@@ -30,7 +30,7 @@ export default function MarqueeAd() {
   }, [])
 
   return (
-    <div className="text-center mt-6 min-h-[3rem] md:min-h-[4rem] overflow-hidden">
+    <div className="text-center mt-6 h-[50px] md:h-[90px] overflow-hidden">
       <a
         href={ads[index].url}
         target="_blank"
@@ -47,7 +47,7 @@ export default function MarqueeAd() {
           <img
             src={ads[index].image}
             alt="purosopyh"
-            className="h-12 md:h-16 w-auto min-w-[120px] max-w-[280px] object-contain rounded-md shadow hover:opacity-80"
+            className="w-[320px] h-[50px] md:w-[728px] md:h-[90px] object-contain rounded-md shadow hover:opacity-80"
           />
         )}
       </a>
