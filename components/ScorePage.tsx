@@ -966,7 +966,7 @@ return (
 
     <div className="flex flex-col items-center mb-6 space-y-4">
       {/* 篩選選手下拉選單 */}
-      <div className="flex items-center space-x-3 mb-2">
+      <div className="flex items-center space-x-3">
         <label className="text-sm font-medium text-gray-700">篩選選手(Filter)：</label>
         <select 
           value={selectedPlayerFilter}
@@ -989,6 +989,13 @@ return (
           </button>
         )}
       </div>
+      
+      {/* 顯示選手比賽數量 */}
+      {selectedPlayerFilter && (
+        <div className="text-sm text-gray-600 -mt-2">
+          {filteredRows.length} matches
+        </div>
+      )}
 
       {/* 手機版添加比賽按鈕 - 打開 Modal */}
       {showEditFeatures && (

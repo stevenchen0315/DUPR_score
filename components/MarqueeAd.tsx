@@ -6,7 +6,11 @@ const ads = [
   {
     text: 'Gold Home澎湖民宿👉點我訂房',
     url: 'https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0',
-  },  
+  },
+  {
+    image: '/purosopyh.png',
+    url: 'https://purosophy.com/',
+  },
 ]
 
 export default function MarqueeAd() {
@@ -26,16 +30,26 @@ export default function MarqueeAd() {
   }, [])
 
   return (
-    <div className="text-center mt-6 h-12 overflow-hidden">
+    <div className="text-center mt-6 h-[50px] md:h-[90px] overflow-hidden">
       <a
         href={ads[index].url}
         target="_blank"
         rel="noopener noreferrer"
-        className={`inline-block bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200 transition-opacity duration-500 ${
+        className={`inline-block transition-opacity duration-500 ${
           fade ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        {ads[index].text}
+        {ads[index].text ? (
+          <span className="bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-md shadow hover:bg-yellow-200">
+            {ads[index].text}
+          </span>
+        ) : (
+          <img
+            src={ads[index].image}
+            alt="purosopyh"
+            className="w-[320px] h-[50px] md:w-[728px] md:h-[90px] object-contain rounded-md shadow hover:opacity-80"
+          />
+        )}
       </a>
     </div>
   )
