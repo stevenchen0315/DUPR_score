@@ -989,6 +989,13 @@ return (
           </button>
         )}
       </div>
+      
+      {/* 顯示選手比賽數量 */}
+      {selectedPlayerFilter && (
+        <div className="text-sm text-gray-600">
+          {filteredRows.length} matches
+        </div>
+      )}
 
       {/* 手機版添加比賽按鈕 - 打開 Modal */}
       {showEditFeatures && (
