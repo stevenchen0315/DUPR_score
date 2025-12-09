@@ -279,8 +279,8 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       const parts = line.split(',').map(s => s.trim())
       
       if (parts.length === 5) {
-        // 配對格式：name1, dupr_id1, name2, dupr_id2, partner_number
-        const [name1, dupr_id1, name2, dupr_id2, partner_number] = parts
+        // 配對格式：partner_number, name1, dupr_id1, name2, dupr_id2
+        const [partner_number, name1, dupr_id1, name2, dupr_id2] = parts
         const partnerNum = parseInt(partner_number)
         
         imported.push(
