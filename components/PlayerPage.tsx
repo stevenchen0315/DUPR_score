@@ -321,7 +321,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.value = ''
   }
 
-  reader.readAsText(file)
+  reader.readAsText(file, 'UTF-8')
 }
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
