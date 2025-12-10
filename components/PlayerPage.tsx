@@ -270,9 +270,24 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
   const reader = new FileReader()
   reader.onload = async (event) => {
-    const text = event.target?.result as string
-    const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
+    let text = event.target?.result as string
+    
+    // 如果包含亂碼，嘗試用 Big5 編碼重新讀取
+    if (text.includes('�') || /[\u00C0-\u00FF]/.test(text)) {
+      const reader2 = new FileReader()
+      reader2.onload = async (event2) => {
+        const text2 = event2.target?.result as string
+        processCSVText(text2)
+      }
+      reader2.readAsText(file, 'Big5')
+      return
+    }
+    
+    processCSVText(text)
+  }
 
+  const processCSVText = async (text: string) => {
+    const lines = text.split('\n').map(line => line.trim()).filter(Boolean)
     const imported: (player_info & { partner_number?: number | null })[] = []
 
     lines.forEach(line => {
@@ -321,7 +336,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.value = ''
   }
 
-  reader.readAsText(file)
+  reader.readAsText(file, 'UTF-8')
 }
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
