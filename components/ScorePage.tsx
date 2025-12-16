@@ -723,7 +723,9 @@ return (
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (
-                        <option key={idx} value={opt}>{opt.trim()}</option>
+                        <option key={idx} value={opt}>
+                          {partnerNumbers[opt] ? `(${partnerNumbers[opt]}) ` : ''}{opt.trim()}
+                        </option>
                       ))}
                     </select>
                   </td>
@@ -876,7 +878,9 @@ return (
                 >
                   <option value="">--</option>
                   {getFilteredOptions(row, 0).map((opt, idx) => (
-                    <option key={idx} value={opt}>{opt.trim()}</option>
+                    <option key={idx} value={opt}>
+                      {partnerNumbers[opt] ? `(${partnerNumbers[opt]}) ` : ''}{opt.trim()}
+                    </option>
                   ))}
                 </select>
                 <select
@@ -889,7 +893,9 @@ return (
                 >
                   <option value="">--</option>
                   {getFilteredOptions(row, 1).map((opt, idx) => (
-                    <option key={idx} value={opt}>{opt.trim()}</option>
+                    <option key={idx} value={opt}>
+                      {partnerNumbers[opt] ? `(${partnerNumbers[opt]}) ` : ''}{opt.trim()}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -926,7 +932,9 @@ return (
                 >
                   <option value="">--</option>
                   {getFilteredOptions(row, 2).map((opt, idx) => (
-                    <option key={idx} value={opt}>{opt.trim()}</option>
+                    <option key={idx} value={opt}>
+                      {partnerNumbers[opt] ? `(${partnerNumbers[opt]}) ` : ''}{opt.trim()}
+                    </option>
                   ))}
                 </select>
                 <select
@@ -939,7 +947,9 @@ return (
                 >
                   <option value="">--</option>
                   {getFilteredOptions(row, 3).map((opt, idx) => (
-                    <option key={idx} value={opt}>{opt.trim()}</option>
+                    <option key={idx} value={opt}>
+                      {partnerNumbers[opt] ? `(${partnerNumbers[opt]}) ` : ''}{opt.trim()}
+                    </option>
                   ))}
                 </select>
               </div>
