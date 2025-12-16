@@ -585,7 +585,13 @@ const validateNewMatch = () => {
 
   const getFilteredOptions = (row: Row, currentIndex: number) => {
     const selected = row.values.filter((v, i) => v && i !== currentIndex)
-    return userList.map((u) => u.name).filter((n) => !selected.includes(n)).sort()
+    return userList.map((u) => u.name).filter((n) => !selected.includes(n))
+      .sort((a, b) => {
+        const aPartner = partnerNumbers[a] || 999
+        const bPartner = partnerNumbers[b] || 999
+        if (aPartner !== bPartner) return aPartner - bPartner
+        return a.localeCompare(b)
+      })
   }
 
   const getPlayersInTable = () => {
@@ -597,7 +603,12 @@ const validateNewMatch = () => {
         }
       })
     })
-    return Array.from(playersInTable).sort()
+    return Array.from(playersInTable).sort((a, b) => {
+      const aPartner = partnerNumbers[a] || 999
+      const bPartner = partnerNumbers[b] || 999
+      if (aPartner !== bPartner) return aPartner - bPartner
+      return a.localeCompare(b)
+    })
   }
 
   const exportCSV = () => {
