@@ -986,7 +986,7 @@ return (
           <option value="">--</option>
           {getPlayersInTable().map(playerName => (
             <option key={playerName} value={playerName}>
-              {playerName}
+              {partnerNumbers[playerName] ? `(${partnerNumbers[playerName]}) ` : ''}{playerName}
             </option>
           ))}
         </select>
