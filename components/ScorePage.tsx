@@ -34,7 +34,7 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return '--'
   const date = new Date(dateString)
-  return new Intl.DateTimeFormat('default', {
+  return date.toLocaleString(navigator.language, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -42,7 +42,7 @@ const formatDateTime = (dateString?: string) => {
     minute: '2-digit',
     second: '2-digit',
     hour12: false
-  }).format(date)
+  })
 }
 
 interface ScorePageProps {
