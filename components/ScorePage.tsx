@@ -20,6 +20,7 @@ type Row = {
   i: string
   lock: string
   check: boolean
+  updated_time?: string
 }
 
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay = 200) {
@@ -28,6 +29,20 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
     if (timer.current) window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => fn(...args), delay)
   }
+}
+
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return '--'
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-TW', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
 }
 
 interface ScorePageProps {
@@ -94,7 +109,7 @@ useEffect(() => {
       // 初次全量抓一次，明確指定欄位確保包含 check
       const { data: scores } = await supabase
         .from('score')
-        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
         .like('serial_number', `%_${username}`)
       if (scores) {
         const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
@@ -154,7 +169,7 @@ const refetchScores = async () => {
   if (!username) return
   const { data } = await supabase
     .from('score')
-    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
     .like('serial_number', `%_${username}`)
   if (data) {
     const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
@@ -290,8 +305,8 @@ const isPlayerInRow = (row: Row, playerName: string) => {
   return row.values.some((val: string) => val.trim() === playerName)
 }
   
-  const formatScores = (scores: score[]): Row[] => {
-    return scores.map((item: score) => {
+  const formatScores = (scores: any[]): Row[] => {
+    return scores.map((item: any) => {
       const serialNum = parseInt(item.serial_number.toString().replace(`_${username}`, ''))
       return {
         serial_number: serialNum,
@@ -300,6 +315,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? LOCKED : UNLOCKED,
         check: Boolean(item.check),
+        updated_time: item.updated_time,
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
           [item.player_b1, item.player_b2].filter(Boolean).length === 1
@@ -716,6 +732,7 @@ return (
               <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
+              <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">時間</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
@@ -769,6 +786,9 @@ return (
                     disabled={readonly || row.lock === 'Locked'}
                     className="w-full border px-1 text-center"
                   />
+                </td>
+                <td className="border p-1 text-center text-xs text-gray-600">
+                  {formatDateTime(row.updated_time)}
                 </td>
                 {showEditFeatures && (
                   <td className="border p-1 text-center">
@@ -978,6 +998,9 @@ return (
                   className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
+                <div className="text-xs text-gray-500 text-center mt-1">
+                  {formatDateTime(row.updated_time)}
+                </div>
               </div>
             </div>
           </div>
