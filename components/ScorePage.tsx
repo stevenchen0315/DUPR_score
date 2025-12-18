@@ -20,6 +20,7 @@ type Row = {
   i: string
   lock: string
   check: boolean
+  updated_time?: string
 }
 
 function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay = 200) {
@@ -28,6 +29,20 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
     if (timer.current) window.clearTimeout(timer.current)
     timer.current = window.setTimeout(() => fn(...args), delay)
   }
+}
+
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return '--'
+  const date = new Date(dateString)
+  return date.toLocaleString(navigator.language, {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  })
 }
 
 interface ScorePageProps {
@@ -94,7 +109,7 @@ useEffect(() => {
       // 初次全量抓一次，明確指定欄位確保包含 check
       const { data: scores } = await supabase
         .from('score')
-        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
         .like('serial_number', `%_${username}`)
       if (scores) {
         const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
@@ -154,7 +169,7 @@ const refetchScores = async () => {
   if (!username) return
   const { data } = await supabase
     .from('score')
-    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check')
+    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
     .like('serial_number', `%_${username}`)
   if (data) {
     const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
@@ -290,8 +305,8 @@ const isPlayerInRow = (row: Row, playerName: string) => {
   return row.values.some((val: string) => val.trim() === playerName)
 }
   
-  const formatScores = (scores: score[]): Row[] => {
-    return scores.map((item: score) => {
+  const formatScores = (scores: any[]): Row[] => {
+    return scores.map((item: any) => {
       const serialNum = parseInt(item.serial_number.toString().replace(`_${username}`, ''))
       return {
         serial_number: serialNum,
@@ -300,6 +315,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? LOCKED : UNLOCKED,
         check: Boolean(item.check),
+        updated_time: item.updated_time,
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
           [item.player_b1, item.player_b2].filter(Boolean).length === 1
@@ -312,10 +328,10 @@ const isPlayerInRow = (row: Row, playerName: string) => {
     })
   }
   
-const debouncedSave = useDebouncedCallback(async (row: Row) => {
+const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boolean = false) => {
   lastLocalUpdateRef.current = Date.now() // 記錄更新時間
   const [a1, a2, b1, b2] = row.values
-  await supabase.from('score').upsert({
+  const updateData: any = {
     serial_number: `${row.serial_number}_${username}`,
     player_a1: a1,
     player_a2: a2,
@@ -325,13 +341,22 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     team_b_score: row.i === '' ? null : parseInt(row.i),
     lock: row.lock === LOCKED,
     check: row.check
-  })
+  }
+  
+  // 只有在鎖定操作時才更新時間戳
+  if (isLockingAction && row.lock === LOCKED) {
+    updateData.updated_time = new Date().toISOString()
+  }
+  
+  await supabase.from('score').upsert(updateData)
 }, 500)
   
   const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
     // 樂觀更新：立即更新 UI
     const targetRow = filteredRows[rowIndex]
     const originalIndex = rows.findIndex(r => r.serial_number === targetRow.serial_number)
+    const isLockingAction = field === 'lock' && value === LOCKED
+    
     const newRows = rows.map((r, i) => {
       if (i !== originalIndex) return r
 
@@ -348,6 +373,11 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
           updatedRow.check = value === 'true'
         } else {
           (updatedRow as any)[field] = value
+        }
+        
+        // 如果是鎖定操作且變成鎖定狀態，立即設定時間戳
+        if (isLockingAction && value === LOCKED) {
+          updatedRow.updated_time = new Date().toISOString()
         }
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
@@ -419,7 +449,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     const row = newRows[originalIndex]
     const [a1, a2, b1, b2] = row.values
     
-    debouncedSave(row)
+    debouncedSave(row, isLockingAction)
   }
 
 const deleteRow = async (index: number) => {
@@ -442,7 +472,7 @@ const addRow = async () => {
   const payload = {
     serial_number: `${nextSerial}_${username}`,
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-    team_a_score: null, team_b_score: null, lock: false, check: false,
+    team_a_score: null, team_b_score: null, lock: false, check: false
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -477,6 +507,7 @@ const submitNewMatch = async () => {
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
     lock: true,
     check: false,
+    updated_time: new Date().toISOString()
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -492,7 +523,8 @@ const submitNewMatch = async () => {
       i: newMatch.scoreB,
       lock: LOCKED,
       check: false,
-      sd: sd
+      sd: sd,
+      updated_time: undefined
     }
     setRows(prev => [...prev, newRow])
     closeAddModal()
@@ -716,6 +748,7 @@ return (
               <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
+              <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
@@ -769,6 +802,9 @@ return (
                     disabled={readonly || row.lock === 'Locked'}
                     className="w-full border px-1 text-center"
                   />
+                </td>
+                <td className="border p-1 text-center text-xs text-gray-600">
+                  {formatDateTime(row.updated_time)}
                 </td>
                 {showEditFeatures && (
                   <td className="border p-1 text-center">
@@ -840,6 +876,9 @@ return (
                 'bg-gray-100 text-gray-600'
               }`}>
                 {row.sd || '--'}
+              </span>
+              <span className="text-xs text-gray-500">
+                {formatDateTime(row.updated_time)}
               </span>
             </div>
             {showEditFeatures && (
@@ -978,6 +1017,7 @@ return (
                   className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
+
               </div>
             </div>
           </div>
