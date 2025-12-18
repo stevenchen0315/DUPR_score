@@ -34,7 +34,7 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return '--'
   const date = new Date(dateString)
-  return date.toLocaleString('zh-TW', {
+  return date.toLocaleString(undefined, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
