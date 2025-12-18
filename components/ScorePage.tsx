@@ -328,10 +328,10 @@ const isPlayerInRow = (row: Row, playerName: string) => {
     })
   }
   
-const debouncedSave = useDebouncedCallback(async (row: Row) => {
+const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boolean = false) => {
   lastLocalUpdateRef.current = Date.now() // 記錄更新時間
   const [a1, a2, b1, b2] = row.values
-  await supabase.from('score').upsert({
+  const updateData: any = {
     serial_number: `${row.serial_number}_${username}`,
     player_a1: a1,
     player_a2: a2,
@@ -341,13 +341,22 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     team_b_score: row.i === '' ? null : parseInt(row.i),
     lock: row.lock === LOCKED,
     check: row.check
-  })
+  }
+  
+  // 只有在鎖定操作時才更新時間戳
+  if (isLockingAction && row.lock === LOCKED) {
+    updateData.updated_time = new Date().toISOString()
+  }
+  
+  await supabase.from('score').upsert(updateData)
 }, 500)
   
   const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
     // 樂觀更新：立即更新 UI
     const targetRow = filteredRows[rowIndex]
     const originalIndex = rows.findIndex(r => r.serial_number === targetRow.serial_number)
+    const isLockingAction = field === 'lock' && value === LOCKED
+    
     const newRows = rows.map((r, i) => {
       if (i !== originalIndex) return r
 
@@ -364,6 +373,11 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
           updatedRow.check = value === 'true'
         } else {
           (updatedRow as any)[field] = value
+        }
+        
+        // 如果是鎖定操作且變成鎖定狀態，更新時間戳
+        if (isLockingAction) {
+          updatedRow.updated_time = new Date().toISOString()
         }
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
@@ -435,7 +449,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row) => {
     const row = newRows[originalIndex]
     const [a1, a2, b1, b2] = row.values
     
-    debouncedSave(row)
+    debouncedSave(row, isLockingAction)
   }
 
 const deleteRow = async (index: number) => {
@@ -458,7 +472,7 @@ const addRow = async () => {
   const payload = {
     serial_number: `${nextSerial}_${username}`,
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-    team_a_score: null, team_b_score: null, lock: false, check: false,
+    team_a_score: null, team_b_score: null, lock: false, check: false
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -493,6 +507,7 @@ const submitNewMatch = async () => {
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
     lock: true,
     check: false,
+    updated_time: new Date().toISOString()
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
@@ -508,7 +523,8 @@ const submitNewMatch = async () => {
       i: newMatch.scoreB,
       lock: LOCKED,
       check: false,
-      sd: sd
+      sd: sd,
+      updated_time: new Date().toISOString()
     }
     setRows(prev => [...prev, newRow])
     closeAddModal()
