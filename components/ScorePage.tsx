@@ -33,12 +33,8 @@ function useDebouncedCallback<T extends (...args: any[]) => void>(fn: T, delay =
 
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return '--'
-  return dateString
-}
-
-const getCurrentLocalTimeString = () => {
-  const now = new Date()
-  return now.toLocaleString(navigator.language, {
+  const date = new Date(dateString)
+  return date.toLocaleString(navigator.language, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -349,7 +345,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boo
   
   // 只有在鎖定操作時才更新時間戳
   if (isLockingAction && row.lock === LOCKED) {
-    updateData.updated_time = getCurrentLocalTimeString()
+    updateData.updated_time = new Date().toISOString()
   }
   
   await supabase.from('score').upsert(updateData)
@@ -511,7 +507,7 @@ const submitNewMatch = async () => {
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
     lock: true,
     check: false,
-    updated_time: getCurrentLocalTimeString()
+    updated_time: new Date().toISOString()
   }
   const { error } = await supabase.from('score').insert(payload)
   if (!error) {
