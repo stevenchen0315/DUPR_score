@@ -975,7 +975,7 @@ return (
                 <th className="border p-2">選手</th>
                 <th className="border p-2 text-center">勝場</th>
                 <th className="border p-2 text-center">敗場</th>
-                <th className="border p-2 text-center">得失分差</th>
+                <th className="border p-2 text-center">PD</th>
               </tr>
             </thead>
             <tbody>
