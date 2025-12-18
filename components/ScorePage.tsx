@@ -748,7 +748,7 @@ return (
               <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
               <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
-              <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">時間</th>
+              <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
@@ -876,6 +876,9 @@ return (
                 'bg-gray-100 text-gray-600'
               }`}>
                 {row.sd || '--'}
+              </span>
+              <span className="text-xs text-gray-500">
+                {formatDateTime(row.updated_time)}
               </span>
             </div>
             {showEditFeatures && (
@@ -1014,9 +1017,7 @@ return (
                   className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
                   placeholder="0"
                 />
-                <div className="text-xs text-gray-500 text-center mt-1">
-                  {formatDateTime(row.updated_time)}
-                </div>
+
               </div>
             </div>
           </div>
