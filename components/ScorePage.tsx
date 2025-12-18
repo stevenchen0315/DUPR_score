@@ -375,9 +375,9 @@ const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boo
           (updatedRow as any)[field] = value
         }
         
-        // 如果是鎖定操作且變成鎖定狀態，更新時間戳
+        // 如果是鎖定操作且變成鎖定狀態，清空時間戳等待資料庫更新
         if (isLockingAction) {
-          updatedRow.updated_time = new Date().toISOString()
+          updatedRow.updated_time = undefined
         }
       } else {
         const colIndex = { D: 0, E: 1, F: 2, G: 3 }[field as CellField]
@@ -524,7 +524,7 @@ const submitNewMatch = async () => {
       lock: LOCKED,
       check: false,
       sd: sd,
-      updated_time: new Date().toISOString()
+      updated_time: undefined
     }
     setRows(prev => [...prev, newRow])
     closeAddModal()
