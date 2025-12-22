@@ -973,7 +973,7 @@ return (
                       type="checkbox"
                       checked={row.check}
                       onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
-                      disabled={readonly}
+                      disabled={readonly || row.lock === 'Locked'}
                       className="w-4 h-4"
                     />
                   </td>
