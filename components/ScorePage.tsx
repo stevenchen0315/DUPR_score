@@ -876,7 +876,7 @@ return (
               <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
-              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
+              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
             </tr>
           </thead>
           <tbody>
