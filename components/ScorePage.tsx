@@ -279,6 +279,131 @@ const filteredRows = useMemo(() => {
   )
 }, [rows, selectedPlayerFilter])
 
+// 排名計算 - 只在 readonly 模式下計算
+const rankings = useMemo(() => {
+  if (!readonly || filteredRows.length === 0) return []
+  
+  const playerStats: {[playerName: string]: {
+    wins: number
+    losses: number
+    pointsFor: number
+    pointsAgainst: number
+    matches: Array<{
+      opponent: string[]
+      won: boolean
+      scoreFor: number
+      scoreAgainst: number
+    }>
+  }} = {}
+  
+  const validMatches = filteredRows.filter(row => 
+    row.lock === LOCKED && 
+    row.h !== '' && 
+    row.i !== '' &&
+    row.values.some(v => v.trim())
+  )
+  
+  validMatches.forEach(row => {
+    const [a1, a2, b1, b2] = row.values
+    const scoreA = parseInt(row.h)
+    const scoreB = parseInt(row.i)
+    
+    if (isNaN(scoreA) || isNaN(scoreB)) return
+    
+    const teamA = [a1, a2].filter(Boolean)
+    const teamB = [b1, b2].filter(Boolean)
+    
+    if (teamA.length === 0 || teamB.length === 0) return
+    
+    const teamAWon = scoreA > scoreB
+    
+    teamA.forEach(player => {
+      if (!playerStats[player]) {
+        playerStats[player] = { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, matches: [] }
+      }
+      playerStats[player].wins += teamAWon ? 1 : 0
+      playerStats[player].losses += teamAWon ? 0 : 1
+      playerStats[player].pointsFor += scoreA
+      playerStats[player].pointsAgainst += scoreB
+      playerStats[player].matches.push({
+        opponent: teamB,
+        won: teamAWon,
+        scoreFor: scoreA,
+        scoreAgainst: scoreB
+      })
+    })
+    
+    teamB.forEach(player => {
+      if (!playerStats[player]) {
+        playerStats[player] = { wins: 0, losses: 0, pointsFor: 0, pointsAgainst: 0, matches: [] }
+      }
+      playerStats[player].wins += teamAWon ? 0 : 1
+      playerStats[player].losses += teamAWon ? 1 : 0
+      playerStats[player].pointsFor += scoreB
+      playerStats[player].pointsAgainst += scoreA
+      playerStats[player].matches.push({
+        opponent: teamA,
+        won: !teamAWon,
+        scoreFor: scoreB,
+        scoreAgainst: scoreA
+      })
+    })
+  })
+  
+  let rankingList = Object.entries(playerStats).map(([name, stats]) => ({
+    name,
+    wins: stats.wins,
+    losses: stats.losses,
+    pointDiff: stats.pointsFor - stats.pointsAgainst,
+    matches: stats.matches,
+    h2hWins: 0,
+    h2hPointDiff: 0
+  }))
+  
+  // 按勝場分組
+  const groupsByWins: {[wins: number]: typeof rankingList} = {}
+  rankingList.forEach(player => {
+    if (!groupsByWins[player.wins]) groupsByWins[player.wins] = []
+    groupsByWins[player.wins].push(player)
+  })
+  
+  // 對每個同勝場組別進行排序
+  const sortedRanking: typeof rankingList = []
+  Object.keys(groupsByWins).sort((a, b) => parseInt(b) - parseInt(a)).forEach(winsStr => {
+    const wins = parseInt(winsStr)
+    const group = groupsByWins[wins]
+    
+    if (group.length === 1) {
+      sortedRanking.push(...group)
+    } else {
+      // 多人同勝場，計算組內Head-to-Head
+      const groupNames = group.map(p => p.name)
+      
+      group.forEach(player => {
+        // 計算與組內其他選手的對戰記錄
+        const h2hMatches = player.matches.filter(m => 
+          m.opponent.some(opp => groupNames.includes(opp))
+        )
+        player.h2hWins = h2hMatches.filter(m => m.won).length
+        player.h2hPointDiff = h2hMatches.reduce((sum, m) => sum + (m.scoreFor - m.scoreAgainst), 0)
+      })
+      
+      // 組內排序：Head-to-Head勝場 > Head-to-Head得失分差 > 總得失分差
+      group.sort((a, b) => {
+        if (a.h2hWins !== b.h2hWins) return b.h2hWins - a.h2hWins
+        if (a.h2hPointDiff !== b.h2hPointDiff) return b.h2hPointDiff - a.h2hPointDiff
+        return b.pointDiff - a.pointDiff
+      })
+      
+      sortedRanking.push(...group)
+    }
+  })
+  
+  rankingList = sortedRanking
+  
+  return rankingList.slice(0, 8)
+}, [readonly, filteredRows])
+
 // 從 localStorage 讀取篩選設定
 useEffect(() => {
   if (username && userList.length > 0) {
@@ -859,6 +984,47 @@ return (
         </table>
       </div>
     </div>
+
+    {/* 排名表格 - 只在 readonly 模式且桌面版顯示 */}
+    {readonly && rankings.length > 0 && (
+      <div className="hidden md:block mt-8 mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-center">排名 (Rankings)</h3>
+        <div className="overflow-auto">
+          <table className="w-full border text-sm max-w-4xl mx-auto">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="border p-2 text-center">排名</th>
+                <th className="border p-2">選手</th>
+                <th className="border p-2 text-center">勝場</th>
+                <th className="border p-2 text-center">敗場</th>
+                <th className="border p-2 text-center">PD</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rankings.map((player, index) => (
+                <tr key={player.name} className={index < 3 ? 'bg-yellow-50' : ''}>
+                  <td className="border p-2 text-center font-bold">
+                    {index + 1}
+                  </td>
+                  <td className="border p-2">
+                    {partnerNumbers[player.name] ? `(${partnerNumbers[player.name]}) ` : ''}{player.name}
+                  </td>
+                  <td className="border p-2 text-center font-semibold text-green-600">
+                    {player.wins}
+                  </td>
+                  <td className="border p-2 text-center text-red-600">
+                    {player.losses}
+                  </td>
+                  <td className="border p-2 text-center font-semibold">
+                    {player.pointDiff > 0 ? '+' : ''}{player.pointDiff}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
 
     {/* 手機版卡片佈局 */}
     <div className="md:hidden space-y-3 mb-6">
