@@ -1448,19 +1448,21 @@ return (
           </div>
 
           <div className="flex justify-between items-center p-4 border-t">
-            {/* 左側：棄賽 checkbox */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={newMatch.check}
-                onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
-                className="w-4 h-4"
-              />
-              <label className="text-sm text-gray-600">棄賽(WD)</label>
-            </div>
+            {/* 左側：棄賽 checkbox - 只在 readonly 模式下顯示 */}
+            {readonly && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={newMatch.check}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
+                  className="w-4 h-4"
+                />
+                <label className="text-sm text-gray-600">棄賽(WD)</label>
+              </div>
+            )}
             
             {/* 右側：按鈕 */}
-            <div className="flex space-x-3">
+            <div className={`flex space-x-3 ${readonly ? '' : 'w-full justify-end'}`}>
               <button
                 onClick={closeAddModal}
                 className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
