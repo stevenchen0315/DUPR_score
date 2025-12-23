@@ -339,19 +339,18 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
-      for (const user of list) {
-        const response = await fetch(`/api/players/${username}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dupr_id: user.dupr_id.toUpperCase(),
-            name: user.name,
-            partner_number: user.partner_number || null
-          })
-        })
-        if (!response.ok) {
-          throw new Error(`Failed to save ${user.name}`)
-        }
+      const response = await fetch(`/api/players/${username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(list.map(user => ({
+          dupr_id: user.dupr_id.toUpperCase(),
+          name: user.name,
+          partner_number: user.partner_number || null
+        })))
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to save players')
       }
       
       // 更新本地 partnerNumbers 狀態
