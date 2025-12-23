@@ -658,6 +658,9 @@ const submitNewMatch = async () => {
   setRows(prev => [...prev, newRow])
   closeAddModal()
   
+  // 記錄本地更新時間戳，避免 realtime 重複更新
+  lastLocalUpdateRef.current = Date.now()
+  
   // 背景執行 API 呼叫
   const payload = {
     serial_number: `${nextSerial}_${username}`,
@@ -672,20 +675,29 @@ const submitNewMatch = async () => {
     updated_time: new Date().toISOString()
   }
   
-  try {
-    const response = await fetch(`/api/scores/${username}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-    
-    if (!response.ok) {
-      // 如果 API 失敗，可以選擇回滾或顯示錯誤
-      console.error('Failed to save match to server')
+  // 使用 setTimeout 確保 API 呼叫不會阻塞 UI
+  setTimeout(async () => {
+    try {
+      const response = await fetch(`/api/scores/${username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!response.ok) {
+        // 如果 API 失敗，回滾本地狀態
+        console.error('Failed to save match to server')
+        setRows(prev => prev.filter(row => row.serial_number !== nextSerial))
+        // 可以顯示錯誤提示
+        alert('儲存失敗，請重試')
+      }
+    } catch (error) {
+      console.error('API error:', error)
+      // 回滾本地狀態
+      setRows(prev => prev.filter(row => row.serial_number !== nextSerial))
+      alert('網路錯誤，請重試')
     }
-  } catch (error) {
-    console.error('API error:', error)
-  }
+  }, 0)
 }
 
 const handleNewMatchChange = (field: string, value: string) => {
