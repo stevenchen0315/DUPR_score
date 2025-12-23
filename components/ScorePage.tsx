@@ -79,41 +79,44 @@ useEffect(() => {
 
   const fetchData = async () => {
     try {
-      const { data: account, error: accountError } = await supabase
-        .from('account')
-        .select('password, event')
-        .eq('username', username)
-        .single()
-      if (accountError) throw accountError
-      if (account?.password) setStoredPassword(account.password)
-      if (account?.event) {
-        setEvent(account.event)
-        setEventName(account.event)
+      // 讀取帳號資訊
+      const accountResponse = await fetch(`/api/account/${username}`)
+      if (accountResponse.ok) {
+        const account = await accountResponse.json()
+        if (account?.password) setStoredPassword(account.password)
+        if (account?.event) {
+          setEvent(account.event)
+          setEventName(account.event)
+        }
       }
 
-      const { data: users, error: userError } = await supabase
-        .from('player_info')
-        .select('dupr_id, name, partner_number')
-        .like('dupr_id', `%_${username}`)
-      if (userError) throw userError
-      if (users) {
-        const partners: {[key: string]: number | null} = {}
-        const userListData = users.map(u => {
-          partners[u.name] = u.partner_number
-          return { ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') }
-        })
-        setUserList(userListData)
-        setPartnerNumbers(partners)
+      // 讀取選手資訊
+      const playersResponse = await fetch(`/api/players/${username}`)
+      if (playersResponse.ok) {
+        const users = await playersResponse.json()
+        if (users) {
+          const partners: {[key: string]: number | null} = {}
+          const userListData = users.map((u: any) => {
+            const cleanId = u.dupr_id.replace(`_${username}`, '')
+            partners[u.name] = u.partner_number
+            return {
+              dupr_id: cleanId,
+              name: u.name,
+            }
+          })
+          setUserList(userListData)
+          setPartnerNumbers(partners)
+        }
       }
 
-      // 初次全量抓一次，明確指定欄位確保包含 check
-      const { data: scores } = await supabase
-        .from('score')
-        .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
-        .like('serial_number', `%_${username}`)
-      if (scores) {
-        const sorted = scores.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
-        setRows(formatScores(sorted))
+      // 讀取比分資訊
+      const scoresResponse = await fetch(`/api/scores/${username}`)
+      if (scoresResponse.ok) {
+        const scores = await scoresResponse.json()
+        if (scores) {
+          const sorted = scores.sort((a: any, b: any) => parseInt(a.serial_number) - parseInt(b.serial_number))
+          setRows(formatScores(sorted))
+        }
       }
       setIsLoading(false)
     } catch (error) {
@@ -123,7 +126,6 @@ useEffect(() => {
   }
 
   fetchData().then(() => {
-    // 等數據載入完成後再建立 Realtime 訂閱
     resubscribe()
   })
 
@@ -167,30 +169,34 @@ const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null
 // 重新抓取屬於該使用者的 score（全量補拉）
 const refetchScores = async () => {
   if (!username) return
-  const { data } = await supabase
-    .from('score')
-    .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
-    .like('serial_number', `%_${username}`)
-  if (data) {
-    const sorted = data.sort((a, b) => parseInt(a.serial_number) - parseInt(b.serial_number))
-    setRows(formatScores(sorted))
+  const response = await fetch(`/api/scores/${username}`)
+  if (response.ok) {
+    const data = await response.json()
+    if (data) {
+      const sorted = data.sort((a: any, b: any) => parseInt(a.serial_number) - parseInt(b.serial_number))
+      setRows(formatScores(sorted))
+    }
   }
 }
 // 重新抓取選手資料
 const refetchPlayers = async () => {
   if (!username) return
-  const { data: users } = await supabase
-    .from('player_info')
-    .select('dupr_id, name, partner_number')
-    .like('dupr_id', `%_${username}`)
-  if (users) {
-    const partners: {[key: string]: number | null} = {}
-    const userListData = users.map(u => {
-      partners[u.name] = u.partner_number
-      return { ...u, dupr_id: u.dupr_id.replace(`_${username}`, '') }
-    })
-    setUserList(userListData)
-    setPartnerNumbers(partners)
+  const response = await fetch(`/api/players/${username}`)
+  if (response.ok) {
+    const users = await response.json()
+    if (users) {
+      const partners: {[key: string]: number | null} = {}
+      const userListData = users.map((u: any) => {
+        const cleanId = u.dupr_id.replace(`_${username}`, '')
+        partners[u.name] = u.partner_number
+        return {
+          dupr_id: cleanId,
+          name: u.name,
+        }
+      })
+      setUserList(userListData)
+      setPartnerNumbers(partners)
+    }
   }
 }
 // 建立或重建 Realtime 訂閱（幂等）
@@ -473,7 +479,11 @@ const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boo
     updateData.updated_time = new Date().toISOString()
   }
   
-  await supabase.from('score').upsert(updateData)
+  await fetch(`/api/scores/${username}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(updateData)
+  })
 }, 500)
   
   const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
@@ -583,8 +593,9 @@ const deleteRow = async (index: number) => {
   // 先更新本地
   const updated = [...rows]; updated.splice(originalIndex, 1); setRows(updated)
   // 僅刪除單列（避免整表抖動與資料競爭）
-  await supabase.from('score').delete()
-    .eq('serial_number', `${row.serial_number}_${username}`)
+  await fetch(`/api/scores/${username}?serial_number=${row.serial_number}_${username}`, {
+    method: 'DELETE'
+  })
 }
 
 const openAddModal = () => {
@@ -599,8 +610,12 @@ const addRow = async () => {
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
     team_a_score: null, team_b_score: null, lock: false, check: false
   }
-  const { error } = await supabase.from('score').insert(payload)
-  if (!error) {
+  const response = await fetch(`/api/scores/${username}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  if (response.ok) {
     // 立即更新本地狀態
     const newRow: Row = {
       serial_number: nextSerial,
@@ -634,8 +649,12 @@ const submitNewMatch = async () => {
     check: newMatch.check,
     updated_time: new Date().toISOString()
   }
-  const { error } = await supabase.from('score').insert(payload)
-  if (!error) {
+  const response = await fetch(`/api/scores/${username}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  })
+  if (response.ok) {
     // 立即更新本地狀態
     const teamACount = [newMatch.a1, newMatch.a2].filter(Boolean).length
     const teamBCount = [newMatch.b1, newMatch.b2].filter(Boolean).length
@@ -731,8 +750,10 @@ const validateNewMatch = () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const { error } = await supabase.from('score').delete().like('serial_number', `%_${username}`)
-    if (!error) {
+    const response = await fetch(`/api/scores/${username}?delete_all=true`, {
+      method: 'DELETE'
+    })
+    if (response.ok) {
       setRows([])
       setDeleteMessage('✅ 所有比賽資料已刪除')
     } else {
