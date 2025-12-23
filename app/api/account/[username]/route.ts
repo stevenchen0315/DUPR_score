@@ -3,12 +3,13 @@ import { supabaseServer } from '@/lib/supabase-server'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
+  const { username } = await params
   const { data, error } = await supabaseServer
     .from('account')
     .select('password, event')
-    .eq('username', params.username)
+    .eq('username', username)
     .single()
 
   if (error) {
