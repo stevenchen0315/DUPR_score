@@ -64,7 +64,7 @@ export default function ScorePage({ username, readonly = false }: ScorePageProps
   const [showScrollTop, setShowScrollTop] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMatch, setNewMatch] = useState({
-    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: ''
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false
   })
   const [selectedPlayerFilter, setSelectedPlayerFilter] = useState<string>('')
   
@@ -588,7 +588,7 @@ const deleteRow = async (index: number) => {
 }
 
 const openAddModal = () => {
-  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
   setShowAddModal(true)
 }
 
@@ -617,7 +617,7 @@ const addRow = async () => {
 
 const closeAddModal = () => {
   setShowAddModal(false)
-  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '' })
+  setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
 }
 
 const submitNewMatch = async () => {
@@ -631,7 +631,7 @@ const submitNewMatch = async () => {
     team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
     team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
     lock: true,
-    check: false,
+    check: newMatch.check,
     updated_time: new Date().toISOString()
   }
   const { error } = await supabase.from('score').insert(payload)
@@ -647,7 +647,7 @@ const submitNewMatch = async () => {
       h: newMatch.scoreA,
       i: newMatch.scoreB,
       lock: LOCKED,
-      check: false,
+      check: newMatch.check,
       sd: sd,
       updated_time: undefined
     }
@@ -779,20 +779,22 @@ const validateNewMatch = () => {
       return user ? { dupr_id: cleanDuprId(user.dupr_id), name: user.name } : { dupr_id: '', name: '' }
   }
 
-  const csvRows = rows.map((row) => {
-    const [a1, a2, b1, b2] = row.values
-    const a1User = findUser(a1), a2User = findUser(a2)
-    const b1User = findUser(b1), b2User = findUser(b2)
+  const csvRows = rows
+    .filter(row => !row.check)
+    .map((row) => {
+      const [a1, a2, b1, b2] = row.values
+      const a1User = findUser(a1), a2User = findUser(a2)
+      const b1User = findUser(b1), b2User = findUser(b2)
 
-    return [
-      '', '', '', row.sd, eventName, today,
-      a1User.name, a1User.dupr_id, '',
-      a2User.name, a2User.dupr_id, '',
-      b1User.name, b1User.dupr_id, '',
-      b2User.name, b2User.dupr_id, '', '',
-      row.h, row.i
-    ]
-  })
+      return [
+        '', '', '', row.sd, eventName, today,
+        a1User.name, a1User.dupr_id, '',
+        a2User.name, a2User.dupr_id, '',
+        b1User.name, b1User.dupr_id, '',
+        b2User.name, b2User.dupr_id, '', '',
+        row.h, row.i
+      ]
+    })
 
   const csvContent = csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv' })
@@ -876,7 +878,7 @@ return (
               <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
-              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Check</th>}
+              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
             </tr>
           </thead>
           <tbody>
@@ -973,7 +975,7 @@ return (
                       type="checkbox"
                       checked={row.check}
                       onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
-                      disabled={readonly}
+                      disabled={readonly || row.lock === 'Locked'}
                       className="w-4 h-4"
                     />
                   </td>
@@ -1447,24 +1449,38 @@ return (
             </div>
           </div>
 
-          <div className="flex justify-end space-x-3 p-4 border-t">
-            <button
-              onClick={closeAddModal}
-              className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-            >
-              取消
-            </button>
-            <button
-              onClick={submitNewMatch}
-              disabled={!validateNewMatch()}
-              className={`px-4 py-2 rounded ${
-                validateNewMatch()
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              確認新增
-            </button>
+          <div className="flex justify-between items-center p-4 border-t">
+            {/* 左側：棄賽 checkbox */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={newMatch.check}
+                onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
+                className="w-4 h-4"
+              />
+              <label className="text-sm text-gray-600">棄賽(WD)</label>
+            </div>
+            
+            {/* 右側：按鈕 */}
+            <div className="flex space-x-3">
+              <button
+                onClick={closeAddModal}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={submitNewMatch}
+                disabled={!validateNewMatch()}
+                className={`px-4 py-2 rounded ${
+                  validateNewMatch()
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                確認新增
+              </button>
+            </div>
           </div>
         </div>
       </div>
