@@ -779,20 +779,22 @@ const validateNewMatch = () => {
       return user ? { dupr_id: cleanDuprId(user.dupr_id), name: user.name } : { dupr_id: '', name: '' }
   }
 
-  const csvRows = rows.map((row) => {
-    const [a1, a2, b1, b2] = row.values
-    const a1User = findUser(a1), a2User = findUser(a2)
-    const b1User = findUser(b1), b2User = findUser(b2)
+  const csvRows = rows
+    .filter(row => !row.check)
+    .map((row) => {
+      const [a1, a2, b1, b2] = row.values
+      const a1User = findUser(a1), a2User = findUser(a2)
+      const b1User = findUser(b1), b2User = findUser(b2)
 
-    return [
-      '', '', '', row.sd, eventName, today,
-      a1User.name, a1User.dupr_id, '',
-      a2User.name, a2User.dupr_id, '',
-      b1User.name, b1User.dupr_id, '',
-      b2User.name, b2User.dupr_id, '', '',
-      row.h, row.i
-    ]
-  })
+      return [
+        '', '', '', row.sd, eventName, today,
+        a1User.name, a1User.dupr_id, '',
+        a2User.name, a2User.dupr_id, '',
+        b1User.name, b1User.dupr_id, '',
+        b2User.name, b2User.dupr_id, '', '',
+        row.h, row.i
+      ]
+    })
 
   const csvContent = csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
   const blob = new Blob([csvContent], { type: 'text/csv' })
