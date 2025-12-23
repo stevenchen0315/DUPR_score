@@ -637,6 +637,28 @@ const closeAddModal = () => {
 
 const submitNewMatch = async () => {
   const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+  
+  // 樂觀更新：立即更新本地狀態和關閉 Modal
+  const teamACount = [newMatch.a1, newMatch.a2].filter(Boolean).length
+  const teamBCount = [newMatch.b1, newMatch.b2].filter(Boolean).length
+  const sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+  
+  const newRow: Row = {
+    serial_number: nextSerial,
+    values: [newMatch.a1, newMatch.a2, newMatch.b1, newMatch.b2],
+    h: newMatch.scoreA,
+    i: newMatch.scoreB,
+    lock: LOCKED,
+    check: newMatch.check,
+    sd: sd,
+    updated_time: new Date().toISOString()
+  }
+  
+  // 立即更新 UI 和關閉 Modal
+  setRows(prev => [...prev, newRow])
+  closeAddModal()
+  
+  // 背景執行 API 呼叫
   const payload = {
     serial_number: `${nextSerial}_${username}`,
     player_a1: newMatch.a1,
@@ -649,29 +671,20 @@ const submitNewMatch = async () => {
     check: newMatch.check,
     updated_time: new Date().toISOString()
   }
-  const response = await fetch(`/api/scores/${username}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
-  if (response.ok) {
-    // 立即更新本地狀態
-    const teamACount = [newMatch.a1, newMatch.a2].filter(Boolean).length
-    const teamBCount = [newMatch.b1, newMatch.b2].filter(Boolean).length
-    const sd = teamACount === 1 && teamBCount === 1 ? 'S' : teamACount === 2 && teamBCount === 2 ? 'D' : ''
+  
+  try {
+    const response = await fetch(`/api/scores/${username}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
     
-    const newRow: Row = {
-      serial_number: nextSerial,
-      values: [newMatch.a1, newMatch.a2, newMatch.b1, newMatch.b2],
-      h: newMatch.scoreA,
-      i: newMatch.scoreB,
-      lock: LOCKED,
-      check: newMatch.check,
-      sd: sd,
-      updated_time: undefined
+    if (!response.ok) {
+      // 如果 API 失敗，可以選擇回滾或顯示錯誤
+      console.error('Failed to save match to server')
     }
-    setRows(prev => [...prev, newRow])
-    closeAddModal()
+  } catch (error) {
+    console.error('API error:', error)
   }
 }
 
