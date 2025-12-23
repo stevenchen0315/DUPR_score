@@ -43,6 +43,7 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
       }
     } catch (error) {
       console.error('Check scores error:', error)
+      setHasActiveScores(false)
     }
   }
   
@@ -81,22 +82,30 @@ useEffect(() => {
         }
 
         // 讀取 score 中出現過的 player 名稱
-        const scoresResponse = await fetch(`/api/scores/${username}`)
-        if (scoresResponse.ok) {
-          const scores = await scoresResponse.json()
-          if (scores) {
-            const namesInScores = new Set<string>()
-            scores.forEach((score: any) => {
-              const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
-              fields.forEach(field => {
-                const name = score[field]
-                if (name) namesInScores.add(name)
+        try {
+          const scoresResponse = await fetch(`/api/scores/${username}`)
+          if (scoresResponse.ok) {
+            const scores = await scoresResponse.json()
+            if (scores) {
+              const namesInScores = new Set<string>()
+              scores.forEach((score: any) => {
+                const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
+                fields.forEach(field => {
+                  const name = score[field]
+                  if (name) namesInScores.add(name)
+                })
               })
-            })
-            setLockedNames(namesInScores)
-            setLoadingLockedNames(false) 
+              setLockedNames(namesInScores)
+            }
           }
+        } catch (scoresError) {
+          console.error('Scores API error:', scoresError)
+          // 即使 scores API 失敗，也要清空 lockedNames
+          setLockedNames(new Set())
         }
+        
+        // 確保 loadingLockedNames 總是被設為 false
+        setLoadingLockedNames(false)
         setIsLoading(false)
 
       } catch (error) {
