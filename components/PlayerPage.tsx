@@ -514,21 +514,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         const player1 = userList[selectedArray[0]]
         const player2 = userList[selectedArray[1]]
         
-        // 直接從 API 查詢最新的 partner_number 資料
-        const response = await fetch(`/api/players/${username}`)
-        const currentUsers = response.ok ? await response.json() : []
-        
+        // 使用本地狀態計算下一個可用的 partner_number
         const usedNumbers = new Set(
-          currentUsers
-            .filter((u: any) => u.partner_number !== null)
-            .map((u: any) => u.partner_number)
+          Object.values(partnerNumbers).filter(num => num !== null)
         )
         let nextNumber = 1
         while (usedNumbers.has(nextNumber)) {
           nextNumber++
         }
-        
-        console.log('Used numbers:', Array.from(usedNumbers), 'Next number:', nextNumber)
 
         // 更新兩個選手的 partner_number
         await fetch(`/api/players/${username}`, {
