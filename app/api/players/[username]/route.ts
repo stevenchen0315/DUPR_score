@@ -26,6 +26,26 @@ export async function POST(
   const { username } = await params
   const body = await request.json()
   
+  // 檢查是否為批量匯入
+  if (Array.isArray(body)) {
+    const playersData = body.map(player => ({
+      dupr_id: `${player.dupr_id}_${username}`,
+      name: player.name,
+      partner_number: player.partner_number
+    }))
+    
+    const { data, error } = await supabaseServer
+      .from('player_info')
+      .upsert(playersData, { onConflict: 'dupr_id' })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json(data)
+  }
+  
+  // 原有的單一選手處理邏輯
   const { data, error } = await supabaseServer
     .from('player_info')
     .upsert({
