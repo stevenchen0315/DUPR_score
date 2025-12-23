@@ -25,6 +25,7 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const [hasActiveScores, setHasActiveScores] = useState(false)
+  const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -465,10 +466,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 
   const handlePartnerAction = async () => {
-    if (deletePassword !== storedPassword) return
+    if (deletePassword !== storedPassword || isUpdatingPartner) return
     
+    setIsUpdatingPartner(true)
     const selectedArray = Array.from(selectedPlayers)
-    if (selectedArray.length === 0) return
+    if (selectedArray.length === 0) {
+      setIsUpdatingPartner(false)
+      return
+    }
 
     try {
       if (selectedArray.length === 1) {
@@ -481,33 +486,37 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           const partnerNames = Object.keys(partnerNumbers).filter(name => 
             partnerNumbers[name] === partnerNum
           )
-          const partnerDuprIds = partnerNames.map(name => {
-            const user = userList.find(u => u.name === name)
-            return `${user?.dupr_id}${suffix}`
-          })
           
-          for (const duprId of partnerDuprIds) {
-            const cleanId = duprId.replace(`_${username}`, '')
-            await fetch(`/api/players/${username}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                dupr_id: cleanId,
-                name: partnerNames.find(name => {
-                  const user = userList.find(u => u.name === name)
-                  return `${user?.dupr_id}_${username}` === duprId
-                }),
-                partner_number: null,
-                original_dupr_id: cleanId
-              })
-            })
-          }
-          
+          // 樂觀更新本地狀態
+          const oldPartnerNumbers = { ...partnerNumbers }
           const updatedPartners = { ...partnerNumbers }
           partnerNames.forEach(name => {
             updatedPartners[name] = null
           })
           setPartnerNumbers(updatedPartners)
+          
+          try {
+            // 並行更新資料庫
+            const updatePromises = partnerNames.map(name => {
+              const user = userList.find(u => u.name === name)
+              return fetch(`/api/players/${username}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  dupr_id: user?.dupr_id,
+                  name: name,
+                  partner_number: null,
+                  original_dupr_id: user?.dupr_id
+                })
+              })
+            })
+            
+            await Promise.all(updatePromises)
+          } catch (apiError) {
+            // API 失敗時回滾本地狀態
+            setPartnerNumbers(oldPartnerNumbers)
+            throw apiError
+          }
         }
       } else if (selectedArray.length === 2) {
         // 兩個玩家的操作
@@ -523,40 +532,50 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           nextNumber++
         }
 
-        // 更新兩個選手的 partner_number
-        await fetch(`/api/players/${username}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dupr_id: player1.dupr_id,
-            name: player1.name,
-            partner_number: nextNumber,
-            original_dupr_id: player1.dupr_id
-          })
-        })
-        
-        await fetch(`/api/players/${username}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            dupr_id: player2.dupr_id,
-            name: player2.name,
-            partner_number: nextNumber,
-            original_dupr_id: player2.dupr_id
-          })
-        })
-        
-        // 更新本地狀態
+        // 樂觀更新本地狀態
+        const oldPartnerNumbers = { ...partnerNumbers }
         setPartnerNumbers(prev => ({
           ...prev,
           [player1.name]: nextNumber,
           [player2.name]: nextNumber
         }))
+        
+        try {
+          // 並行更新兩個選手的 partner_number
+          await Promise.all([
+            fetch(`/api/players/${username}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dupr_id: player1.dupr_id,
+                name: player1.name,
+                partner_number: nextNumber,
+                original_dupr_id: player1.dupr_id
+              })
+            }),
+            fetch(`/api/players/${username}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dupr_id: player2.dupr_id,
+                name: player2.name,
+                partner_number: nextNumber,
+                original_dupr_id: player2.dupr_id
+              })
+            })
+          ])
+        } catch (apiError) {
+          // API 失敗時回滾本地狀態
+          setPartnerNumbers(oldPartnerNumbers)
+          throw apiError
+        }
       }
       
       setSelectedPlayers(new Set())
     } catch (error) {
       console.error('Partner action error:', error)
+    } finally {
+      setIsUpdatingPartner(false)
     }
   }
 
@@ -668,13 +687,16 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="mb-4 text-center">
           <button
             onClick={handlePartnerAction}
+            disabled={isUpdatingPartner}
             className={`px-4 py-2 text-white rounded-md ${
-              getButtonText() === '解除固定' 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-green-600 hover:bg-green-700'
+              isUpdatingPartner 
+                ? 'bg-gray-400 cursor-not-allowed'
+                : getButtonText() === '解除固定' 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {getButtonText()}
+            {isUpdatingPartner ? '處理中...' : getButtonText()}
           </button>
         </div>
       )}
