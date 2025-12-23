@@ -326,8 +326,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUserList([])
     setPartnerNumbers({})
     
-    // 再匯入新的選手名單
-    setUserList(imported.map(({ partner_number, ...user }) => user))
+    // 匯入新的選手名單到資料庫，讓即時更新處理UI更新
     await saveUserToSupabase(imported)
 
     // ✅ 清空 input，避免第二次匯入同檔案不觸發
