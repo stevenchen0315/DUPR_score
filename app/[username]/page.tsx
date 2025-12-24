@@ -24,20 +24,26 @@ export default function UserPage({ params }: any) {
   // 🔄 讀取 account 資料表中的所有 username、web_event 和 default_mode
   useEffect(() => {
     const fetchUsernames = async () => {
-      const { data, error } = await supabase.from('account').select('username, web_event, default_mode')
-      if (error) {
+      try {
+        const response = await fetch('/api/account')
+        if (response.ok) {
+          const data = await response.json()
+          setAllowedUsernames(data.map((d: any) => d.username))
+          // 找到對應的 web_event 和 default_mode
+          const userAccount = data.find((d: any) => d.username === username)
+          if (userAccount?.web_event) {
+            setWebEvent(userAccount.web_event)
+          }
+          // NULL 或空字串都視為管理員模式
+          const mode = userAccount?.default_mode === 'readonly' ? 'readonly' : 'admin'
+          setDefaultMode(mode)
+        } else {
+          console.error('Failed to fetch usernames')
+          setAllowedUsernames([])
+        }
+      } catch (error) {
         console.error('Failed to fetch usernames:', error)
         setAllowedUsernames([])
-      } else {
-        setAllowedUsernames(data.map((d) => d.username))
-        // 找到對應的 web_event 和 default_mode
-        const userAccount = data.find((d) => d.username === username)
-        if (userAccount?.web_event) {
-          setWebEvent(userAccount.web_event)
-        }
-        // NULL 或空字串都視為管理員模式
-        const mode = userAccount?.default_mode === 'readonly' ? 'readonly' : 'admin'
-        setDefaultMode(mode)
       }
     }
 

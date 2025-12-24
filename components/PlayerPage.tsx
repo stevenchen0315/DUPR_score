@@ -25,6 +25,7 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const [hasActiveScores, setHasActiveScores] = useState(false)
+  const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
   const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
@@ -35,15 +36,14 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   
   const checkActiveScores = async () => {
     try {
-      const { data: scores } = await supabase
-        .from('score')
-        .select('serial_number')
-        .like('serial_number', `%_${username}`)
-        .limit(1)
-      
-      setHasActiveScores(Boolean(scores && scores.length > 0))
+      const response = await fetch(`/api/scores/${username}`)
+      if (response.ok) {
+        const scores = await response.json()
+        setHasActiveScores(Boolean(scores && scores.length > 0))
+      }
     } catch (error) {
       console.error('Check scores error:', error)
+      setHasActiveScores(false)
     }
   }
   
@@ -53,58 +53,59 @@ useEffect(() => {
   const fetchData = async () => {
       try {
         // 讀取密碼
-        const { data: account, error: accountError } = await supabase
-          .from('account')
-          .select('password')
-          .eq('username', username)
-          .single()
-        if (accountError) throw accountError
-        if (account?.password) setStoredPassword(account.password)
+        const accountResponse = await fetch(`/api/account/${username}`)
+        if (accountResponse.ok) {
+          const account = await accountResponse.json()
+          if (account?.password) setStoredPassword(account.password)
+        }
         
         // 檢查是否有比分資料
         await checkActiveScores()
+        
         // 讀取 player_info 名單
-        const { data: users, error: userError } = await supabase
-          .from('player_info')
-          .select('dupr_id, name, partner_number')
-          .like('dupr_id', `%_${username}`)
-          .order('name')
-
-        if (userError) throw userError
-        if (users) {
-          const partners: {[key: string]: number | null} = {}
-          const userListData = users.map(u => {
-            const cleanId = u.dupr_id.replace(`_${username}`, '')
-            partners[u.name] = u.partner_number
-            return {
-              dupr_id: cleanId,
-              name: u.name,
-            }
-          })
-          setUserList(userListData)
-          setPartnerNumbers(partners)
+        const playersResponse = await fetch(`/api/players/${username}`)
+        if (playersResponse.ok) {
+          const users = await playersResponse.json()
+          if (users) {
+            const partners: {[key: string]: number | null} = {}
+            const userListData = users.map((u: any) => {
+              const cleanId = u.dupr_id.replace(`_${username}`, '')
+              partners[u.name] = u.partner_number
+              return {
+                dupr_id: cleanId,
+                name: u.name,
+              }
+            })
+            setUserList(userListData)
+            setPartnerNumbers(partners)
+          }
         }
 
         // 讀取 score 中出現過的 player 名稱
-        const { data: scores, error: scoreError } = await supabase
-          .from('score')
-          .select('*')
-          .like('serial_number', `%_${username}`)
-
-        if (scoreError) throw scoreError
-
-        if (scores) {
-          const namesInScores = new Set<string>()
-          scores.forEach(score => {
-            const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
-            fields.forEach(field => {
-              const name = score[field]
-              if (name) namesInScores.add(name)
-            })
-          })
-          setLockedNames(namesInScores)
-          setLoadingLockedNames(false) 
+        try {
+          const scoresResponse = await fetch(`/api/scores/${username}`)
+          if (scoresResponse.ok) {
+            const scores = await scoresResponse.json()
+            if (scores) {
+              const namesInScores = new Set<string>()
+              scores.forEach((score: any) => {
+                const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
+                fields.forEach(field => {
+                  const name = score[field]
+                  if (name) namesInScores.add(name)
+                })
+              })
+              setLockedNames(namesInScores)
+            }
+          }
+        } catch (scoresError) {
+          console.error('Scores API error:', scoresError)
+          // 即使 scores API 失敗，也要清空 lockedNames
+          setLockedNames(new Set())
         }
+        
+        // 確保 loadingLockedNames 總是被設為 false
+        setLoadingLockedNames(false)
         setIsLoading(false)
 
       } catch (error) {
@@ -152,23 +153,22 @@ useEffect(() => {
   
   const refetchPlayers = async () => {
     if (!username) return
-    const { data: users } = await supabase
-      .from('player_info')
-      .select('dupr_id, name, partner_number')
-      .like('dupr_id', `%_${username}`)
-      .order('name')
-    if (users) {
-      const partners: {[key: string]: number | null} = {}
-      const userListData = users.map(u => {
-        const cleanId = u.dupr_id.replace(`_${username}`, '')
-        partners[u.name] = u.partner_number
-        return {
-          dupr_id: cleanId,
-          name: u.name,
-        }
-      })
-      setUserList(userListData)
-      setPartnerNumbers(partners)
+    const response = await fetch(`/api/players/${username}`)
+    if (response.ok) {
+      const users = await response.json()
+      if (users) {
+        const partners: {[key: string]: number | null} = {}
+        const userListData = users.map((u: any) => {
+          const cleanId = u.dupr_id.replace(`_${username}`, '')
+          partners[u.name] = u.partner_number
+          return {
+            dupr_id: cleanId,
+            name: u.name,
+          }
+        })
+        setUserList(userListData)
+        setPartnerNumbers(partners)
+      }
     }
   }
 
@@ -234,12 +234,11 @@ useEffect(() => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const { error } = await supabase
-      .from('player_info')
-      .delete()
-      .like('dupr_id', `%_${username}`)
+    const response = await fetch(`/api/players/${username}?delete_all=true`, {
+      method: 'DELETE'
+    })
 
-    if (!error) {
+    if (response.ok) {
       setUserList([])
       setDeleteMessage('✅ 所有玩家資料已刪除')
     } else {
@@ -319,17 +318,15 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     })
 
     // 先清空所有現有選手
-    await supabase
-      .from('player_info')
-      .delete()
-      .like('dupr_id', `%_${username}`)
+    await fetch(`/api/players/${username}?delete_all=true`, {
+      method: 'DELETE'
+    })
     
     // 清空本地狀態
     setUserList([])
     setPartnerNumbers({})
     
-    // 再匯入新的選手名單
-    setUserList(imported.map(({ partner_number, ...user }) => user))
+    // 匯入新的選手名單到資料庫，讓即時更新處理UI更新
     await saveUserToSupabase(imported)
 
     // ✅ 清空 input，避免第二次匯入同檔案不觸發
@@ -341,24 +338,28 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
-      const transformed = list.map(user => ({
-        dupr_id: `${user.dupr_id.toUpperCase()}${suffix}`,
-        name: user.name,
-        partner_number: user.partner_number || null
-      }))
-      const { error } = await supabase
-        .from('player_info')
-        .upsert(transformed, { onConflict: 'dupr_id' })
-      if (error) throw error
+      const response = await fetch(`/api/players/${username}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(list.map(user => ({
+          dupr_id: user.dupr_id.toUpperCase(),
+          name: user.name,
+          partner_number: user.partner_number || null
+        })))
+      })
       
-      // 更新本地 partnerNumbers 狀態（只更新傳入的選手）
+      if (!response.ok) {
+        throw new Error('Failed to save players')
+      }
+      
+      // 更新本地 partnerNumbers 狀態
       const updatedPartners = { ...partnerNumbers }
-      transformed.forEach(user => {
-        updatedPartners[user.name] = user.partner_number
+      list.forEach(user => {
+        updatedPartners[user.name] = user.partner_number || null
       })
       setPartnerNumbers(updatedPartners)
     } catch (error: any) {
-      console.error('Supabase save error:', error.message)
+      console.error('Save error:', error.message)
     }
   }
 
@@ -383,10 +384,9 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       
       // 如果 DUPR ID 改變了，需要先刪除舊記錄
       if (oldDuprId !== newDuprId) {
-        await supabase
-          .from('player_info')
-          .delete()
-          .eq('dupr_id', oldDuprId)
+        await fetch(`/api/players/${username}?dupr_id=${oldUser.dupr_id}`, {
+          method: 'DELETE'
+        })
       }
       
       // 插入/更新新記錄
@@ -425,13 +425,12 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const fullDuprId = `${deletedUser.dupr_id}${suffix}`
 
-    const { error } = await supabase
-      .from('player_info')
-      .delete()
-      .eq('dupr_id', fullDuprId)
+    const response = await fetch(`/api/players/${username}?dupr_id=${deletedUser.dupr_id}`, {
+      method: 'DELETE'
+    })
 
-    if (error) {
-      console.error('Supabase delete error:', error.message)
+    if (!response.ok) {
+      console.error('Delete error:', await response.text())
     }
   }
 
@@ -474,10 +473,14 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   }
 
   const handlePartnerAction = async () => {
-    if (deletePassword !== storedPassword) return
+    if (deletePassword !== storedPassword || isUpdatingPartner) return
     
+    setIsUpdatingPartner(true)
     const selectedArray = Array.from(selectedPlayers)
-    if (selectedArray.length === 0) return
+    if (selectedArray.length === 0) {
+      setIsUpdatingPartner(false)
+      return
+    }
 
     try {
       if (selectedArray.length === 1) {
@@ -490,58 +493,96 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           const partnerNames = Object.keys(partnerNumbers).filter(name => 
             partnerNumbers[name] === partnerNum
           )
-          const partnerDuprIds = partnerNames.map(name => {
-            const user = userList.find(u => u.name === name)
-            return `${user?.dupr_id}${suffix}`
-          })
           
-          await supabase
-            .from('player_info')
-            .update({ partner_number: null })
-            .in('dupr_id', partnerDuprIds)
-          
+          // 樂觀更新本地狀態
+          const oldPartnerNumbers = { ...partnerNumbers }
           const updatedPartners = { ...partnerNumbers }
           partnerNames.forEach(name => {
             updatedPartners[name] = null
           })
           setPartnerNumbers(updatedPartners)
+          
+          try {
+            // 並行更新資料庫
+            const updatePromises = partnerNames.map(name => {
+              const user = userList.find(u => u.name === name)
+              return fetch(`/api/players/${username}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  dupr_id: user?.dupr_id,
+                  name: name,
+                  partner_number: null,
+                  original_dupr_id: user?.dupr_id
+                })
+              })
+            })
+            
+            await Promise.all(updatePromises)
+          } catch (apiError) {
+            // API 失敗時回滾本地狀態
+            setPartnerNumbers(oldPartnerNumbers)
+            throw apiError
+          }
         }
       } else if (selectedArray.length === 2) {
         // 兩個玩家的操作
         const player1 = userList[selectedArray[0]]
         const player2 = userList[selectedArray[1]]
         
-        // 直接從資料庫查詢最新的 partner_number 資料
-        const { data: currentUsers } = await supabase
-          .from('player_info')
-          .select('partner_number')
-          .like('dupr_id', `%_${username}`)
-          .not('partner_number', 'is', null)
-        
-        const usedNumbers = new Set(currentUsers?.map(u => u.partner_number) || [])
+        // 使用本地狀態計算下一個可用的 partner_number
+        const usedNumbers = new Set(
+          Object.values(partnerNumbers).filter(num => num !== null)
+        )
         let nextNumber = 1
         while (usedNumbers.has(nextNumber)) {
           nextNumber++
         }
-        
-        console.log('Used numbers:', Array.from(usedNumbers), 'Next number:', nextNumber)
 
-        await supabase
-          .from('player_info')
-          .update({ partner_number: nextNumber })
-          .in('dupr_id', [`${player1.dupr_id}${suffix}`, `${player2.dupr_id}${suffix}`])
-        
-        // 更新本地狀態
+        // 樂觀更新本地狀態
+        const oldPartnerNumbers = { ...partnerNumbers }
         setPartnerNumbers(prev => ({
           ...prev,
           [player1.name]: nextNumber,
           [player2.name]: nextNumber
         }))
+        
+        try {
+          // 並行更新兩個選手的 partner_number
+          await Promise.all([
+            fetch(`/api/players/${username}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dupr_id: player1.dupr_id,
+                name: player1.name,
+                partner_number: nextNumber,
+                original_dupr_id: player1.dupr_id
+              })
+            }),
+            fetch(`/api/players/${username}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                dupr_id: player2.dupr_id,
+                name: player2.name,
+                partner_number: nextNumber,
+                original_dupr_id: player2.dupr_id
+              })
+            })
+          ])
+        } catch (apiError) {
+          // API 失敗時回滾本地狀態
+          setPartnerNumbers(oldPartnerNumbers)
+          throw apiError
+        }
       }
       
       setSelectedPlayers(new Set())
     } catch (error) {
       console.error('Partner action error:', error)
+    } finally {
+      setIsUpdatingPartner(false)
     }
   }
 
@@ -653,13 +694,16 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         <div className="mb-4 text-center">
           <button
             onClick={handlePartnerAction}
+            disabled={isUpdatingPartner}
             className={`px-4 py-2 text-white rounded-md ${
-              getButtonText() === '解除固定' 
-                ? 'bg-red-600 hover:bg-red-700' 
-                : 'bg-green-600 hover:bg-green-700'
+              isUpdatingPartner 
+                ? 'bg-gray-400 cursor-not-allowed'
+                : getButtonText() === '解除固定' 
+                  ? 'bg-red-600 hover:bg-red-700' 
+                  : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {getButtonText()}
+            {isUpdatingPartner ? '處理中...' : getButtonText()}
           </button>
         </div>
       )}
