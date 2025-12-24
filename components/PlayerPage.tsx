@@ -52,18 +52,26 @@ useEffect(() => {
 
   const fetchData = async () => {
       try {
-        // 讀取密碼
-        const accountResponse = await fetch(`/api/read/account/${username}`)
+        // 並行調用 API
+        const [accountResponse, playersResponse, scoresResponse] = await Promise.all([
+          fetch(`/api/read/account/${username}`),
+          fetch(`/api/read/players/${username}`),
+          fetch(`/api/read/scores/${username}`)
+        ])
+        
+        // 處理密碼
         if (accountResponse.ok) {
           const account = await accountResponse.json()
           if (account?.password) setStoredPassword(account.password)
         }
         
         // 檢查是否有比分資料
-        await checkActiveScores()
+        if (scoresResponse.ok) {
+          const scores = await scoresResponse.json()
+          setHasActiveScores(Boolean(scores && scores.length > 0))
+        }
         
         // 讀取 player_info 名單
-        const playersResponse = await fetch(`/api/read/players/${username}`)
         if (playersResponse.ok) {
           const users = await playersResponse.json()
           if (users) {
@@ -82,29 +90,21 @@ useEffect(() => {
         }
 
         // 讀取 score 中出現過的 player 名稱
-        try {
-          const scoresResponse = await fetch(`/api/read/scores/${username}`)
-          if (scoresResponse.ok) {
-            const scores = await scoresResponse.json()
-            if (scores) {
-              const namesInScores = new Set<string>()
-              scores.forEach((score: any) => {
-                const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
-                fields.forEach(field => {
-                  const name = score[field]
-                  if (name) namesInScores.add(name)
-                })
+        if (scoresResponse.ok) {
+          const scores = await scoresResponse.json()
+          if (scores) {
+            const namesInScores = new Set<string>()
+            scores.forEach((score: any) => {
+              const fields = ['player_a1', 'player_a2', 'player_b1', 'player_b2']
+              fields.forEach(field => {
+                const name = score[field]
+                if (name) namesInScores.add(name)
               })
-              setLockedNames(namesInScores)
-            }
+            })
+            setLockedNames(namesInScores)
           }
-        } catch (scoresError) {
-          console.error('Scores API error:', scoresError)
-          // 即使 scores API 失敗，也要清空 lockedNames
-          setLockedNames(new Set())
         }
         
-        // 確保 loadingLockedNames 總是被設為 false
         setLoadingLockedNames(false)
         setIsLoading(false)
 
