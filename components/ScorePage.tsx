@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
 import { player_info, score } from '@/types'
+import { getReadApiEndpoint, getWriteApiEndpoint } from '@/lib/api-utils'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FaLock, FaLockOpen } from 'react-icons/fa'
 
@@ -80,7 +81,7 @@ useEffect(() => {
   const fetchData = async () => {
     try {
       // 讀取帳號資訊
-      const accountResponse = await fetch(`/api/account/${username}`)
+      const accountResponse = await fetch(`/api/read/account/${username}`)
       if (accountResponse.ok) {
         const account = await accountResponse.json()
         if (account?.password) setStoredPassword(account.password)
@@ -91,7 +92,7 @@ useEffect(() => {
       }
 
       // 讀取選手資訊
-      const playersResponse = await fetch(`/api/players/${username}`)
+      const playersResponse = await fetch(`/api/read/players/${username}`)
       if (playersResponse.ok) {
         const users = await playersResponse.json()
         if (users) {
@@ -110,7 +111,7 @@ useEffect(() => {
       }
 
       // 讀取比分資訊
-      const scoresResponse = await fetch(`/api/scores/${username}`)
+      const scoresResponse = await fetch(`/api/read/scores/${username}`)
       if (scoresResponse.ok) {
         const scores = await scoresResponse.json()
         if (scores) {
@@ -169,7 +170,7 @@ const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null
 // 重新抓取屬於該使用者的 score（全量補拉）
 const refetchScores = async () => {
   if (!username) return
-  const response = await fetch(`/api/scores/${username}`)
+  const response = await fetch(`/api/read/scores/${username}`)
   if (response.ok) {
     const data = await response.json()
     if (data) {
@@ -181,7 +182,7 @@ const refetchScores = async () => {
 // 重新抓取選手資料
 const refetchPlayers = async () => {
   if (!username) return
-  const response = await fetch(`/api/players/${username}`)
+  const response = await fetch(`/api/read/players/${username}`)
   if (response.ok) {
     const users = await response.json()
     if (users) {
@@ -479,7 +480,7 @@ const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boo
     updateData.updated_time = new Date().toISOString()
   }
   
-  await fetch(`/api/scores/${username}`, {
+  await fetch(`/api/write/scores/${username}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updateData)
@@ -593,7 +594,7 @@ const deleteRow = async (index: number) => {
   // 先更新本地
   const updated = [...rows]; updated.splice(originalIndex, 1); setRows(updated)
   // 僅刪除單列（避免整表抖動與資料競爭）
-  await fetch(`/api/scores/${username}?serial_number=${row.serial_number}_${username}`, {
+  await fetch(`/api/write/scores/${username}?serial_number=${row.serial_number}_${username}`, {
     method: 'DELETE'
   })
 }
@@ -610,7 +611,7 @@ const addRow = async () => {
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
     team_a_score: null, team_b_score: null, lock: false, check: false
   }
-  const response = await fetch(`/api/scores/${username}`, {
+  const response = await fetch(`/api/write/scores/${username}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -678,7 +679,7 @@ const submitNewMatch = async () => {
   // 使用 setTimeout 確保 API 呼叫不會阻塞 UI
   setTimeout(async () => {
     try {
-      const response = await fetch(`/api/scores/${username}`, {
+      const response = await fetch(`/api/write/scores/${username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -775,7 +776,7 @@ const validateNewMatch = () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const response = await fetch(`/api/scores/${username}?delete_all=true`, {
+    const response = await fetch(`/api/write/scores/${username}?delete_all=true`, {
       method: 'DELETE'
     })
     if (response.ok) {
