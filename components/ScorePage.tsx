@@ -80,8 +80,14 @@ useEffect(() => {
 
   const fetchData = async () => {
     try {
-      // 讀取帳號資訊
-      const accountResponse = await fetch(`/api/read/account/${username}`)
+      // 並行調用所有 API
+      const [accountResponse, playersResponse, scoresResponse] = await Promise.all([
+        fetch(`/api/read/account/${username}`),
+        fetch(`/api/read/players/${username}`),
+        fetch(`/api/read/scores/${username}`)
+      ])
+
+      // 處理帳號資訊
       if (accountResponse.ok) {
         const account = await accountResponse.json()
         if (account?.password) setStoredPassword(account.password)
@@ -91,8 +97,7 @@ useEffect(() => {
         }
       }
 
-      // 讀取選手資訊
-      const playersResponse = await fetch(`/api/read/players/${username}`)
+      // 處理選手資訊
       if (playersResponse.ok) {
         const users = await playersResponse.json()
         if (users) {
@@ -110,8 +115,7 @@ useEffect(() => {
         }
       }
 
-      // 讀取比分資訊
-      const scoresResponse = await fetch(`/api/read/scores/${username}`)
+      // 處理比分資訊
       if (scoresResponse.ok) {
         const scores = await scoresResponse.json()
         if (scores) {
@@ -119,6 +123,7 @@ useEffect(() => {
           setRows(formatScores(sorted))
         }
       }
+      
       setIsLoading(false)
     } catch (error) {
       console.error('Fetch error:', error)
