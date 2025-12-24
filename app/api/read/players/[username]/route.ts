@@ -1,20 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabase-server'
+import { NextRequest } from 'next/server'
+import { DatabaseService } from '@/lib/database'
+import { createApiResponse, handleApiError, extractUsername } from '@/lib/api-utils'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = await params
-  const { data, error } = await supabaseServer
-    .from('player_info')
-    .select('dupr_id, name, partner_number')
-    .like('dupr_id', `%_${username}`)
-    .order('name')
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const username = await extractUsername(params)
+    const data = await DatabaseService.getPlayersByUsername(username)
+    return createApiResponse(data)
+  } catch (error) {
+    return handleApiError(error, 'Failed to fetch players')
   }
-
-  return NextResponse.json(data)
 }

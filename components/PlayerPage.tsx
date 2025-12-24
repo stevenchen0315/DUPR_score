@@ -1,7 +1,9 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useUserData } from '@/hooks/useUserData'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { VALIDATION, API_ENDPOINTS } from '@/lib/constants'
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
@@ -12,31 +14,54 @@ interface PlayerPageProps {
 }
 
 export default function PlayerPage({ username, readonly = false }: PlayerPageProps) {
+  const { userList, partnerNumbers, storedPassword, isLoading, setUserList, setPartnerNumbers, fetchData, refetchPlayers } = useUserData(username)
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
-  const [userList, setUserList] = useState<player_info[]>([])
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [lockedNames, setLockedNames] = useState<Set<string>>(new Set())
   const [loadingLockedNames, setLoadingLockedNames] = useState(true)
-  const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
-  const [storedPassword, setStoredPassword] = useState<string | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
-  const [partnerNumbers, setPartnerNumbers] = useState<{[key: string]: number | null}>({})
   const [hasActiveScores, setHasActiveScores] = useState(false)
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
   const suffix = `_${username}`
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const playerChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
-  const scoreChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
   // 控制編輯功能顯示
   const showEditFeatures = !readonly
   
+  // 即時訂閱
+  const { connected: playerConnected } = useRealtimeSubscription(
+    username,
+    'player_info',
+    async (payload: any) => {
+      const duprId = payload.new?.dupr_id || payload.old?.dupr_id
+      if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
+        await refetchPlayers()
+      }
+    }
+  )
+  
+  const { connected: scoreConnected } = useRealtimeSubscription(
+    username,
+    'score',
+    async (payload: any) => {
+      const serialNumber = payload.new?.serial_number || payload.old?.serial_number
+      if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
+        await checkActiveScores()
+      }
+    }
+  )
+  
+  // 設定即時連接狀態
+  useEffect(() => {
+    setRealtimeConnected(playerConnected && scoreConnected)
+  }, [playerConnected, scoreConnected])
+  
   const checkActiveScores = async () => {
     try {
-      const response = await fetch(`/api/read/scores/${username}`)
+      const response = await fetch(API_ENDPOINTS.SCORES(username))
       if (response.ok) {
         const scores = await response.json()
         setHasActiveScores(Boolean(scores && scores.length > 0))
@@ -47,51 +72,16 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
     }
   }
   
-useEffect(() => {
+  useEffect(() => {
     if (!username) return
 
-  const fetchData = async () => {
+    const initializeScores = async () => {
       try {
-        // 並行調用 API
-        const [accountResponse, playersResponse, scoresResponse] = await Promise.all([
-          fetch(`/api/read/account/${username}`),
-          fetch(`/api/read/players/${username}`),
-          fetch(`/api/read/scores/${username}`)
-        ])
-        
-        // 處理密碼
-        if (accountResponse.ok) {
-          const account = await accountResponse.json()
-          if (account?.password) setStoredPassword(account.password)
-        }
-        
-        // 檢查是否有比分資料
+        const scoresResponse = await fetch(API_ENDPOINTS.SCORES(username))
         if (scoresResponse.ok) {
           const scores = await scoresResponse.json()
           setHasActiveScores(Boolean(scores && scores.length > 0))
-        }
-        
-        // 讀取 player_info 名單
-        if (playersResponse.ok) {
-          const users = await playersResponse.json()
-          if (users) {
-            const partners: {[key: string]: number | null} = {}
-            const userListData = users.map((u: any) => {
-              const cleanId = u.dupr_id.replace(`_${username}`, '')
-              partners[u.name] = u.partner_number
-              return {
-                dupr_id: cleanId,
-                name: u.name,
-              }
-            })
-            setUserList(userListData)
-            setPartnerNumbers(partners)
-          }
-        }
-
-        // 讀取 score 中出現過的 player 名稱
-        if (scoresResponse.ok) {
-          const scores = await scoresResponse.json()
+          
           if (scores) {
             const namesInScores = new Set<string>()
             scores.forEach((score: any) => {
@@ -104,25 +94,14 @@ useEffect(() => {
             setLockedNames(namesInScores)
           }
         }
-        
-        setLoadingLockedNames(false)
-        setIsLoading(false)
-
       } catch (error) {
-        console.error('Fetch error:', error)
-        setLoadingLockedNames(false)
-        setIsLoading(false)
+        console.error('Fetch scores error:', error)
       }
+      
+      setLoadingLockedNames(false)
     }
 
-    fetchData().then(() => {
-      resubscribe()
-    })
-
-    return () => {
-      if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
-      if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
-    }
+    initializeScores()
   }, [username])
 
   useEffect(() => {
@@ -131,12 +110,11 @@ useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         refetchPlayers()
-        if (!playerChannelRef.current) resubscribe()
       }
     }
     const onFocus = () => { refetchPlayers() }
-    const onOnline = () => { refetchPlayers(); resubscribe() }
-    const onPageShow = () => { refetchPlayers(); resubscribe() }
+    const onOnline = () => { refetchPlayers() }
+    const onPageShow = () => { refetchPlayers() }
 
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onFocus)
@@ -149,92 +127,15 @@ useEffect(() => {
       window.removeEventListener('online', onOnline)
       window.removeEventListener('pageshow', onPageShow)
     }
-  }, [username])
-  
-  const refetchPlayers = async () => {
-    if (!username) return
-    const response = await fetch(`/api/read/players/${username}`)
-    if (response.ok) {
-      const users = await response.json()
-      if (users) {
-        const partners: {[key: string]: number | null} = {}
-        const userListData = users.map((u: any) => {
-          const cleanId = u.dupr_id.replace(`_${username}`, '')
-          partners[u.name] = u.partner_number
-          return {
-            dupr_id: cleanId,
-            name: u.name,
-          }
-        })
-        setUserList(userListData)
-        setPartnerNumbers(partners)
-      }
-    }
-  }
+  }, [username, refetchPlayers])
 
-  const resubscribe = () => {
-    if (!username) return
-    if (playerChannelRef.current) supabase.removeChannel(playerChannelRef.current)
-    if (scoreChannelRef.current) supabase.removeChannel(scoreChannelRef.current)
-    setRealtimeConnected(false)
-
-    const playerChannel = supabase
-      .channel(`player-${username}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'player_info'
-        },
-        async (payload: any) => {
-          console.log('Player change detected:', payload)
-          const duprId = payload.new?.dupr_id || payload.old?.dupr_id
-          if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
-            console.log('Refreshing players...')
-            await refetchPlayers()
-          }
-        }
-      )
-      .subscribe((status) => {
-        console.log('Player channel status:', status)
-        if (status === 'SUBSCRIBED') {
-          setTimeout(() => {
-            setRealtimeConnected(true)
-          }, 1000)
-        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          setTimeout(() => resubscribe(), 3000)
-        }
-      })
-
-    const scoreChannel = supabase
-      .channel(`score-${username}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'score'
-        },
-        async (payload: any) => {
-          const serialNumber = payload.new?.serial_number || payload.old?.serial_number
-          if (serialNumber && typeof serialNumber === 'string' && serialNumber.includes(`_${username}`)) {
-            await checkActiveScores()
-          }
-        }
-      )
-      .subscribe()
-
-    playerChannelRef.current = playerChannel
-    scoreChannelRef.current = scoreChannel
-  }
 
   // 🚀 一鍵刪除功能
   const handleDeleteAll = async () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const response = await fetch(`/api/write/players/${username}?delete_all=true`, {
+    const response = await fetch(`/api/write/players/${username}?delete_all=true&mode=admin`, {
       method: 'DELETE'
     })
 
@@ -318,7 +219,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     })
 
     // 先清空所有現有選手
-    await fetch(`/api/write/players/${username}?delete_all=true`, {
+    await fetch(`/api/write/players/${username}?delete_all=true&mode=admin`, {
       method: 'DELETE'
     })
     
@@ -338,7 +239,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
-      const response = await fetch(`/api/write/players/${username}`, {
+      const response = await fetch(`/api/write/players/${username}?mode=admin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(list.map(user => ({
@@ -384,7 +285,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       
       // 如果 DUPR ID 改變了，需要先刪除舊記錄
       if (oldDuprId !== newDuprId) {
-        await fetch(`/api/write/players/${username}?dupr_id=${oldUser.dupr_id}`, {
+        await fetch(`/api/write/players/${username}?dupr_id=${oldUser.dupr_id}&mode=admin`, {
           method: 'DELETE'
         })
       }
@@ -425,7 +326,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const fullDuprId = `${deletedUser.dupr_id}${suffix}`
 
-    const response = await fetch(`/api/write/players/${username}?dupr_id=${deletedUser.dupr_id}`, {
+    const response = await fetch(`/api/write/players/${username}?dupr_id=${deletedUser.dupr_id}&mode=admin`, {
       method: 'DELETE'
     })
 
@@ -506,7 +407,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             // 並行更新資料庫
             const updatePromises = partnerNames.map(name => {
               const user = userList.find(u => u.name === name)
-              return fetch(`/api/write/players/${username}`, {
+              return fetch(`/api/write/players/${username}?mode=admin`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -550,7 +451,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
           // 並行更新兩個選手的 partner_number
           await Promise.all([
-            fetch(`/api/write/players/${username}`, {
+            fetch(`/api/write/players/${username}?mode=admin`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -560,7 +461,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 original_dupr_id: player1.dupr_id
               })
             }),
-            fetch(`/api/write/players/${username}`, {
+            fetch(`/api/write/players/${username}?mode=admin`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -603,7 +504,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     return null
   }
   
-  if (isLoading || !realtimeConnected) {
+  if (isLoading || loadingLockedNames) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="flex flex-col items-center space-y-4">
@@ -625,13 +526,13 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
           value={userInfo.dupr_id}
           onChange={(e) => {
             const value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
-            if (value.length <= 6) {
+            if (value.length <= VALIDATION.DUPR_ID_LENGTH) {
               updateUserInfo('dupr_id', value)
             }
           }}
           type="text"
           inputMode="text"
-          maxLength={6}
+          maxLength={VALIDATION.DUPR_ID_LENGTH}
         />
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
@@ -643,10 +544,10 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         <button
           onClick={addUser}
           disabled={
-            !/^[A-Z0-9]{6}$/.test(userInfo.dupr_id) || userInfo.name.trim() === ''
+            !VALIDATION.DUPR_ID_PATTERN.test(userInfo.dupr_id) || userInfo.name.trim() === ''
           }
           className={`rounded-md px-5 py-2 shadow flex-shrink-0 transition
-            ${/^[A-Z0-9]{6}$/.test(userInfo.dupr_id) && userInfo.name.trim() !== ''
+            ${VALIDATION.DUPR_ID_PATTERN.test(userInfo.dupr_id) && userInfo.name.trim() !== ''
               ? 'bg-blue-600 text-white hover:bg-blue-700'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
           `}

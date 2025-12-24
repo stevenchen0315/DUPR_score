@@ -1,97 +1,88 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabase-server'
+import { NextRequest } from 'next/server'
+import { DatabaseService } from '@/lib/database'
+import { createApiResponse, handleApiError, extractUsername } from '@/lib/api-utils'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = await params
-  const body = await request.json()
-  
-  if (Array.isArray(body)) {
-    const playersData = body.map(player => ({
-      dupr_id: `${player.dupr_id}_${username}`,
-      name: player.name,
-      partner_number: player.partner_number
-    }))
+  try {
+    const username = await extractUsername(params)
     
-    const { data, error } = await supabaseServer
-      .from('player_info')
-      .upsert(playersData, { onConflict: 'dupr_id' })
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    // 檢查用戶權限 - 允許?mode=admin覆蓋
+    const { searchParams } = new URL(request.url)
+    const mode = searchParams.get('mode')
+    
+    if (mode !== 'admin') {
+      const account = await DatabaseService.getAccount(username)
+      if (account?.default_mode === 'readonly') {
+        return createApiResponse({ error: 'Forbidden' }, 403)
+      }
     }
-
-    return NextResponse.json(data)
+    
+    const body = await request.json()
+    const data = await DatabaseService.upsertPlayers(body, username)
+    return createApiResponse(data)
+  } catch (error) {
+    return handleApiError(error, 'Failed to save players')
   }
-  
-  const { data, error } = await supabaseServer
-    .from('player_info')
-    .upsert({
-      dupr_id: `${body.dupr_id}_${username}`,
-      name: body.name,
-      partner_number: body.partner_number
-    }, { onConflict: 'dupr_id' })
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  return NextResponse.json(data)
 }
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = await params
-  const body = await request.json()
-  
-  const { data, error } = await supabaseServer
-    .from('player_info')
-    .update({
-      dupr_id: `${body.dupr_id}_${username}`,
-      name: body.name,
-      partner_number: body.partner_number
-    })
-    .eq('dupr_id', `${body.original_dupr_id}_${username}`)
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const username = await extractUsername(params)
+    
+    // 檢查用戶權限 - 允許?mode=admin覆蓋
+    const { searchParams } = new URL(request.url)
+    const mode = searchParams.get('mode')
+    
+    if (mode !== 'admin') {
+      const account = await DatabaseService.getAccount(username)
+      if (account?.default_mode === 'readonly') {
+        return createApiResponse({ error: 'Forbidden' }, 403)
+      }
+    }
+    
+    const body = await request.json()
+    const data = await DatabaseService.updatePlayer(body, body.original_dupr_id, username)
+    return createApiResponse(data)
+  } catch (error) {
+    return handleApiError(error, 'Failed to update player')
   }
-
-  return NextResponse.json(data)
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
-  const { username } = await params
-  const { searchParams } = new URL(request.url)
-  const duprId = searchParams.get('dupr_id')
-  const deleteAll = searchParams.get('delete_all')
-  
-  if (deleteAll === 'true') {
-    const { error } = await supabaseServer
-      .from('player_info')
-      .delete()
-      .like('dupr_id', `%_${username}`)
-      
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+  try {
+    const username = await extractUsername(params)
+    
+    // 檢查用戶權限 - 允許?mode=admin覆蓋
+    const { searchParams } = new URL(request.url)
+    const mode = searchParams.get('mode')
+    
+    if (mode !== 'admin') {
+      const account = await DatabaseService.getAccount(username)
+      if (account?.default_mode === 'readonly') {
+        return createApiResponse({ error: 'Forbidden' }, 403)
+      }
     }
-  } else if (duprId) {
-    const { error } = await supabaseServer
-      .from('player_info')
-      .delete()
-      .eq('dupr_id', `${duprId}_${username}`)
-      
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    
+    const duprId = searchParams.get('dupr_id')
+    const deleteAll = searchParams.get('delete_all')
+    
+    if (deleteAll === 'true') {
+      await DatabaseService.deleteAllPlayers(username)
+    } else if (duprId) {
+      await DatabaseService.deletePlayer(duprId, username)
     }
-  }
 
-  return NextResponse.json({ success: true })
+    return createApiResponse({ success: true })
+  } catch (error) {
+    return handleApiError(error, 'Failed to delete player')
+  }
 }

@@ -1,17 +1,16 @@
-// API 工具函數，根據 readonly 模式選擇正確的端點
+import { NextResponse } from 'next/server'
 
-export const getApiEndpoint = (resource: string, username: string, readonly: boolean = false) => {
-  const prefix = readonly ? '/api/read' : '/api/write'
-  return `${prefix}/${resource}/${username}`
+// API 回應和錯誤處理
+export const createApiResponse = (data: any, status = 200) => {
+  return NextResponse.json(data, { status })
 }
 
-export const getReadApiEndpoint = (resource: string, username?: string) => {
-  if (username) {
-    return `/api/read/${resource}/${username}`
-  }
-  return `/api/read/${resource}`
+export const handleApiError = (error: any, message: string) => {
+  console.error(message, error)
+  return NextResponse.json({ error: message }, { status: 500 })
 }
 
-export const getWriteApiEndpoint = (resource: string, username: string) => {
-  return `/api/write/${resource}/${username}`
+export const extractUsername = async (params: Promise<{ username: string }>) => {
+  const { username } = await params
+  return username
 }

@@ -2,16 +2,11 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { supabase } from '@/lib/supabase'
-import { player_info, score } from '@/types'
-import { getReadApiEndpoint, getWriteApiEndpoint } from '@/lib/api-utils'
+import { player_info } from '@/types'
 import { FiPlus as Plus, FiDownload as Download, FiTrash2 as Trash2 } from 'react-icons/fi'
 import { FaLock, FaLockOpen } from 'react-icons/fa'
 
 const LOCKED = 'Locked'
-const UNLOCKED = 'Unlocked'
-
-type CellField = 'D' | 'E' | 'F' | 'G'
-type OtherField = 'h' | 'i' | 'lock' | 'sd' | 'check'
 
 type Row = {
   serial_number: number
@@ -57,7 +52,6 @@ export default function ScorePage({ username, readonly = false }: ScorePageProps
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
   const [storedPassword, setStoredPassword] = useState<string | null>(null)
-  const [event, setEvent] = useState('')
   const [eventName, setEventName] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [realtimeConnected, setRealtimeConnected] = useState(false)
@@ -92,7 +86,6 @@ useEffect(() => {
         const account = await accountResponse.json()
         if (account?.password) setStoredPassword(account.password)
         if (account?.event) {
-          setEvent(account.event)
           setEventName(account.event)
         }
       }
@@ -435,12 +428,6 @@ const handleFilterChange = (value: string) => {
     localStorage.removeItem(FILTER_STORAGE_KEY)
   }
 }
-
-// 檢查該行是否包含篩選的選手
-const isPlayerInRow = (row: Row, playerName: string) => {
-  if (!playerName) return false
-  return row.values.some((val: string) => val.trim() === playerName)
-}
   
   const formatScores = (scores: any[]): Row[] => {
     return scores.map((item: any) => {
@@ -450,7 +437,7 @@ const isPlayerInRow = (row: Row, playerName: string) => {
         values: [item.player_a1, item.player_a2, item.player_b1, item.player_b2],
         h: item.team_a_score?.toString() ?? '',
         i: item.team_b_score?.toString() ?? '',
-        lock: item.lock ? LOCKED : UNLOCKED,
+        lock: item.lock ? LOCKED : 'Unlocked',
         check: Boolean(item.check),
         updated_time: item.updated_time,
         sd:
@@ -485,14 +472,14 @@ const debouncedSave = useDebouncedCallback(async (row: Row, isLockingAction: boo
     updateData.updated_time = new Date().toISOString()
   }
   
-  await fetch(`/api/write/scores/${username}`, {
+  await fetch(`/api/write/scores/${username}?mode=admin`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(updateData)
   })
 }, 500)
   
-  const updateCell = (rowIndex: number, field: CellField | OtherField, value: string) => {
+  const updateCell = (rowIndex: number, field: string, value: string) => {
     // 樂觀更新：立即更新 UI
     const targetRow = filteredRows[rowIndex]
     const originalIndex = rows.findIndex(r => r.serial_number === targetRow.serial_number)
@@ -599,7 +586,7 @@ const deleteRow = async (index: number) => {
   // 先更新本地
   const updated = [...rows]; updated.splice(originalIndex, 1); setRows(updated)
   // 僅刪除單列（避免整表抖動與資料競爭）
-  await fetch(`/api/write/scores/${username}?serial_number=${row.serial_number}_${username}`, {
+  await fetch(`/api/write/scores/${username}?serial_number=${row.serial_number}_${username}&mode=admin`, {
     method: 'DELETE'
   })
 }
@@ -616,7 +603,7 @@ const addRow = async () => {
     player_a1: '', player_a2: '', player_b1: '', player_b2: '',
     team_a_score: null, team_b_score: null, lock: false, check: false
   }
-  const response = await fetch(`/api/write/scores/${username}`, {
+  const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload)
@@ -628,7 +615,7 @@ const addRow = async () => {
       values: ['', '', '', ''],
       h: '',
       i: '',
-      lock: UNLOCKED,
+      lock: 'Unlocked',
       check: false,
       sd: ''
     }
@@ -684,7 +671,7 @@ const submitNewMatch = async () => {
   // 使用 setTimeout 確保 API 呼叫不會阻塞 UI
   setTimeout(async () => {
     try {
-      const response = await fetch(`/api/write/scores/${username}`, {
+      const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -781,7 +768,7 @@ const validateNewMatch = () => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const response = await fetch(`/api/write/scores/${username}?delete_all=true`, {
+    const response = await fetch(`/api/write/scores/${username}?delete_all=true&mode=admin`, {
       method: 'DELETE'
     })
     if (response.ok) {
@@ -942,7 +929,7 @@ return (
                     <select
                       value={val}
                       disabled={readonly || row.lock === 'Locked'}
-                      onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i] as CellField, e.target.value)}
+                      onChange={(e) => updateCell(rowIndex, ['D', 'E', 'F', 'G'][i], e.target.value)}
                     >
                       <option value="">--</option>
                       {getFilteredOptions(row, i).map((opt, idx) => (

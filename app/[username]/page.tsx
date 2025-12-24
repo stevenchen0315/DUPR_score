@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useSearchParams } from 'next/navigation'
 import PlayerPage from '@/components/PlayerPage'
 import ScorePage from '@/components/ScorePage'
@@ -9,11 +9,11 @@ import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
 
 export default function UserPage({ params }: any) {
+  const { username } = use(params)
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
   const [webEvent, setWebEvent] = useState<string>('')
   const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
-  const username = params.username
   const searchParams = useSearchParams()
   
   // 決定最終模式
