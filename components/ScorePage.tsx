@@ -8,6 +8,8 @@ import { FaLock, FaLockOpen } from 'react-icons/fa'
 
 const LOCKED = 'Locked'
 
+type CellField = 'D' | 'E' | 'F' | 'G'
+
 type Row = {
   serial_number: number
   values: string[]
