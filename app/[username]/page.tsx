@@ -25,7 +25,7 @@ export default function UserPage({ params }: any) {
   useEffect(() => {
     const fetchUsernames = async () => {
       try {
-        const response = await fetch('/api/account')
+        const response = await fetch('/api/read/account')
         if (response.ok) {
           const data = await response.json()
           setAllowedUsernames(data.map((d: any) => d.username))
