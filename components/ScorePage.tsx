@@ -284,9 +284,9 @@ const filteredRows = useMemo(() => {
   )
 }, [rows, selectedPlayerFilter])
 
-// 排名計算 - 只在 readonly 模式下計算
+// 排名計算 - 只在管理員模式下計算
 const rankings = useMemo(() => {
-  if (!readonly || filteredRows.length === 0) return []
+  if (readonly || filteredRows.length === 0) return []
   
   const playerStats: {[playerName: string]: {
     wins: number
@@ -1026,8 +1026,8 @@ return (
       </div>
     </div>
 
-    {/* 排名表格 - 只在 readonly 模式且桌面版顯示 */}
-    {readonly && rankings.length > 0 && (
+    {/* 排名表格 - 只在管理員模式且桌面版顯示 */}
+    {!readonly && rankings.length > 0 && (
       <div className="hidden md:block mt-8 mb-6">
         <h3 className="text-lg font-semibold mb-4 text-center">排名 (Rankings)</h3>
         <div className="overflow-auto">
