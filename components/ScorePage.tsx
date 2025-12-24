@@ -1089,6 +1089,11 @@ return (
               <span className="text-xs text-gray-500">
                 {formatDateTime(row.updated_time)}
               </span>
+              {row.check && (
+                <span className="text-xs font-medium text-red-600">
+                  棄賽(WD)
+                </span>
+              )}
             </div>
             {showEditFeatures && (
               <div className="flex space-x-2">
@@ -1230,6 +1235,22 @@ return (
               </div>
             </div>
           </div>
+          
+          {/* 棄賽checkbox - 只在管理員模式下顯示 */}
+          {showEditFeatures && (
+            <div className="mt-4 pt-3 border-t border-gray-200">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={row.check}
+                  onChange={(e) => updateCell(rowIndex, 'check', e.target.checked.toString())}
+                  disabled={readonly || row.lock === 'Locked'}
+                  className="w-4 h-4"
+                />
+                <label className="text-sm text-gray-600">棄賽(WD)</label>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
