@@ -36,7 +36,7 @@ export default function PlayerPage({ username, readonly = false }: PlayerPagePro
   
   const checkActiveScores = async () => {
     try {
-      const response = await fetch(`/api/scores/${username}`)
+      const response = await fetch(`/api/read/scores/${username}`)
       if (response.ok) {
         const scores = await response.json()
         setHasActiveScores(Boolean(scores && scores.length > 0))
@@ -53,7 +53,7 @@ useEffect(() => {
   const fetchData = async () => {
       try {
         // 讀取密碼
-        const accountResponse = await fetch(`/api/account/${username}`)
+        const accountResponse = await fetch(`/api/read/account/${username}`)
         if (accountResponse.ok) {
           const account = await accountResponse.json()
           if (account?.password) setStoredPassword(account.password)
@@ -63,7 +63,7 @@ useEffect(() => {
         await checkActiveScores()
         
         // 讀取 player_info 名單
-        const playersResponse = await fetch(`/api/players/${username}`)
+        const playersResponse = await fetch(`/api/read/players/${username}`)
         if (playersResponse.ok) {
           const users = await playersResponse.json()
           if (users) {
@@ -83,7 +83,7 @@ useEffect(() => {
 
         // 讀取 score 中出現過的 player 名稱
         try {
-          const scoresResponse = await fetch(`/api/scores/${username}`)
+          const scoresResponse = await fetch(`/api/read/scores/${username}`)
           if (scoresResponse.ok) {
             const scores = await scoresResponse.json()
             if (scores) {
@@ -153,7 +153,7 @@ useEffect(() => {
   
   const refetchPlayers = async () => {
     if (!username) return
-    const response = await fetch(`/api/players/${username}`)
+    const response = await fetch(`/api/read/players/${username}`)
     if (response.ok) {
       const users = await response.json()
       if (users) {
@@ -234,7 +234,7 @@ useEffect(() => {
     const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
     if (!confirmed) return
 
-    const response = await fetch(`/api/players/${username}?delete_all=true`, {
+    const response = await fetch(`/api/write/players/${username}?delete_all=true`, {
       method: 'DELETE'
     })
 
@@ -318,7 +318,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     })
 
     // 先清空所有現有選手
-    await fetch(`/api/players/${username}?delete_all=true`, {
+    await fetch(`/api/write/players/${username}?delete_all=true`, {
       method: 'DELETE'
     })
     
@@ -338,7 +338,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
   
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
-      const response = await fetch(`/api/players/${username}`, {
+      const response = await fetch(`/api/write/players/${username}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(list.map(user => ({
@@ -384,7 +384,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
       
       // 如果 DUPR ID 改變了，需要先刪除舊記錄
       if (oldDuprId !== newDuprId) {
-        await fetch(`/api/players/${username}?dupr_id=${oldUser.dupr_id}`, {
+        await fetch(`/api/write/players/${username}?dupr_id=${oldUser.dupr_id}`, {
           method: 'DELETE'
         })
       }
@@ -425,7 +425,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
 
     const fullDuprId = `${deletedUser.dupr_id}${suffix}`
 
-    const response = await fetch(`/api/players/${username}?dupr_id=${deletedUser.dupr_id}`, {
+    const response = await fetch(`/api/write/players/${username}?dupr_id=${deletedUser.dupr_id}`, {
       method: 'DELETE'
     })
 
@@ -506,7 +506,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
             // 並行更新資料庫
             const updatePromises = partnerNames.map(name => {
               const user = userList.find(u => u.name === name)
-              return fetch(`/api/players/${username}`, {
+              return fetch(`/api/write/players/${username}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -550,7 +550,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
           // 並行更新兩個選手的 partner_number
           await Promise.all([
-            fetch(`/api/players/${username}`, {
+            fetch(`/api/write/players/${username}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -560,7 +560,7 @@ const importCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
                 original_dupr_id: player1.dupr_id
               })
             }),
-            fetch(`/api/players/${username}`, {
+            fetch(`/api/write/players/${username}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
