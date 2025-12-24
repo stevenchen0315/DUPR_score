@@ -46,9 +46,10 @@ const formatDateTime = (dateString?: string) => {
 interface ScorePageProps {
   username: string
   readonly?: boolean
+  defaultMode?: string
 }
 
-export default function ScorePage({ username, readonly = false }: ScorePageProps) {
+export default function ScorePage({ username, readonly = false, defaultMode = 'dupr' }: ScorePageProps) {
   const [userList, setUserList] = useState<player_info[]>([])
   const [rows, setRows] = useState<Row[]>([])
   const [deletePassword, setDeletePassword] = useState('')
@@ -70,6 +71,7 @@ export default function ScorePage({ username, readonly = false }: ScorePageProps
   
   // 控制編輯功能顯示
   const showEditFeatures = !readonly
+  const isOpenMode = defaultMode === 'open'
 
 useEffect(() => {
   if (!username) return
@@ -919,7 +921,7 @@ return (
               <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
               {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
-              {showEditFeatures && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
+              {showEditFeatures && isOpenMode && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
             </tr>
           </thead>
           <tbody>
@@ -1010,7 +1012,7 @@ return (
                     </button>
                   </td>
                 )}
-                {showEditFeatures && (
+                {showEditFeatures && isOpenMode && (
                   <td className="border p-1 text-center">
                     <input
                       type="checkbox"
@@ -1089,7 +1091,7 @@ return (
               <span className="text-xs text-gray-500">
                 {formatDateTime(row.updated_time)}
               </span>
-              {row.check && (
+              {row.check && isOpenMode && (
                 <span className="text-xs font-medium text-red-600">
                   棄賽(WD)
                 </span>
@@ -1236,8 +1238,8 @@ return (
             </div>
           </div>
           
-          {/* 棄賽checkbox - 只在管理員模式下顯示 */}
-          {showEditFeatures && (
+          {/* 棄賽checkbox - 只在管理員模式且 open 模式下顯示 */}
+          {showEditFeatures && isOpenMode && (
             <div className="mt-4 pt-3 border-t border-gray-200">
               <div className="flex items-center space-x-2">
                 <input
@@ -1512,19 +1514,21 @@ return (
           </div>
 
           <div className="flex justify-between items-center p-4 border-t">
-            {/* 左側：棄賽 checkbox */}
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={newMatch.check}
-                onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
-                className="w-4 h-4"
-              />
-              <label className="text-sm text-gray-600">棄賽(WD)</label>
-            </div>
+            {/* 左側：棄賽 checkbox - 只在 open 模式下顯示 */}
+            {isOpenMode && (
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={newMatch.check}
+                  onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
+                  className="w-4 h-4"
+                />
+                <label className="text-sm text-gray-600">棄賽(WD)</label>
+              </div>
+            )}
             
             {/* 右側：按鈕 */}
-            <div className="flex space-x-3">
+            <div className={`flex space-x-3 ${!isOpenMode ? 'w-full justify-end' : ''}`}>
               <button
                 onClick={closeAddModal}
                 className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"

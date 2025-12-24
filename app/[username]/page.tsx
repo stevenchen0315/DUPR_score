@@ -14,6 +14,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
   const [webEvent, setWebEvent] = useState<string>('')
   const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
+  const [userDefaultMode, setUserDefaultMode] = useState<string>('dupr')
   const searchParams = useSearchParams()
   
   // 決定最終模式
@@ -34,8 +35,10 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
           if (userAccount?.web_event) {
             setWebEvent(userAccount.web_event)
           }
-          // NULL 或空字串都視為管理員模式
-          const mode = userAccount?.default_mode === 'readonly' ? 'readonly' : 'admin'
+          // 保存原始的 default_mode
+          setUserDefaultMode(userAccount?.default_mode || 'dupr')
+          // 決定 readonly 模式
+          const mode = userAccount?.default_mode === 'open' ? 'readonly' : 'admin'
           setDefaultMode(mode)
         } else {
           console.error('Failed to fetch usernames')
@@ -102,7 +105,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
 
       <div className="flex-grow">
         {tab === 'players' && <PlayerPage username={username} readonly={isReadOnly} />}
-        {tab === 'scores' && <ScorePage username={username} readonly={isReadOnly} />}
+        {tab === 'scores' && <ScorePage username={username} readonly={isReadOnly} defaultMode={userDefaultMode} />}
       </div>
 
       <MarqueeAd />
