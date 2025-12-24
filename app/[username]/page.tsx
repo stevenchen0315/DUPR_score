@@ -8,7 +8,7 @@ import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
 
-export default function UserPage({ params }: any) {
+export default function UserPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
