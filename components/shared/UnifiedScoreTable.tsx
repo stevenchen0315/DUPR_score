@@ -53,7 +53,7 @@ export default function UnifiedScoreTable({
               {filteredRows.map((row, rowIndex) => (
                 <tr key={rowIndex}>
                   <td className="border p-1 text-center font-medium sticky left-0 bg-white z-10">{row.serial_number}</td>
-                  {row.values.map((val: string, i) => (
+                  {row.values.map((val: string, i: number) => (
                     <td key={i} className={`border p-1 ${val === selectedPlayerFilter && selectedPlayerFilter ? 'bg-yellow-100' : ''}`}>
                       {readonly ? (
                         <div className="px-1">
