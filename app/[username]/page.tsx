@@ -2,8 +2,10 @@
 
 import { useState, useEffect, use } from 'react'
 import { useSearchParams } from 'next/navigation'
-import PlayerPage from '@/components/PlayerPage'
-import ScorePage from '@/components/ScorePage'
+import ReadonlyPlayerPage from '@/components/readonly/ReadonlyPlayerPage'
+import AdminPlayerPage from '@/components/admin/AdminPlayerPage'
+import ReadonlyScorePage from '@/components/readonly/ReadonlyScorePage'
+import AdminScorePage from '@/components/admin/AdminScorePage'
 import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
@@ -104,8 +106,16 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
       </div>
 
       <div className="flex-grow">
-        {tab === 'players' && <PlayerPage username={username} readonly={isReadOnly} />}
-        {tab === 'scores' && <ScorePage username={username} readonly={isReadOnly} defaultMode={userDefaultMode} />}
+        {tab === 'players' && (
+          isReadOnly ? 
+            <ReadonlyPlayerPage username={username} /> : 
+            <AdminPlayerPage username={username} />
+        )}
+        {tab === 'scores' && (
+          isReadOnly ? 
+            <ReadonlyScorePage username={username} defaultMode={userDefaultMode} /> : 
+            <AdminScorePage username={username} defaultMode={userDefaultMode} />
+        )}
       </div>
 
       <MarqueeAd />
