@@ -66,7 +66,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       row.lock === LOCKED && 
       row.h !== '' && 
       row.i !== '' &&
-      row.values.some(v => v.trim())
+      row.values.some((v: string) => v.trim())
     )
     
     validMatches.forEach(row => {
