@@ -1,19 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, use } from 'react'
 import { useSearchParams } from 'next/navigation'
-import PlayerPage from '@/components/PlayerPage'
-import ScorePage from '@/components/ScorePage'
+import ReadonlyPlayerPage from '@/components/readonly/ReadonlyPlayerPage'
+import AdminPlayerPage from '@/components/admin/AdminPlayerPage'
+import ReadonlyScorePage from '@/components/readonly/ReadonlyScorePage'
+import AdminScorePage from '@/components/admin/AdminScorePage'
 import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
 
-export default function UserPage({ params }: any) {
+export default function UserPage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params)
   const [tab, setTab] = useState<'players' | 'scores'>('scores')
   const [allowedUsernames, setAllowedUsernames] = useState<string[] | null>(null)
   const [webEvent, setWebEvent] = useState<string>('')
   const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
-  const username = params.username
+  const [userDefaultMode, setUserDefaultMode] = useState<string>('dupr')
   const searchParams = useSearchParams()
   
   // 決定最終模式
@@ -25,7 +28,7 @@ export default function UserPage({ params }: any) {
   useEffect(() => {
     const fetchUsernames = async () => {
       try {
-        const response = await fetch('/api/account')
+        const response = await fetch('/api/read/account')
         if (response.ok) {
           const data = await response.json()
           setAllowedUsernames(data.map((d: any) => d.username))
@@ -34,8 +37,10 @@ export default function UserPage({ params }: any) {
           if (userAccount?.web_event) {
             setWebEvent(userAccount.web_event)
           }
-          // NULL 或空字串都視為管理員模式
-          const mode = userAccount?.default_mode === 'readonly' ? 'readonly' : 'admin'
+          // 保存原始的 default_mode
+          setUserDefaultMode(userAccount?.default_mode || 'dupr')
+          // 決定 readonly 模式
+          const mode = userAccount?.default_mode === 'open' ? 'readonly' : 'admin'
           setDefaultMode(mode)
         } else {
           console.error('Failed to fetch usernames')
@@ -101,8 +106,16 @@ export default function UserPage({ params }: any) {
       </div>
 
       <div className="flex-grow">
-        {tab === 'players' && <PlayerPage username={username} readonly={isReadOnly} />}
-        {tab === 'scores' && <ScorePage username={username} readonly={isReadOnly} />}
+        {tab === 'players' && (
+          isReadOnly ? 
+            <ReadonlyPlayerPage username={username} /> : 
+            <AdminPlayerPage username={username} />
+        )}
+        {tab === 'scores' && (
+          isReadOnly ? 
+            <ReadonlyScorePage username={username} defaultMode={userDefaultMode} /> : 
+            <AdminScorePage username={username} defaultMode={userDefaultMode} />
+        )}
       </div>
 
       <MarqueeAd />
