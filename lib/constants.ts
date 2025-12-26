@@ -18,7 +18,8 @@ export const API_ENDPOINTS = {
 export const VALIDATION = {
   MAX_SCORE: 21,
   DUPR_ID_LENGTH: 6,
-  DUPR_ID_PATTERN: /^[A-Z0-9]{6}$/
+  DUPR_ID_PATTERN: /^[A-Z0-9]{6}$/,
+  NAME_MAX_LENGTH: 25
 } as const
 
 // 工具函數
