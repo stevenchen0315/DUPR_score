@@ -406,8 +406,14 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
           placeholder="名稱 (name)"
           value={userInfo.name}
-          onChange={(e) => updateUserInfo('name', e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value
+            if (value.length <= VALIDATION.NAME_MAX_LENGTH) {
+              updateUserInfo('name', value)
+            }
+          }}
           type="text"
+          maxLength={VALIDATION.NAME_MAX_LENGTH}
         />
         <button
           onClick={addUser}
