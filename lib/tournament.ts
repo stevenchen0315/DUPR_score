@@ -15,69 +15,74 @@ export function generateRoundRobin(players: string[], gamesPerPlayer: number): T
     playerGames[player] = 0
   })
   
-  // 生成所有可能的雙打組合
-  const allPairs: [string, string][] = []
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      allPairs.push([players[i], players[j]])
-    }
-  }
-  
   // 創建對戰組合的唯一標識符
   const createMatchKey = (teamA: [string, string], teamB: [string, string]) => {
-    const sortedTeamA = [...teamA].sort()
-    const sortedTeamB = [...teamB].sort()
-    const allPlayers = [...sortedTeamA, ...sortedTeamB].sort()
+    const allPlayers = [...teamA, ...teamB].sort()
     return allPlayers.join('-')
   }
   
-  // 檢查是否所有選手都達到目標場次
-  const allPlayersReachedTarget = () => {
-    return players.every(player => playerGames[player] >= gamesPerPlayer)
+  // 生成所有可能的四人組合
+  const allFourPlayerCombos: string[][] = []
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      for (let k = j + 1; k < players.length; k++) {
+        for (let l = k + 1; l < players.length; l++) {
+          allFourPlayerCombos.push([players[i], players[j], players[k], players[l]])
+        }
+      }
+    }
   }
   
+  // 為每個四人組合生成所有可能的對戰方式
+  const generateMatchesForFourPlayers = (fourPlayers: string[]) => {
+    const [a, b, c, d] = fourPlayers
+    return [
+      { teamA: [a, b] as [string, string], teamB: [c, d] as [string, string] },
+      { teamA: [a, c] as [string, string], teamB: [b, d] as [string, string] },
+      { teamA: [a, d] as [string, string], teamB: [b, c] as [string, string] }
+    ]
+  }
+  
+  // 重複嘗試直到每人都達到目標場數或無法再安排
   let attempts = 0
   const maxAttempts = 1000
   
-  while (!allPlayersReachedTarget() && attempts < maxAttempts) {
+  while (attempts < maxAttempts) {
     let foundMatch = false
     
     // 找出還需要比賽的選手
     const needMoreGames = players.filter(player => playerGames[player] < gamesPerPlayer)
-    
     if (needMoreGames.length < 4) break
     
-    // 嘗試為需要比賽的選手安排對戰
-    for (let i = 0; i < allPairs.length && !foundMatch; i++) {
-      for (let j = i + 1; j < allPairs.length && !foundMatch; j++) {
-        const teamA = allPairs[i]
-        const teamB = allPairs[j]
+    // 嘗試所有四人組合
+    for (const fourPlayers of allFourPlayerCombos) {
+      // 檢查這四人是否都還需要比賽
+      if (!fourPlayers.every(player => playerGames[player] < gamesPerPlayer)) continue
+      
+      // 為這四人生成所有可能的對戰方式
+      const possibleMatches = generateMatchesForFourPlayers(fourPlayers)
+      
+      for (const match of possibleMatches) {
+        const matchKey = createMatchKey(match.teamA, match.teamB)
         
-        // 檢查是否有重複選手
-        const allPlayersInMatch = [...teamA, ...teamB]
-        if (new Set(allPlayersInMatch).size !== 4) continue
-        
-        // 檢查這個對戰組合是否已經存在
-        const matchKey = createMatchKey(teamA, teamB)
-        if (usedMatchups.has(matchKey)) continue
-        
-        // 檢查所有選手是否還需要比賽
-        const canPlay = allPlayersInMatch.every(player => 
-          playerGames[player] < gamesPerPlayer
-        )
-        
-        if (canPlay) {
-          matches.push({ teamA, teamB })
+        // 如果這個對戰組合還沒用過，且所有選手都還需要比賽
+        if (!usedMatchups.has(matchKey) && 
+            fourPlayers.every(player => playerGames[player] < gamesPerPlayer)) {
+          
+          matches.push(match)
           usedMatchups.add(matchKey)
           
           // 更新每個選手的比賽次數
-          allPlayersInMatch.forEach(player => {
+          fourPlayers.forEach(player => {
             playerGames[player]++
           })
           
           foundMatch = true
+          break
         }
       }
+      
+      if (foundMatch) break
     }
     
     if (!foundMatch) break
