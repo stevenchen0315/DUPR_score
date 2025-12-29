@@ -13,7 +13,8 @@ export function generateRoundRobin(
   const totalGames = (n * gamesPerPlayer) / 4
   if (!Number.isInteger(totalGames)) return []
 
-  const P = players
+  // 隨機打亂選手順序
+  const P = [...players].sort(() => Math.random() - 0.5)
 
   const templates: Record<number, TournamentMatch[]> = {
     4: [
