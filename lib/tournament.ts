@@ -4,7 +4,7 @@ export interface TournamentMatch {
 }
 
 export function generateRoundRobin(players: string[], gamesPerPlayer: number): TournamentMatch[] {
-  if (players.length < 4) return []
+  if (players.length < 4 || players.length > 8) return []
   
   const matches: TournamentMatch[] = []
   const playerGames: { [key: string]: number } = {}
@@ -21,27 +21,18 @@ export function generateRoundRobin(players: string[], gamesPerPlayer: number): T
     return allPlayers.join('-')
   }
   
-  // 生成所有可能的四人組合
-  const allFourPlayerCombos: string[][] = []
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      for (let k = j + 1; k < players.length; k++) {
-        for (let l = k + 1; l < players.length; l++) {
-          allFourPlayerCombos.push([players[i], players[j], players[k], players[l]])
-        }
+  // 生成所有可能的雙打組合
+  const generateAllPairs = () => {
+    const pairs: [string, string][] = []
+    for (let i = 0; i < players.length; i++) {
+      for (let j = i + 1; j < players.length; j++) {
+        pairs.push([players[i], players[j]])
       }
     }
+    return pairs
   }
   
-  // 為每個四人組合生成所有可能的對戰方式
-  const generateMatchesForFourPlayers = (fourPlayers: string[]) => {
-    const [a, b, c, d] = fourPlayers
-    return [
-      { teamA: [a, b] as [string, string], teamB: [c, d] as [string, string] },
-      { teamA: [a, c] as [string, string], teamB: [b, d] as [string, string] },
-      { teamA: [a, d] as [string, string], teamB: [b, c] as [string, string] }
-    ]
-  }
+  const allPairs = generateAllPairs()
   
   // 重複嘗試直到每人都達到目標場數或無法再安排
   let attempts = 0
@@ -50,39 +41,49 @@ export function generateRoundRobin(players: string[], gamesPerPlayer: number): T
   while (attempts < maxAttempts) {
     let foundMatch = false
     
-    // 找出還需要比賽的選手
-    const needMoreGames = players.filter(player => playerGames[player] < gamesPerPlayer)
+    // 找出還需要比賽的選手，按需求場數排序（需要更多比賽的優先）
+    const needMoreGames = players
+      .filter(player => playerGames[player] < gamesPerPlayer)
+      .sort((a, b) => playerGames[a] - playerGames[b])
+    
     if (needMoreGames.length < 4) break
     
-    // 嘗試所有四人組合
-    for (const fourPlayers of allFourPlayerCombos) {
-      // 檢查這四人是否都還需要比賽
-      if (!fourPlayers.every(player => playerGames[player] < gamesPerPlayer)) continue
-      
-      // 為這四人生成所有可能的對戰方式
-      const possibleMatches = generateMatchesForFourPlayers(fourPlayers)
-      
-      for (const match of possibleMatches) {
-        const matchKey = createMatchKey(match.teamA, match.teamB)
+    // 嘗試所有可能的對戰組合
+    for (let i = 0; i < allPairs.length && !foundMatch; i++) {
+      for (let j = i + 1; j < allPairs.length && !foundMatch; j++) {
+        const teamA = allPairs[i]
+        const teamB = allPairs[j]
         
-        // 如果這個對戰組合還沒用過，且所有選手都還需要比賽
-        if (!usedMatchups.has(matchKey) && 
-            fourPlayers.every(player => playerGames[player] < gamesPerPlayer)) {
-          
-          matches.push(match)
+        // 檢查是否有重複選手
+        const allPlayersInMatch = [...teamA, ...teamB]
+        if (new Set(allPlayersInMatch).size !== 4) continue
+        
+        // 檢查這個對戰組合是否已經存在
+        const matchKey = createMatchKey(teamA, teamB)
+        if (usedMatchups.has(matchKey)) continue
+        
+        // 檢查所有選手是否還需要比賽
+        const canPlay = allPlayersInMatch.every(player => 
+          playerGames[player] < gamesPerPlayer
+        )
+        
+        // 優先安排需要更多比賽的選手
+        const hasHighPriorityPlayer = allPlayersInMatch.some(player => 
+          needMoreGames.slice(0, Math.min(4, needMoreGames.length)).includes(player)
+        )
+        
+        if (canPlay && hasHighPriorityPlayer) {
+          matches.push({ teamA, teamB })
           usedMatchups.add(matchKey)
           
           // 更新每個選手的比賽次數
-          fourPlayers.forEach(player => {
+          allPlayersInMatch.forEach(player => {
             playerGames[player]++
           })
           
           foundMatch = true
-          break
         }
       }
-      
-      if (foundMatch) break
     }
     
     if (!foundMatch) break
