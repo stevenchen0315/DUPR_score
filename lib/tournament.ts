@@ -22,57 +22,43 @@ export function generateRoundRobin(players: string[], gamesPerPlayer: number): T
   }
   
   // 生成所有可能的雙打組合
-  const generateAllPairs = () => {
-    const pairs: [string, string][] = []
-    for (let i = 0; i < players.length; i++) {
-      for (let j = i + 1; j < players.length; j++) {
-        pairs.push([players[i], players[j]])
-      }
+  const allPairs: [string, string][] = []
+  for (let i = 0; i < players.length; i++) {
+    for (let j = i + 1; j < players.length; j++) {
+      allPairs.push([players[i], players[j]])
     }
-    return pairs
   }
   
-  const allPairs = generateAllPairs()
-  
-  // 重複嘗試直到每人都達到目標場數或無法再安排
-  let attempts = 0
-  const maxAttempts = 1000
-  
-  while (attempts < maxAttempts) {
-    let foundMatch = false
+  // 持續生成比賽直到達到目標
+  while (true) {
+    let addedMatch = false
     
-    // 找出還需要比賽的選手，按需求場數排序（需要更多比賽的優先）
-    const needMoreGames = players
-      .filter(player => playerGames[player] < gamesPerPlayer)
-      .sort((a, b) => playerGames[a] - playerGames[b])
-    
-    if (needMoreGames.length < 4) break
+    // 檢查是否還有選手需要更多比賽
+    const playersNeedingGames = players.filter(p => playerGames[p] < gamesPerPlayer)
+    if (playersNeedingGames.length < 4) break
     
     // 嘗試所有可能的對戰組合
-    for (let i = 0; i < allPairs.length && !foundMatch; i++) {
-      for (let j = i + 1; j < allPairs.length && !foundMatch; j++) {
+    for (let i = 0; i < allPairs.length && !addedMatch; i++) {
+      for (let j = i + 1; j < allPairs.length && !addedMatch; j++) {
         const teamA = allPairs[i]
         const teamB = allPairs[j]
         
         // 檢查是否有重複選手
         const allPlayersInMatch = [...teamA, ...teamB]
-        if (new Set(allPlayersInMatch).size !== 4) continue
+        const uniquePlayers = new Set(allPlayersInMatch)
+        if (uniquePlayers.size !== 4) continue
         
         // 檢查這個對戰組合是否已經存在
         const matchKey = createMatchKey(teamA, teamB)
         if (usedMatchups.has(matchKey)) continue
         
         // 檢查所有選手是否還需要比賽
-        const canPlay = allPlayersInMatch.every(player => 
+        const allCanPlay = allPlayersInMatch.every(player => 
           playerGames[player] < gamesPerPlayer
         )
         
-        // 優先安排需要更多比賽的選手
-        const hasHighPriorityPlayer = allPlayersInMatch.some(player => 
-          needMoreGames.slice(0, Math.min(4, needMoreGames.length)).includes(player)
-        )
-        
-        if (canPlay && hasHighPriorityPlayer) {
+        if (allCanPlay) {
+          // 添加比賽
           matches.push({ teamA, teamB })
           usedMatchups.add(matchKey)
           
@@ -81,13 +67,13 @@ export function generateRoundRobin(players: string[], gamesPerPlayer: number): T
             playerGames[player]++
           })
           
-          foundMatch = true
+          addedMatch = true
         }
       }
     }
     
-    if (!foundMatch) break
-    attempts++
+    // 如果沒有找到新的比賽組合，結束
+    if (!addedMatch) break
   }
   
   return matches
