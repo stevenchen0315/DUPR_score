@@ -536,9 +536,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         })
         
         if (!response.ok) throw new Error('API Error')
-      }))
-      
-      alert(`成功生成 ${matches.length} 場比賽！`)
+      }))      
     } catch (error) {
       alert('部分比賽新增失敗，請重試')
       // 回滾本地狀態
