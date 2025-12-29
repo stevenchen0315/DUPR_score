@@ -40,8 +40,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   })
   const [showTournamentModal, setShowTournamentModal] = useState(false)
   const [tournamentConfig, setTournamentConfig] = useState({
-    selectedPlayers: [] as string[],
-    gamesPerPlayer: 3
+    selectedPlayers: [] as string[]
   })
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
@@ -494,9 +493,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   }
 
   const generateTournament = async () => {
-    const matches = generateRoundRobin(tournamentConfig.selectedPlayers, tournamentConfig.gamesPerPlayer)
+    const matches = generateRoundRobin(tournamentConfig.selectedPlayers)
     if (matches.length === 0) {
-      alert('無法生成賽程，請檢查選手人數和場數設定')
+      alert('無法生成賽程，請檢查選手人數設定')
       return
     }
 
@@ -918,25 +917,11 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             <div className="p-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  每人打幾場
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={tournamentConfig.gamesPerPlayer}
-                  onChange={(e) => setTournamentConfig(prev => ({
-                    ...prev,
-                    gamesPerPlayer: parseInt(e.target.value) || 1
-                  }))}
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
                   選擇選手 ({tournamentConfig.selectedPlayers.length} 人)
                 </label>
+                <div className="text-xs text-gray-500 mb-2">
+                  系統會根據人數自動安排最佳場數
+                </div>
                 <div className="max-h-48 overflow-y-auto border rounded p-2">
                   {userList.map(user => (
                     <div key={user.name} className="flex items-center space-x-2 py-1">
