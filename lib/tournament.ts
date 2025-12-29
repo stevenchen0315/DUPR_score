@@ -3,88 +3,58 @@ export interface TournamentMatch {
   teamB: [string, string]
 }
 
-export function generateRoundRobin(players: string[], gamesPerPlayer: number): TournamentMatch[] {
-  if (players.length < 4 || players.length > 8) return []
-  
-  // 特殊處理4人情況
-  if (players.length === 4) {
-    const [a, b, c, d] = players
-    const allMatches = [
-      { teamA: [a, b] as [string, string], teamB: [c, d] as [string, string] },
-      { teamA: [a, c] as [string, string], teamB: [b, d] as [string, string] },
-      { teamA: [a, d] as [string, string], teamB: [b, c] as [string, string] }
-    ]
-    
-    const matches: TournamentMatch[] = []
-    for (let i = 0; i < Math.min(gamesPerPlayer, 3); i++) {
-      matches.push(allMatches[i])
-    }
-    return matches
+export function generateRoundRobin(
+  players: string[],
+  gamesPerPlayer: number
+): TournamentMatch[] {
+  const n = players.length
+  if (n < 4 || n > 8) return []
+
+  const totalGames = (n * gamesPerPlayer) / 4
+  if (!Number.isInteger(totalGames)) return []
+
+  const P = players
+
+  const templates: Record<number, TournamentMatch[]> = {
+    4: [
+      { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
+      { teamA: [P[0], P[2]], teamB: [P[1], P[3]] },
+      { teamA: [P[0], P[3]], teamB: [P[1], P[2]] },
+    ],
+    5: [
+      { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
+      { teamA: [P[0], P[2]], teamB: [P[3], P[4]] },
+      { teamA: [P[0], P[3]], teamB: [P[1], P[4]] },
+      { teamA: [P[0], P[4]], teamB: [P[1], P[2]] },
+      { teamA: [P[1], P[3]], teamB: [P[2], P[4]] },
+    ],
+    6: [
+      { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
+      { teamA: [P[0], P[2]], teamB: [P[4], P[5]] },
+      { teamA: [P[0], P[3]], teamB: [P[1], P[4]] },
+      { teamA: [P[0], P[5]], teamB: [P[2], P[4]] },
+      { teamA: [P[1], P[2]], teamB: [P[3], P[5]] },
+      { teamA: [P[1], P[3]], teamB: [P[2], P[4]] },
+    ],
+    7: [
+      { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
+      { teamA: [P[0], P[2]], teamB: [P[4], P[5]] },
+      { teamA: [P[0], P[3]], teamB: [P[5], P[6]] },
+      { teamA: [P[1], P[2]], teamB: [P[3], P[4]] },
+      { teamA: [P[1], P[3]], teamB: [P[4], P[6]] },
+      { teamA: [P[2], P[3]], teamB: [P[5], P[6]] },
+      { teamA: [P[0], P[4]], teamB: [P[1], P[5]] },
+    ],
+    8: [
+      { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
+      { teamA: [P[4], P[5]], teamB: [P[6], P[7]] },
+      { teamA: [P[0], P[2]], teamB: [P[4], P[6]] },
+      { teamA: [P[1], P[3]], teamB: [P[5], P[7]] },
+      { teamA: [P[0], P[3]], teamB: [P[5], P[6]] },
+      { teamA: [P[1], P[2]], teamB: [P[4], P[7]] },
+      { teamA: [P[0], P[4]], teamB: [P[1], P[5]] },
+    ],
   }
-  
-  // 其他人數的處理
-  const matches: TournamentMatch[] = []
-  const playerGames: { [key: string]: number } = {}
-  const usedMatches = new Set<string>()
-  
-  players.forEach(player => {
-    playerGames[player] = 0
-  })
-  
-  const allPairs: [string, string][] = []
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      allPairs.push([players[i], players[j]])
-    }
-  }
-  
-  const allPossibleMatches: TournamentMatch[] = []
-  for (let i = 0; i < allPairs.length; i++) {
-    for (let j = i + 1; j < allPairs.length; j++) {
-      const teamA = allPairs[i]
-      const teamB = allPairs[j]
-      
-      const allPlayersInMatch = [...teamA, ...teamB]
-      if (new Set(allPlayersInMatch).size === 4) {
-        allPossibleMatches.push({ teamA, teamB })
-      }
-    }
-  }
-  
-  const createMatchKey = (match: TournamentMatch) => {
-    const allPlayers = [...match.teamA, ...match.teamB].sort()
-    return allPlayers.join('-')
-  }
-  
-  while (true) {
-    let addedMatch = false
-    
-    for (const match of allPossibleMatches) {
-      const matchKey = createMatchKey(match)
-      
-      if (usedMatches.has(matchKey)) continue
-      
-      const allPlayersInMatch = [...match.teamA, ...match.teamB]
-      
-      const allNeedGames = allPlayersInMatch.every(player => 
-        playerGames[player] < gamesPerPlayer
-      )
-      
-      if (allNeedGames) {
-        matches.push(match)
-        usedMatches.add(matchKey)
-        
-        allPlayersInMatch.forEach(player => {
-          playerGames[player]++
-        })
-        
-        addedMatch = true
-        break
-      }
-    }
-    
-    if (!addedMatch) break
-  }
-  
-  return matches
+
+  return templates[n].slice(0, totalGames)
 }
