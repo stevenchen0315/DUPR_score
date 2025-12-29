@@ -920,7 +920,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                   選擇選手 ({tournamentConfig.selectedPlayers.length} 人)
                 </label>
                 <div className="text-xs text-gray-500 mb-2">
-                  系統會根據人數自動安排最佳場數
+                  系統會根據人數自動安排最佳場數，選手只能選4-8位
                 </div>
                 <div className="max-h-48 overflow-y-auto border rounded p-2">
                   {userList.map(user => (
