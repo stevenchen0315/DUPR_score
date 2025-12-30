@@ -35,7 +35,7 @@ export class DatabaseService {
   static async getScoresByUsername(username: string) {
     const { data, error } = await supabaseServer
       .from('score')
-      .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, updated_time')
+      .select('serial_number, player_a1, player_a2, player_b1, player_b2, team_a_score, team_b_score, lock, check, court, updated_time')
       .like('serial_number', `%_${username}`)
       .order('serial_number')
     

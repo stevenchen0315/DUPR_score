@@ -5,6 +5,7 @@ import { useScoreData } from '@/hooks/useScoreData'
 import { FiPlus as Plus, FiDownload as Download } from 'react-icons/fi'
 import { createFilteredRows, handleFilterChange as utilHandleFilterChange } from '@/lib/constants'
 import { useDebouncedCallback, usePlayerFilter, useScrollToTop } from '@/lib/utils'
+import { generateRoundRobin } from '@/lib/tournament'
 import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import ScrollToTopButton from '@/components/shared/ScrollToTopButton'
 import PlayerFilter from '@/components/shared/PlayerFilter'
@@ -35,7 +36,12 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const [deleteMessage, setDeleteMessage] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMatch, setNewMatch] = useState({
-    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: ''
+  })
+  const [showTournamentModal, setShowTournamentModal] = useState(false)
+  const [tournamentConfig, setTournamentConfig] = useState({
+    selectedPlayers: [] as string[],
+    court: '' as string
   })
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
@@ -175,7 +181,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       team_a_score: row.h === '' ? null : parseInt(row.h),
       team_b_score: row.i === '' ? null : parseInt(row.i),
       lock: row.lock === LOCKED,
-      check: row.check
+      check: row.check,
+      court: row.court || null
     }
     
     if (isLockingAction && row.lock === LOCKED) {
@@ -202,14 +209,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         values: [...r.values]
       }
 
-      if (['h', 'i', 'lock', 'check'].includes(field)) {
+      if (['h', 'i', 'lock', 'check', 'court'].includes(field)) {
         if ((field === 'h' || field === 'i') && value !== '') {
           if (!/^\d{1,2}$/.test(value) || +value > 99) return r
+        }
+        if (field === 'court' && value !== '') {
+          if (!/^\d{1,2}$/.test(value) || +value > 99 || +value < 1) return r
         }
         if (field === 'check') {
           updatedRow.check = value === 'true'
         } else {
-          updatedRow[field] = value
+          updatedRow[field] = field === 'court' && value === '' ? null : value
         }
         
         if (isLockingAction && value === LOCKED) {
@@ -283,7 +293,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     const payload = {
       serial_number: `${nextSerial}_${username}`,
       player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-      team_a_score: null, team_b_score: null, lock: false, check: false
+      team_a_score: null, team_b_score: null, lock: false, check: false, court: null
     }
     const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
       method: 'POST',
@@ -305,13 +315,13 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   }
 
   const openAddModal = () => {
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
     setShowAddModal(true)
   }
 
   const closeAddModal = () => {
     setShowAddModal(false)
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
   }
 
   const submitNewMatch = async () => {
@@ -329,6 +339,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       lock: LOCKED,
       check: newMatch.check,
       sd: sd,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
       updated_time: new Date().toISOString()
     }
     
@@ -347,6 +358,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
       lock: true,
       check: newMatch.check,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
       updated_time: new Date().toISOString()
     }
     
@@ -372,6 +384,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const handleNewMatchChange = (field: string, value: string) => {
     if ((field === 'scoreA' || field === 'scoreB') && value !== '') {
       if (!/^\d{1,2}$/.test(value) || +value > 21) return
+    }
+    if (field === 'court' && value !== '') {
+      if (!/^\d{1,2}$/.test(value) || +value > 99 || +value < 1) return
     }
     
     setNewMatch(prev => ({ ...prev, [field]: value }))
@@ -487,6 +502,70 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     utilHandleFilterChange(value, setSelectedPlayerFilter, FILTER_STORAGE_KEY)
   }
 
+  const generateTournament = async () => {
+    const matches = generateRoundRobin(tournamentConfig.selectedPlayers)
+    if (matches.length === 0) {
+      alert('無法生成賽程，請檢查選手人數設定')
+      return
+    }
+
+    const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+    const courtNumber = tournamentConfig.court ? parseInt(tournamentConfig.court) : null
+    
+    const newRows = matches.map((match, index) => ({
+      serial_number: nextSerial + index,
+      values: [...match.teamA, ...match.teamB],
+      h: '',
+      i: '',
+      lock: 'Unlocked',
+      check: false,
+      sd: 'D',
+      court: courtNumber
+    }))
+
+    setRows(prev => [...prev, ...newRows])
+    setShowTournamentModal(false)
+    
+    // 批量新增到資料庫
+    try {
+      await Promise.all(newRows.map(async (row, index) => {
+        const payload = {
+          serial_number: `${nextSerial + index}_${username}`,
+          player_a1: row.values[0],
+          player_a2: row.values[1],
+          player_b1: row.values[2],
+          player_b2: row.values[3],
+          team_a_score: null,
+          team_b_score: null,
+          lock: false,
+          check: false,
+          court: courtNumber
+        }
+        
+        const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        })
+        
+        if (!response.ok) throw new Error('API Error')
+      }))      
+    } catch (error) {
+      alert('部分比賽新增失敗，請重試')
+      // 回滾本地狀態
+      setRows(prev => prev.filter(row => row.serial_number < nextSerial))
+    }
+  }
+
+  const togglePlayerSelection = (playerName: string) => {
+    setTournamentConfig(prev => ({
+      ...prev,
+      selectedPlayers: prev.selectedPlayers.includes(playerName)
+        ? prev.selectedPlayers.filter(p => p !== playerName)
+        : [...prev.selectedPlayers, playerName]
+    }))
+  }
+
   useEffect(() => {
     if (!isLoading && realtimeConnected) {
       setTimeout(() => {
@@ -573,35 +652,57 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           filteredRowsLength={filteredRows.length}
         />
 
-        {/* 手機版添加比賽按鈕 */}
-        <button
-          id="add-match-button-mobile"
-          onClick={openAddModal}
-          className="md:hidden bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
-        >
-          <div className="flex items-center">
-            <Plus size={16} className="mr-2" />
-            <div className="leading-tight text-left">
-              <div>添加比賽</div>
-              <div className="text-xs">(Add Match)</div>
+        {/* 手機版按鈕 */}
+        <div className="md:hidden flex flex-col space-y-2">
+          <button
+            id="add-match-button-mobile"
+            onClick={openAddModal}
+            className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+          >
+            <div className="flex items-center">
+              <Plus size={16} className="mr-2" />
+              <div className="leading-tight text-left">
+                <div>添加比賽</div>
+                <div className="text-xs">(Add Match)</div>
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+          <button
+            onClick={() => setShowTournamentModal(true)}
+            className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+          >
+            <div className="leading-tight text-center">
+              <div>循環賽</div>
+              <div className="text-xs">(Tournament)</div>
+            </div>
+          </button>
+        </div>
 
-        {/* 桌面版添加比賽按鈕 */}
-        <button
-          id="add-match-button-desktop"
-          onClick={addRow}
-          className="hidden md:flex bg-green-600 text-white px-3 py-1 rounded w-36 justify-center"
-        >
-          <div className="flex items-center">
-            <Plus size={16} className="mr-2" />
-            <div className="leading-tight text-left">
-              <div>添加比賽</div>
-              <div className="text-xs">(Add Match)</div>
+        {/* 桌面版按鈕 */}
+        <div className="hidden md:flex space-x-3">
+          <button
+            id="add-match-button-desktop"
+            onClick={addRow}
+            className="bg-green-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+          >
+            <div className="flex items-center">
+              <Plus size={16} className="mr-2" />
+              <div className="leading-tight text-left">
+                <div>添加比賽</div>
+                <div className="text-xs">(Add Match)</div>
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
+          <button
+            onClick={() => setShowTournamentModal(true)}
+            className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+          >
+            <div className="leading-tight text-center">
+              <div>循環賽</div>
+              <div className="text-xs">(Tournament)</div>
+            </div>
+          </button>
+        </div>
           
         {/* 管理員專用區塊 */}
         <div className="relative w-full my-4">
@@ -769,6 +870,20 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                   </div>
                 </div>
               </div>
+
+              {/* Court 輸入欄位 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
+                <input
+                  type="number"
+                  value={newMatch.court}
+                  onChange={(e) => handleNewMatchChange('court', e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="輸入場地編號"
+                  min="1"
+                  max="99"
+                />
+              </div>
             </div>
 
             <div className="flex justify-between items-center p-4 border-t">
@@ -803,6 +918,89 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                   確認新增
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 循環賽設定 Modal */}
+      {showTournamentModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-semibold">循環賽設定</h2>
+              <button 
+                onClick={() => setShowTournamentModal(false)} 
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  選擇選手 ({tournamentConfig.selectedPlayers.length} 人)
+                </label>
+                <div className="text-xs text-gray-500 mb-2">
+                  系統會根據人數自動安排最佳場數，選手只能選4-8位
+                </div>
+                <div className="max-h-48 overflow-y-auto border rounded p-2">
+                  {userList.map(user => (
+                    <div key={user.name} className="flex items-center space-x-2 py-1">
+                      <input
+                        type="checkbox"
+                        checked={tournamentConfig.selectedPlayers.includes(user.name)}
+                        onChange={() => togglePlayerSelection(user.name)}
+                        className="w-4 h-4"
+                      />
+                      <label className="text-sm">
+                        {partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Court (Optional)
+                </label>
+                <input
+                  type="number"
+                  value={tournamentConfig.court}
+                  onChange={(e) => setTournamentConfig(prev => ({ ...prev, court: e.target.value }))}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="輸入場地編號"
+                  min="1"
+                  max="99"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  如果填寫，所有生成的比賽都會設定為此場地
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 p-4 border-t">
+              <button
+                onClick={() => setShowTournamentModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+              >
+                取消
+              </button>
+              <button
+                onClick={generateTournament}
+                disabled={tournamentConfig.selectedPlayers.length < 4}
+                className={`px-4 py-2 rounded ${
+                  tournamentConfig.selectedPlayers.length >= 4
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                生成賽程
+              </button>
             </div>
           </div>
         </div>
