@@ -1,5 +1,5 @@
 import { formatDateTime } from '@/lib/constants'
-import { FaLock, FaLockOpen } from 'react-icons/fa'
+import { FaLock, FaLockOpen, FaEdit } from 'react-icons/fa'
 import { FiTrash2 as Trash2 } from 'react-icons/fi'
 
 interface UnifiedScoreTableProps {
@@ -10,6 +10,7 @@ interface UnifiedScoreTableProps {
   readonly?: boolean
   onUpdateCell?: (rowIndex: number, field: string, value: string) => void
   onDeleteRow?: (index: number) => void
+  onEditRow?: (index: number) => void
   getFilteredOptions?: (row: any, currentIndex: number) => string[]
   deletePassword?: string
   storedPassword?: string | null
@@ -23,6 +24,7 @@ export default function UnifiedScoreTable({
   readonly = false,
   onUpdateCell,
   onDeleteRow,
+  onEditRow,
   getFilteredOptions,
   deletePassword,
   storedPassword
@@ -208,57 +210,19 @@ export default function UnifiedScoreTable({
                 )}
               </div>
               {!readonly && (
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => {
-                      if (row.lock === 'Locked') {
-                        if (deletePassword === storedPassword) {
-                          onUpdateCell?.(rowIndex, 'lock', 'Unlocked')
-                        }
-                      } else {
-                        onUpdateCell?.(rowIndex, 'lock', 'Locked')
-                      }
-                    }}
-                    className={`p-2 rounded text-white ${
-                      row.lock === 'Locked'
-                        ? deletePassword === storedPassword
-                          ? 'bg-red-500 hover:bg-red-600'
-                          : 'bg-gray-300 cursor-not-allowed'
-                        : 'bg-green-400 hover:bg-green-500'
-                    }`}
-                    disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
-                  >
-                    {row.lock === 'Locked' ? <FaLock size={14} /> : <FaLockOpen size={14} />}
-                  </button>
-                  <button
-                    onClick={() => onDeleteRow?.(rowIndex)}
-                    disabled={row.lock === 'Locked'}
-                    className={`p-2 rounded text-white ${row.lock === 'Locked' ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                <button
+                  onClick={() => onEditRow?.(rowIndex)}
+                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                  className={`p-2 rounded text-white ${
+                    row.lock === 'Locked' && deletePassword !== storedPassword
+                      ? 'bg-gray-300 cursor-not-allowed' 
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  }`}
+                >
+                  <FaEdit size={14} />
+                </button>
               )}
             </div>
-
-            {/* Court 輸入欄位 - 只在非 readonly 模式顯示 */}
-            {!readonly && (
-              <div className="mb-4">
-                <div className="flex items-center space-x-2">
-                  <label className="text-sm text-gray-600 w-12">Court:</label>
-                  <input
-                    type="number"
-                    value={row.court || ''}
-                    onChange={(e) => onUpdateCell?.(rowIndex, 'court', e.target.value)}
-                    disabled={row.lock === 'Locked'}
-                    className="border rounded px-2 py-1 text-center w-16"
-                    min="1"
-                    max="99"
-                    placeholder="--"
-                  />
-                </div>
-              </div>
-            )}
 
             {/* Team A */}
             <div className="mb-4">
@@ -275,7 +239,7 @@ export default function UnifiedScoreTable({
                           value={row.values[i]}
                           disabled={row.lock === 'Locked'}
                           onChange={(e) => onUpdateCell?.(rowIndex, ['D', 'E'][i], e.target.value)}
-                          className="w-full bg-transparent"
+                          className="w-full bg-transparent pointer-events-none appearance-none"
                         >
                           <option value="">--</option>
                           {getFilteredOptions?.(row, i).map((opt, idx) => (
@@ -299,8 +263,8 @@ export default function UnifiedScoreTable({
                       value={row.h}
                       onChange={(e) => onUpdateCell?.(rowIndex, 'h', e.target.value)}
                       disabled={row.lock === 'Locked'}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
+                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold pointer-events-none"
+                      placeholder="--"
                     />
                   )}
                 </div>
@@ -324,7 +288,7 @@ export default function UnifiedScoreTable({
                           value={row.values[i]}
                           disabled={row.lock === 'Locked'}
                           onChange={(e) => onUpdateCell?.(rowIndex, ['F', 'G'][i-2], e.target.value)}
-                          className="w-full bg-transparent"
+                          className="w-full bg-transparent pointer-events-none appearance-none"
                         >
                           <option value="">--</option>
                           {getFilteredOptions?.(row, i).map((opt, idx) => (
@@ -348,8 +312,8 @@ export default function UnifiedScoreTable({
                       value={row.i}
                       onChange={(e) => onUpdateCell?.(rowIndex, 'i', e.target.value)}
                       disabled={row.lock === 'Locked'}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
+                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold pointer-events-none"
+                      placeholder="--"
                     />
                   )}
                 </div>

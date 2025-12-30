@@ -35,6 +35,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const [deletePassword, setDeletePassword] = useState('')
   const [deleteMessage, setDeleteMessage] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null)
   const [newMatch, setNewMatch] = useState({
     a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: ''
   })
@@ -324,6 +326,97 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
   }
 
+  const openEditModal = (rowIndex: number) => {
+    const row = filteredRows[rowIndex]
+    setNewMatch({
+      a1: row.values[0] || '',
+      a2: row.values[1] || '',
+      b1: row.values[2] || '',
+      b2: row.values[3] || '',
+      scoreA: row.h || '',
+      scoreB: row.i || '',
+      check: row.check || false,
+      court: row.court ? row.court.toString() : ''
+    })
+    setEditingRowIndex(rowIndex)
+    setShowEditModal(true)
+  }
+
+  const closeEditModal = () => {
+    setShowEditModal(false)
+    setEditingRowIndex(null)
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
+  }
+
+  const submitEditMatch = async () => {
+    if (editingRowIndex === null) return
+    
+    const row = filteredRows[editingRowIndex]
+    const originalIndex = rows.findIndex(r => r.serial_number === row.serial_number)
+    
+    // 檢查資料是否完整（比照 validateNewMatch 邏輯）
+    const { a1, a2, b1, b2, scoreA, scoreB } = newMatch
+    const teamACount = [a1, a2].filter(Boolean).length
+    const teamBCount = [b1, b2].filter(Boolean).length
+    
+    const isDataComplete = teamACount > 0 && teamBCount > 0 && scoreA && scoreB &&
+      !((teamACount === 2 && teamBCount === 1) || (teamACount === 1 && teamBCount === 2)) &&
+      !(teamACount === 1 && teamBCount === 1 && (!a1 || !b1 || a2 || b2))
+    
+    const newRows = [...rows]
+    newRows[originalIndex] = {
+      ...newRows[originalIndex],
+      values: [newMatch.a1, newMatch.a2, newMatch.b1, newMatch.b2],
+      h: newMatch.scoreA,
+      i: newMatch.scoreB,
+      check: newMatch.check,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
+      lock: isDataComplete ? 'Locked' : 'Unlocked',
+      updated_time: isDataComplete ? new Date().toISOString() : newRows[originalIndex].updated_time
+    }
+    
+    setRows(newRows)
+    closeEditModal()
+    
+    const payload = {
+      serial_number: `${row.serial_number}_${username}`,
+      player_a1: newMatch.a1,
+      player_a2: newMatch.a2,
+      player_b1: newMatch.b1,
+      player_b2: newMatch.b2,
+      team_a_score: newMatch.scoreA ? parseInt(newMatch.scoreA) : null,
+      team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
+      lock: isDataComplete,
+      check: newMatch.check,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
+      updated_time: isDataComplete ? new Date().toISOString() : undefined
+    }
+    
+    try {
+      const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      
+      if (!response.ok) {
+        alert('儲存失敗，請重試')
+      }
+    } catch (error) {
+      alert('網路錯誤，請重試')
+    }
+  }
+
+  const deleteEditingMatch = async () => {
+    if (editingRowIndex === null) return
+    
+    const confirmed = window.confirm('確定要刪除這場比賽嗎？')
+    if (!confirmed) return
+    
+    await deleteRow(editingRowIndex)
+    closeEditModal()
+  }
+
   const submitNewMatch = async () => {
     const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
     
@@ -597,6 +690,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         readonly={false}
         onUpdateCell={updateCell}
         onDeleteRow={deleteRow}
+        onEditRow={openEditModal}
         getFilteredOptions={getFilteredOptions}
         deletePassword={deletePassword}
         storedPassword={storedPassword}
@@ -667,15 +761,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               </div>
             </div>
           </button>
-          <button
-            onClick={() => setShowTournamentModal(true)}
-            className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
-          >
-            <div className="leading-tight text-center">
-              <div>循環賽</div>
-              <div className="text-xs">(Tournament)</div>
-            </div>
-          </button>
+          {deletePassword === storedPassword && (
+            <button
+              onClick={() => setShowTournamentModal(true)}
+              className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
+            >
+              <div className="leading-tight text-center">
+                <div>循環賽</div>
+                <div className="text-xs">(Round-robin)</div>
+              </div>
+            </button>
+          )}
         </div>
 
         {/* 桌面版按鈕 */}
@@ -699,7 +795,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           >
             <div className="leading-tight text-center">
               <div>循環賽</div>
-              <div className="text-xs">(Tournament)</div>
+              <div className="text-xs">(Round-robin)</div>
             </div>
           </button>
         </div>
@@ -916,6 +1012,160 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                   }`}
                 >
                   確認新增
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 編輯比賽 Modal */}
+      {showEditModal && (
+        <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h2 className="text-lg font-semibold">編輯比賽(Edit Match)</h2>
+              <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-4">
+              {/* Team A */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 space-y-3">
+                    <select
+                      value={newMatch.a1}
+                      onChange={(e) => handleNewMatchChange('a1', e.target.value)}
+                      className="w-full border rounded px-4 py-3 text-base"
+                    >
+                      <option value="">--</option>
+                      {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
+                        <option key={name} value={name}>
+                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={newMatch.a2}
+                      onChange={(e) => handleNewMatchChange('a2', e.target.value)}
+                      className="w-full border rounded px-4 py-3 text-base"
+                    >
+                      <option value="">--</option>
+                      {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
+                        <option key={name} value={name}>
+                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="21"
+                      step="1"
+                      value={newMatch.scoreA}
+                      onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
+                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-300 my-4"></div>
+
+              {/* Team B */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 space-y-3">
+                    <select
+                      value={newMatch.b1}
+                      onChange={(e) => handleNewMatchChange('b1', e.target.value)}
+                      className="w-full border rounded px-4 py-3 text-base"
+                    >
+                      <option value="">--</option>
+                      {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
+                        <option key={name} value={name}>
+                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={newMatch.b2}
+                      onChange={(e) => handleNewMatchChange('b2', e.target.value)}
+                      className="w-full border rounded px-4 py-3 text-base"
+                    >
+                      <option value="">--</option>
+                      {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
+                        <option key={name} value={name}>
+                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-20">
+                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      min="0"
+                      max="21"
+                      step="1"
+                      value={newMatch.scoreB}
+                      onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
+                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
+                      placeholder="0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Court 輸入欄位 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
+                <input
+                  type="number"
+                  value={newMatch.court}
+                  onChange={(e) => handleNewMatchChange('court', e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="輸入場地編號"
+                  min="1"
+                  max="99"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center p-4 border-t">
+              <button
+                onClick={deleteEditingMatch}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                刪除
+              </button>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={closeEditModal}
+                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
+                >
+                  取消
+                </button>
+                <button
+                  onClick={submitEditMatch}
+                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+                >
+                  完成
                 </button>
               </div>
             </div>
