@@ -873,7 +873,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
 
               {/* Court 輸入欄位 */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">場地編號 (可選)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
                 <input
                   type="number"
                   value={newMatch.court}
@@ -966,7 +966,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  場地編號 (可選)
+                  Court (Optional)
                 </label>
                 <input
                   type="number"
