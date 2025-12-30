@@ -44,6 +44,7 @@ export default function UnifiedScoreTable({
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
                 <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
+                <th className="border p-1 text-center w-16 sticky top-0 bg-white z-10">court</th>
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
                 {isOpenMode && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
@@ -104,6 +105,21 @@ export default function UnifiedScoreTable({
                   </td>
                   <td className="border p-1 text-center text-xs text-gray-600">
                     {formatDateTime(row.updated_time)}
+                  </td>
+                  <td className="border p-1 text-center">
+                    {readonly ? (
+                      row.court || '--'
+                    ) : (
+                      <input
+                        type="number"
+                        value={row.court || ''}
+                        onChange={(e) => onUpdateCell?.(rowIndex, 'court', e.target.value)}
+                        disabled={row.lock === 'Locked'}
+                        className="w-full border px-1 text-center"
+                        min="1"
+                        max="99"
+                      />
+                    )}
                   </td>
                   {!readonly && (
                     <td className="border p-1 text-center">
@@ -179,6 +195,11 @@ export default function UnifiedScoreTable({
                 }`}>
                   {row.sd || '--'}
                 </span>
+                {row.court && (
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                    場地 {row.court}
+                  </span>
+                )}
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
                 </span>
@@ -219,6 +240,25 @@ export default function UnifiedScoreTable({
                 </div>
               )}
             </div>
+
+            {/* Court 輸入欄位 - 只在非 readonly 模式顯示 */}
+            {!readonly && (
+              <div className="mb-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm text-gray-600 w-12">場地:</label>
+                  <input
+                    type="number"
+                    value={row.court || ''}
+                    onChange={(e) => onUpdateCell?.(rowIndex, 'court', e.target.value)}
+                    disabled={row.lock === 'Locked'}
+                    className="border rounded px-2 py-1 text-center w-16"
+                    min="1"
+                    max="99"
+                    placeholder="--"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Team A */}
             <div className="mb-4">
