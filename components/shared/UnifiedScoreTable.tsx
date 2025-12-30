@@ -197,7 +197,7 @@ export default function UnifiedScoreTable({
                 </span>
                 {row.court && (
                   <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                    場地 {row.court}
+                    Court {row.court}
                   </span>
                 )}
                 <span className="text-xs text-gray-500">
@@ -245,7 +245,7 @@ export default function UnifiedScoreTable({
             {!readonly && (
               <div className="mb-4">
                 <div className="flex items-center space-x-2">
-                  <label className="text-sm text-gray-600 w-12">場地:</label>
+                  <label className="text-sm text-gray-600 w-12">Court:</label>
                   <input
                     type="number"
                     value={row.court || ''}
