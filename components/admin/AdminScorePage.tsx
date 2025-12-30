@@ -659,6 +659,16 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     }))
   }
 
+  const toggleSelectAll = () => {
+    setTournamentConfig(prev => ({
+      ...prev,
+      selectedPlayers: prev.selectedPlayers.length > 0 ? [] : userList.map(user => user.name)
+    }))
+  }
+
+  const isAllSelected = tournamentConfig.selectedPlayers.length === userList.length
+  const isPartialSelected = tournamentConfig.selectedPlayers.length > 0 && tournamentConfig.selectedPlayers.length < userList.length
+
   useEffect(() => {
     if (!isLoading && realtimeConnected) {
       setTimeout(() => {
@@ -1201,6 +1211,20 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 <div className="text-xs text-gray-500 mb-2">
                   系統會根據人數自動安排最佳場數，選手只能選4-8位
                 </div>
+                <div className="flex items-center space-x-2 py-1 border-b border-gray-200 mb-2 pb-2">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isPartialSelected
+                    }}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4"
+                  />
+                  <label className="text-sm font-medium text-gray-700">
+                    全選/全不選 (Select All)
+                  </label>
+                </div>
                 <div className="max-h-48 overflow-y-auto border rounded p-2">
                   {userList.map(user => (
                     <div key={user.name} className="flex items-center space-x-2 py-1">
@@ -1248,9 +1272,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               </button>
               <button
                 onClick={generateTournament}
-                disabled={tournamentConfig.selectedPlayers.length < 4}
+                disabled={tournamentConfig.selectedPlayers.length < 4 || tournamentConfig.selectedPlayers.length > 8}
                 className={`px-4 py-2 rounded ${
-                  tournamentConfig.selectedPlayers.length >= 4
+                  tournamentConfig.selectedPlayers.length >= 4 && tournamentConfig.selectedPlayers.length <= 8
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
