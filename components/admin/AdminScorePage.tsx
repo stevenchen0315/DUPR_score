@@ -972,6 +972,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newMatch.court}
                   onChange={(e) => handleNewMatchChange('court', e.target.value)}
                   className="w-full border rounded px-3 py-2"
@@ -1136,6 +1138,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={newMatch.court}
                   onChange={(e) => handleNewMatchChange('court', e.target.value)}
                   className="w-full border rounded px-3 py-2"
@@ -1220,6 +1224,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 </label>
                 <input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={tournamentConfig.court}
                   onChange={(e) => setTournamentConfig(prev => ({ ...prev, court: e.target.value }))}
                   className="w-full border rounded px-3 py-2"

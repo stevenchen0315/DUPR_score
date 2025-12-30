@@ -114,6 +114,8 @@ export default function UnifiedScoreTable({
                     ) : (
                       <input
                         type="number"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         value={row.court || ''}
                         onChange={(e) => onUpdateCell?.(rowIndex, 'court', e.target.value)}
                         disabled={row.lock === 'Locked'}
