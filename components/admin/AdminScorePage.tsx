@@ -36,11 +36,12 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const [deleteMessage, setDeleteMessage] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [newMatch, setNewMatch] = useState({
-    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: ''
   })
   const [showTournamentModal, setShowTournamentModal] = useState(false)
   const [tournamentConfig, setTournamentConfig] = useState({
-    selectedPlayers: [] as string[]
+    selectedPlayers: [] as string[],
+    court: '' as string
   })
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
@@ -180,7 +181,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       team_a_score: row.h === '' ? null : parseInt(row.h),
       team_b_score: row.i === '' ? null : parseInt(row.i),
       lock: row.lock === LOCKED,
-      check: row.check
+      check: row.check,
+      court: row.court || null
     }
     
     if (isLockingAction && row.lock === LOCKED) {
@@ -207,14 +209,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         values: [...r.values]
       }
 
-      if (['h', 'i', 'lock', 'check'].includes(field)) {
+      if (['h', 'i', 'lock', 'check', 'court'].includes(field)) {
         if ((field === 'h' || field === 'i') && value !== '') {
           if (!/^\d{1,2}$/.test(value) || +value > 99) return r
+        }
+        if (field === 'court' && value !== '') {
+          if (!/^\d{1,2}$/.test(value) || +value > 99 || +value < 1) return r
         }
         if (field === 'check') {
           updatedRow.check = value === 'true'
         } else {
-          updatedRow[field] = value
+          updatedRow[field] = field === 'court' && value === '' ? null : value
         }
         
         if (isLockingAction && value === LOCKED) {
@@ -288,7 +293,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     const payload = {
       serial_number: `${nextSerial}_${username}`,
       player_a1: '', player_a2: '', player_b1: '', player_b2: '',
-      team_a_score: null, team_b_score: null, lock: false, check: false
+      team_a_score: null, team_b_score: null, lock: false, check: false, court: null
     }
     const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
       method: 'POST',
@@ -310,13 +315,13 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   }
 
   const openAddModal = () => {
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
     setShowAddModal(true)
   }
 
   const closeAddModal = () => {
     setShowAddModal(false)
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
   }
 
   const submitNewMatch = async () => {
@@ -334,6 +339,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       lock: LOCKED,
       check: newMatch.check,
       sd: sd,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
       updated_time: new Date().toISOString()
     }
     
@@ -352,6 +358,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       team_b_score: newMatch.scoreB ? parseInt(newMatch.scoreB) : null,
       lock: true,
       check: newMatch.check,
+      court: newMatch.court ? parseInt(newMatch.court) : null,
       updated_time: new Date().toISOString()
     }
     
@@ -377,6 +384,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const handleNewMatchChange = (field: string, value: string) => {
     if ((field === 'scoreA' || field === 'scoreB') && value !== '') {
       if (!/^\d{1,2}$/.test(value) || +value > 21) return
+    }
+    if (field === 'court' && value !== '') {
+      if (!/^\d{1,2}$/.test(value) || +value > 99 || +value < 1) return
     }
     
     setNewMatch(prev => ({ ...prev, [field]: value }))
@@ -500,6 +510,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     }
 
     const nextSerial = rows.length > 0 ? Math.max(...rows.map(r => r.serial_number)) + 1 : 1
+    const courtNumber = tournamentConfig.court ? parseInt(tournamentConfig.court) : null
     
     const newRows = matches.map((match, index) => ({
       serial_number: nextSerial + index,
@@ -508,7 +519,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       i: '',
       lock: 'Unlocked',
       check: false,
-      sd: 'D'
+      sd: 'D',
+      court: courtNumber
     }))
 
     setRows(prev => [...prev, ...newRows])
@@ -526,7 +538,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           team_a_score: null,
           team_b_score: null,
           lock: false,
-          check: false
+          check: false,
+          court: courtNumber
         }
         
         const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
@@ -857,6 +870,20 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                   </div>
                 </div>
               </div>
+
+              {/* Court 輸入欄位 */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">場地編號 (可選)</label>
+                <input
+                  type="number"
+                  value={newMatch.court}
+                  onChange={(e) => handleNewMatchChange('court', e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="輸入場地編號"
+                  min="1"
+                  max="99"
+                />
+              </div>
             </div>
 
             <div className="flex justify-between items-center p-4 border-t">
@@ -934,6 +961,24 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                       </label>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  場地編號 (可選)
+                </label>
+                <input
+                  type="number"
+                  value={tournamentConfig.court}
+                  onChange={(e) => setTournamentConfig(prev => ({ ...prev, court: e.target.value }))}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="輸入場地編號"
+                  min="1"
+                  max="99"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  如果填寫，所有生成的比賽都會設定為此場地
                 </div>
               </div>
             </div>
