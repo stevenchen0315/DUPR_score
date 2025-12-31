@@ -12,6 +12,7 @@ type Row = {
   i: string
   lock: string
   check: boolean
+  court?: number | null
   updated_time?: string
 }
 
@@ -42,6 +43,7 @@ export const useScoreData = (username: string) => {
         i: item.team_b_score?.toString() ?? '',
         lock: item.lock ? 'Locked' : 'Unlocked',
         check: Boolean(item.check),
+        court: item.court,
         updated_time: item.updated_time,
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&
