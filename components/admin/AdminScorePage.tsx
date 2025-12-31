@@ -1211,34 +1211,75 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 <div className="text-xs text-gray-500 mb-2">
                   系統會根據人數自動安排最佳場數，選手只能選4-8位
                 </div>
-                <div className="flex items-center space-x-2 py-1 border-b border-gray-200 mb-2 pb-2">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    ref={(el) => {
-                      if (el) el.indeterminate = isPartialSelected
-                    }}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4"
-                  />
-                  <label className="text-sm font-medium text-gray-700">
+                <div className="flex items-center space-x-3 py-2 border-b border-gray-200 mb-3 pb-3">
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      ref={(el) => {
+                        if (el) el.indeterminate = isPartialSelected
+                      }}
+                      onChange={toggleSelectAll}
+                      className="sr-only"
+                      id="select-all-checkbox"
+                    />
+                    <label 
+                      htmlFor="select-all-checkbox"
+                      className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500"
+                      style={{
+                        backgroundColor: isAllSelected ? '#3B82F6' : isPartialSelected ? '#3B82F6' : 'transparent',
+                        borderColor: isAllSelected || isPartialSelected ? '#3B82F6' : '#D1D5DB'
+                      }}
+                    >
+                      {isAllSelected && (
+                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      {isPartialSelected && !isAllSelected && (
+                        <div className="w-3 h-0.5 bg-white rounded"></div>
+                      )}
+                    </label>
+                  </div>
+                  <label htmlFor="select-all-checkbox" className="text-sm font-medium text-gray-700 cursor-pointer">
                     全選/全不選 (Select All)
                   </label>
                 </div>
-                <div className="max-h-48 overflow-y-auto border rounded p-2">
-                  {userList.map(user => (
-                    <div key={user.name} className="flex items-center space-x-2 py-1">
-                      <input
-                        type="checkbox"
-                        checked={tournamentConfig.selectedPlayers.includes(user.name)}
-                        onChange={() => togglePlayerSelection(user.name)}
-                        className="w-4 h-4"
-                      />
-                      <label className="text-sm">
-                        {partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}
-                      </label>
-                    </div>
-                  ))}
+                <div className="max-h-48 overflow-y-auto border rounded p-3">
+                  {userList.map((user, index) => {
+                    const isChecked = tournamentConfig.selectedPlayers.includes(user.name)
+                    const checkboxId = `player-checkbox-${index}`
+                    return (
+                      <div key={user.name} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2 -mx-2">
+                        <div className="relative">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => togglePlayerSelection(user.name)}
+                            className="sr-only"
+                            id={checkboxId}
+                          />
+                          <label 
+                            htmlFor={checkboxId}
+                            className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500"
+                            style={{
+                              backgroundColor: isChecked ? '#3B82F6' : 'transparent',
+                              borderColor: isChecked ? '#3B82F6' : '#D1D5DB'
+                            }}
+                          >
+                            {isChecked && (
+                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </label>
+                        </div>
+                        <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1">
+                          {partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}
+                        </label>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
 
