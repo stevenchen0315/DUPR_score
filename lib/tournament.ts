@@ -11,7 +11,7 @@ export function generateRoundRobin(
 
   // 根據人數決定每人打幾場
   const gamesPerPlayer = n === 4 ? 3 : n === 5 ? 4 : n === 6 ? 4 : n === 7 ? 6 : 7
-  const totalGames = (n * gamesPerPlayer) / 4
+  const totalGames = n === 7 ? 10 : (n * gamesPerPlayer) / 4
   if (!Number.isInteger(totalGames)) return []
 
   // 隨機打亂選手順序
@@ -41,14 +41,14 @@ export function generateRoundRobin(
     7: [
       { teamA: [P[0], P[1]], teamB: [P[2], P[3]] }, // P4,P5,P6輪空
       { teamA: [P[4], P[5]], teamB: [P[6], P[0]] }, // P1,P2,P3輪空
-      { teamA: [P[1], P[2]], teamB: [P[4], P[5]] }, // P0,P3,P6輪空
-      { teamA: [P[0], P[3]], teamB: [P[1], P[6]] }, // P2,P4,P5輪空
-      { teamA: [P[2], P[6]], teamB: [P[3], P[4]] }, // P0,P1,P5輪空
-      { teamA: [P[1], P[5]], teamB: [P[2], P[4]] }, // P0,P3,P6輪空
-      { teamA: [P[0], P[5]], teamB: [P[3], P[6]] }, // P1,P2,P4輪空
+      { teamA: [P[1], P[2]], teamB: [P[3], P[4]] }, // P0,P5,P6輪空
+      { teamA: [P[0], P[5]], teamB: [P[1], P[6]] }, // P2,P3,P4輪空
+      { teamA: [P[2], P[4]], teamB: [P[5], P[6]] }, // P0,P1,P3輪空
+      { teamA: [P[0], P[3]], teamB: [P[2], P[5]] }, // P1,P4,P6輪空
+      { teamA: [P[1], P[4]], teamB: [P[3], P[6]] }, // P0,P2,P5輪空
       { teamA: [P[0], P[2]], teamB: [P[4], P[6]] }, // P1,P3,P5輪空
-      { teamA: [P[1], P[3]], teamB: [P[5], P[6]] }, // P0,P2,P4輪空
-      { teamA: [P[0], P[4]], teamB: [P[2], P[5]] }, // P1,P3,P6輪空
+      { teamA: [P[1], P[3]], teamB: [P[5], P[0]] }, // P2,P4,P6輪空
+      { teamA: [P[2], P[6]], teamB: [P[3], P[4]] }, // P0,P1,P5輪空
     ],
     8: [
       { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
