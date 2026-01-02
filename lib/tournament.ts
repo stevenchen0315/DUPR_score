@@ -88,49 +88,45 @@ export function generateRoundRobin(
   const remainingMatches = [...allMatches]
   
   while (remainingMatches.length > 0) {
-    let foundMatch = false
+    let bestMatchIndex = 0
+    let minViolations = Infinity
     
+    // 尋找最佳比賽（違反連續限制最少的）
     for (let i = 0; i < remainingMatches.length; i++) {
       const match = remainingMatches[i]
       const playersInMatch = [...match.teamA, ...match.teamB]
       
-      // 檢查是否有選手會連續打第3場
-      const wouldExceedLimit = playersInMatch.some(player => 
+      // 計算違反連續限制的選手數
+      const violations = playersInMatch.filter(player => 
         playerConsecutive[player] >= 2
-      )
+      ).length
       
-      if (!wouldExceedLimit) {
-        reorderedMatches.push(match)
-        remainingMatches.splice(i, 1)
-        
-        // 更新連續場數
-        players.forEach(player => {
-          if (playersInMatch.includes(player)) {
-            playerConsecutive[player]++
-          } else {
-            playerConsecutive[player] = 0
-          }
-        })
-        
-        foundMatch = true
+      if (violations === 0) {
+        // 找到完美匹配，立即使用
+        bestMatchIndex = i
         break
+      } else if (violations < minViolations) {
+        // 記錄違反最少的比賽
+        minViolations = violations
+        bestMatchIndex = i
       }
     }
     
-    // 如果找不到合適的比賽，強制選擇第一個
-    if (!foundMatch && remainingMatches.length > 0) {
-      const match = remainingMatches.shift()!
-      reorderedMatches.push(match)
-      
-      const playersInMatch = [...match.teamA, ...match.teamB]
-      players.forEach(player => {
-        if (playersInMatch.includes(player)) {
-          playerConsecutive[player]++
-        } else {
-          playerConsecutive[player] = 0
-        }
-      })
-    }
+    // 選擇最佳比賽
+    const selectedMatch = remainingMatches[bestMatchIndex]
+    reorderedMatches.push(selectedMatch)
+    remainingMatches.splice(bestMatchIndex, 1)
+    
+    const playersInMatch = [...selectedMatch.teamA, ...selectedMatch.teamB]
+    
+    // 更新連續場數
+    players.forEach(player => {
+      if (playersInMatch.includes(player)) {
+        playerConsecutive[player]++
+      } else {
+        playerConsecutive[player] = 0
+      }
+    })
   }
   
   return reorderedMatches
