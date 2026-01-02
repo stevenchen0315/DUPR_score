@@ -11,7 +11,7 @@ export function generateRoundRobin(
 
   // 根據人數決定每人打幾場
   const gamesPerPlayer = n === 4 ? 3 : n === 5 ? 4 : n === 6 ? 4 : n === 7 ? 6 : 7
-  const totalGames = (n * gamesPerPlayer) / 4
+  const totalGames = n === 7 ? 10 : (n * gamesPerPlayer) / 4
   if (!Number.isInteger(totalGames)) return []
 
   // 隨機打亂選手順序
