@@ -51,8 +51,8 @@ export function generateRoundRobin(
       { teamA: [P[2], P[6]], teamB: [P[3], P[4]] }, // P0,P1,P5輪空
       { teamA: [P[0], P[4]], teamB: [P[1], P[5]] }, // P2,P3,P6輪空
       { teamA: [P[2], P[3]], teamB: [P[0], P[6]] }, // P1,P4,P5輪空
-      { teamA: [P[1], P[6]], teamB: [P[4], P[5]] }, // P0,P2,P3輪空
-      { teamA: [P[3], P[5]], teamB: [P[0], P[1]] }, // P2,P4,P6輪空
+      { teamA: [P[1], P[2]], teamB: [P[4], P[5]] }, // P0,P3,P6輪空
+      { teamA: [P[3], P[5]], teamB: [P[0], P[2]] }, // P1,P4,P6輪空
     ],
     8: [
       { teamA: [P[0], P[1]], teamB: [P[2], P[3]] },
