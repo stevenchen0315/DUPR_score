@@ -72,6 +72,11 @@ export function generateRoundRobin(
 
   const allMatches = templates[n].slice(0, totalGames)
   
+  // 7人12場配置已經優化，不需要重新排序
+  if (n === 7) {
+    return allMatches
+  }
+  
   // 重新排序避免連續打超過2場
   const reorderedMatches: TournamentMatch[] = []
   const playerConsecutive: { [key: string]: number } = {}
