@@ -22,7 +22,6 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const {
     userList,
     rows,
-    storedPassword,
     eventName,
     isLoading,
     realtimeConnected,
@@ -45,12 +44,30 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     selectedPlayers: [] as string[],
     court: '' as string
   })
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false)
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
   const showScrollTop = useScrollToTop()
   
   const LOCKED = 'Locked'
   const isOpenMode = defaultMode === 'open'
+
+  const verifyPassword = async (inputPassword: string) => {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: inputPassword })
+      })
+      
+      const result = await response.json()
+      setIsPasswordVerified(result.valid)
+      return result.valid
+    } catch (error) {
+      setIsPasswordVerified(false)
+      return false
+    }
+  }
 
   const filteredRows = useMemo(() => createFilteredRows(rows, selectedPlayerFilter), [rows, selectedPlayerFilter])
 
@@ -703,7 +720,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         onEditRow={openEditModal}
         getFilteredOptions={getFilteredOptions}
         deletePassword={deletePassword}
-        storedPassword={storedPassword}
+        isPasswordVerified={isPasswordVerified}
       />
 
       {/* 排名表格 - 只在桌面版顯示 */}
@@ -771,7 +788,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               </div>
             </div>
           </button>
-          {deletePassword === storedPassword && (
+          {isPasswordVerified && (
             <button
               onClick={() => setShowTournamentModal(true)}
               className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
@@ -823,7 +840,14 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             type="password"
             placeholder="Password"
             value={deletePassword}
-            onChange={(e) => setDeletePassword(e.target.value)}
+            onChange={async (e) => {
+              setDeletePassword(e.target.value)
+              if (e.target.value) {
+                await verifyPassword(e.target.value)
+              } else {
+                setIsPasswordVerified(false)
+              }
+            }}
             className="border px-3 py-2 rounded w-24 text-sm h-10"
           />
           
@@ -836,9 +860,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
 
           <button
             onClick={handleDeleteAll}
-            disabled={storedPassword === null || deletePassword !== storedPassword}
+            disabled={!isPasswordVerified}
             className={`px-3 py-2 rounded text-white text-sm h-10 ${
-              deletePassword === storedPassword
+              isPasswordVerified
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-gray-300 cursor-not-allowed'
             }`}
@@ -847,7 +871,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           </button>
         </div>
 
-        {deletePassword === storedPassword && (
+        {isPasswordVerified && (
           <div className="flex items-center space-x-3 mt-2">
             <label className="text-sm text-gray-600 w-16">Event:</label>
             <input
