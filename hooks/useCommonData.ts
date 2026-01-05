@@ -19,7 +19,7 @@ export const useCommonData = (username: string) => {
 
       if (accountResponse.ok) {
         const account = await accountResponse.json()
-        if (account?.password) setStoredPassword(account.password)
+        if (account?.password_hash) setStoredPassword(account.password_hash)
         if (account?.event) setEventName(account.event)
       }
 
