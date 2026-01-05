@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useScoreData } from '@/hooks/useScoreData'
 import { FiPlus as Plus, FiDownload as Download } from 'react-icons/fi'
 import { createFilteredRows, handleFilterChange as utilHandleFilterChange } from '@/lib/constants'
@@ -45,6 +45,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     court: '' as string
   })
   const [isPasswordVerified, setIsPasswordVerified] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+  const verifyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
   const showScrollTop = useScrollToTop()
@@ -53,6 +55,11 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const isOpenMode = defaultMode === 'open'
 
   const verifyPassword = async (inputPassword: string) => {
+    if (!inputPassword) {
+      setIsPasswordVerified(false)
+      return false
+    }
+    
     try {
       const response = await fetch('/api/auth/verify', {
         method: 'POST',
@@ -67,6 +74,24 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       setIsPasswordVerified(false)
       return false
     }
+  }
+
+  const debouncedVerify = (inputPassword: string) => {
+    if (verifyTimeoutRef.current) {
+      clearTimeout(verifyTimeoutRef.current)
+    }
+    
+    if (!inputPassword) {
+      setIsPasswordVerified(false)
+      setIsVerifying(false)
+      return
+    }
+    
+    setIsVerifying(true)
+    verifyTimeoutRef.current = setTimeout(async () => {
+      await verifyPassword(inputPassword)
+      setIsVerifying(false)
+    }, 500)
   }
 
   const filteredRows = useMemo(() => createFilteredRows(rows, selectedPlayerFilter), [rows, selectedPlayerFilter])
@@ -840,13 +865,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             type="password"
             placeholder="Password"
             value={deletePassword}
-            onChange={async (e) => {
+            onChange={(e) => {
               setDeletePassword(e.target.value)
-              if (e.target.value) {
-                await verifyPassword(e.target.value)
-              } else {
-                setIsPasswordVerified(false)
-              }
+              debouncedVerify(e.target.value)
             }}
             className="border px-3 py-2 rounded w-24 text-sm h-10"
           />
