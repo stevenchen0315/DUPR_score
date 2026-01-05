@@ -13,7 +13,7 @@ interface UnifiedScoreTableProps {
   onEditRow?: (index: number) => void
   getFilteredOptions?: (row: any, currentIndex: number) => string[]
   deletePassword?: string
-  storedPassword?: string | null
+  isPasswordVerified?: boolean
 }
 
 export default function UnifiedScoreTable({
@@ -27,7 +27,7 @@ export default function UnifiedScoreTable({
   onEditRow,
   getFilteredOptions,
   deletePassword,
-  storedPassword
+  isPasswordVerified
 }: UnifiedScoreTableProps) {
   return (
     <>
@@ -130,7 +130,7 @@ export default function UnifiedScoreTable({
                       <button
                         onClick={() => {
                           if (row.lock === 'Locked') {
-                            if (deletePassword === storedPassword) {
+                            if (isPasswordVerified) {
                               onUpdateCell?.(rowIndex, 'lock', 'Unlocked')
                             }
                           } else {
@@ -139,12 +139,12 @@ export default function UnifiedScoreTable({
                         }}
                         className={`px-2 py-1 rounded text-white ${
                           row.lock === 'Locked'
-                            ? deletePassword === storedPassword
+                            ? isPasswordVerified
                               ? 'bg-red-500 hover:bg-red-600'
                               : 'bg-gray-300 cursor-not-allowed'
                             : 'bg-green-400 hover:bg-green-500'
                         }`}
-                        disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                        disabled={row.lock === 'Locked' && !isPasswordVerified}
                       >
                         {row.lock === 'Locked' ? <FaLock size={16} /> : <FaLockOpen size={16} />}
                       </button>
@@ -214,9 +214,9 @@ export default function UnifiedScoreTable({
               {!readonly && (
                 <button
                   onClick={() => onEditRow?.(rowIndex)}
-                  disabled={row.lock === 'Locked' && deletePassword !== storedPassword}
+                  disabled={row.lock === 'Locked' && !isPasswordVerified}
                   className={`p-2 rounded text-white ${
-                    row.lock === 'Locked' && deletePassword !== storedPassword
+                    row.lock === 'Locked' && !isPasswordVerified
                       ? 'bg-gray-300 cursor-not-allowed' 
                       : 'bg-blue-500 hover:bg-blue-600'
                   }`}
