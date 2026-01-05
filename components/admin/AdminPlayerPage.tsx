@@ -31,10 +31,17 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
   const [isPasswordVerified, setIsPasswordVerified] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const verifyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const suffix = `_${username}`
 
   const verifyPassword = async (inputPassword: string) => {
+    if (!inputPassword) {
+      setIsPasswordVerified(false)
+      return false
+    }
+    
     try {
       const response = await fetch('/api/auth/verify', {
         method: 'POST',
@@ -49,6 +56,24 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       setIsPasswordVerified(false)
       return false
     }
+  }
+
+  const debouncedVerify = (inputPassword: string) => {
+    if (verifyTimeoutRef.current) {
+      clearTimeout(verifyTimeoutRef.current)
+    }
+    
+    if (!inputPassword) {
+      setIsPasswordVerified(false)
+      setIsVerifying(false)
+      return
+    }
+    
+    setIsVerifying(true)
+    verifyTimeoutRef.current = setTimeout(async () => {
+      await verifyPassword(inputPassword)
+      setIsVerifying(false)
+    }, 500)
   }
 
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
@@ -524,13 +549,9 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           type="password"
           placeholder="Password"
           value={deletePassword}
-          onChange={async (e) => {
+          onChange={(e) => {
             setDeletePassword(e.target.value)
-            if (e.target.value) {
-              await verifyPassword(e.target.value)
-            } else {
-              setIsPasswordVerified(false)
-            }
+            debouncedVerify(e.target.value)
           }}
           className="border px-3 py-2 rounded w-28 text-sm h-10"
         />
