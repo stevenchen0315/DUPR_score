@@ -1,15 +1,28 @@
 import { supabaseServer } from './supabase-server'
+import bcrypt from 'bcrypt'
 
 export class DatabaseService {
   static async getAccount(username: string) {
     const { data, error } = await supabaseServer
       .from('account')
-      .select('password, event, default_mode')
+      .select('password_hash, event, default_mode')
       .eq('username', username)
       .single()
     
     if (error) throw error
     return data
+  }
+
+  static async verifyPassword(username: string, plainPassword: string) {
+    const { data, error } = await supabaseServer
+      .from('account')
+      .select('password_hash')
+      .eq('username', username)
+      .single()
+    
+    if (error || !data?.password_hash) return false
+    
+    return bcrypt.compareSync(plainPassword, data.password_hash)
   }
 
   static async getAllAccounts() {
