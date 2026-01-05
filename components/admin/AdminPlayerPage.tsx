@@ -15,7 +15,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const {
     userList,
     partnerNumbers,
-    storedPassword,
     isLoading,
     lockedNames,
     loadingLockedNames,
@@ -31,8 +30,26 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const suffix = `_${username}`
+
+  const verifyPassword = async (inputPassword: string) => {
+    try {
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password: inputPassword })
+      })
+      
+      const result = await response.json()
+      setIsPasswordVerified(result.valid)
+      return result.valid
+    } catch (error) {
+      setIsPasswordVerified(false)
+      return false
+    }
+  }
 
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
@@ -124,7 +141,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   }
 
   const togglePlayerSelection = (index: number) => {
-    if (deletePassword !== storedPassword) return
+    if (!isPasswordVerified) return
     
     const user = userList[index]
     const partnerNum = partnerNumbers[user.name]
@@ -156,7 +173,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   }
 
   const handlePartnerAction = async () => {
-    if (deletePassword !== storedPassword || isUpdatingPartner) return
+    if (!isPasswordVerified || isUpdatingPartner) return
     
     setIsUpdatingPartner(true)
     const selectedArray = Array.from(selectedPlayers)
@@ -463,7 +480,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       </div>
 
       {/* 固定隊友按鈕 */}
-      {deletePassword === storedPassword && getButtonText() && (
+      {isPasswordVerified && getButtonText() && (
         <div className="mb-4 text-center">
           <button
             onClick={handlePartnerAction}
@@ -507,14 +524,21 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           type="password"
           placeholder="Password"
           value={deletePassword}
-          onChange={(e) => setDeletePassword(e.target.value)}
+          onChange={async (e) => {
+            setDeletePassword(e.target.value)
+            if (e.target.value) {
+              await verifyPassword(e.target.value)
+            } else {
+              setIsPasswordVerified(false)
+            }
+          }}
           className="border px-3 py-2 rounded w-28 text-sm h-10"
         />
         <button
           onClick={handleDeleteAll}
-          disabled={storedPassword === null || deletePassword !== storedPassword}
+          disabled={!isPasswordVerified}
           className={`px-3 py-2 rounded text-white text-sm h-10 ${
-            deletePassword === storedPassword
+            isPasswordVerified
               ? 'bg-red-600 hover:bg-red-700'
               : 'bg-gray-300 cursor-not-allowed'
           }`}
