@@ -13,17 +13,17 @@ export class DatabaseService {
     return data
   }
 
-  static async verifyPassword(username: string, plainPassword: string) {
-    const { data, error } = await supabaseServer
-      .from('account')
-      .select('password_hash')
-      .eq('username', username)
-      .single()
-    
-    if (error || !data?.password_hash) return false
-    
-    return bcrypt.compareSync(plainPassword, data.password_hash)
-  }
+static async verifyPassword(username: string, plainPassword: string) {
+  const { data, error } = await supabaseServer
+    .from('account')
+    .select('password_hash')
+    .eq('username', username)
+    .single()
+  
+  if (error || !data?.password_hash) return false
+  
+  return await bcrypt.compare(plainPassword, data.password_hash)
+}
 
   static async getAllAccounts() {
     const { data, error } = await supabaseServer
