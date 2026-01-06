@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useScoreData } from '@/hooks/useScoreData'
 import { FiPlus as Plus, FiDownload as Download } from 'react-icons/fi'
-import { createFilteredRows, handleFilterChange as utilHandleFilterChange } from '@/lib/constants'
+import { createFilteredRows, handleFilterChange as utilHandleFilterChange, getPlayerMatchCounts } from '@/lib/constants'
 import { useDebouncedCallback, usePlayerFilter, useScrollToTop } from '@/lib/utils'
 import { generateRoundRobin } from '@/lib/tournament'
 import LoadingSpinner from '@/components/shared/LoadingSpinner'
@@ -53,6 +53,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const isOpenMode = defaultMode === 'open'
 
   const filteredRows = useMemo(() => createFilteredRows(rows, selectedPlayerFilter), [rows, selectedPlayerFilter])
+
+  const playerMatchCounts = useMemo(() => getPlayerMatchCounts(rows), [rows])
 
   const rankings = useMemo(() => {
     if (filteredRows.length === 0) return []
@@ -1276,6 +1278,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                         </div>
                         <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1">
                           {partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}
+                          <span className="text-gray-500 ml-2">
+                            {playerMatchCounts[user.name] || 0} matches
+                          </span>
                         </label>
                       </div>
                     )
