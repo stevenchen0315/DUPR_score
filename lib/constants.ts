@@ -77,3 +77,18 @@ export const handleFilterChange = (
     localStorage.removeItem(storageKey)
   }
 }
+
+export const getPlayerMatchCounts = (rows: any[]) => {
+  const matchCounts: {[playerName: string]: number} = {}
+  
+  rows.forEach(row => {
+    row.values.forEach((playerName: string) => {
+      if (playerName && playerName.trim()) {
+        const name = playerName.trim()
+        matchCounts[name] = (matchCounts[name] || 0) + 1
+      }
+    })
+  })
+  
+  return matchCounts
+}

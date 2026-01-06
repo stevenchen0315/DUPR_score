@@ -45,8 +45,8 @@ export default function UnifiedScoreTable({
                 <th className="border p-1 text-center w-12 sticky top-0 bg-white z-10">S/D</th>
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">A Score</th>
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
-                <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">time</th>
-                <th className="border p-1 text-center w-16 sticky top-0 bg-white z-10">court</th>
+                <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">Time</th>
+                <th className="border p-1 text-center w-16 sticky top-0 bg-white z-10">Court</th>
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
                 {isOpenMode && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
