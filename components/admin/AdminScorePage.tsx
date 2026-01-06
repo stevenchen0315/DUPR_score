@@ -1276,9 +1276,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                             )}
                           </label>
                         </div>
-                        <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1">
-                          {partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}
-                          <span className="text-gray-500 ml-2">
+                        <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1 flex justify-between">
+                          <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}</span>
+                          <span className="text-gray-500">
                             {playerMatchCounts[user.name] || 0} matches
                           </span>
                         </label>
