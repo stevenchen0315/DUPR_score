@@ -723,31 +723,33 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       {rankings.length > 0 && (
         <div className="hidden md:block mt-8 mb-6">
           <div className="flex flex-col items-center mb-4">
-            <h3 className="text-lg font-semibold mb-3 text-center">排名 (Rankings)</h3>
-            <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700">
-                排名篩選：
-              </label>
-              <select 
-                value={rankingFilter}
-                onChange={(e) => setRankingFilter(e.target.value)}
-                className="border rounded px-3 py-2 min-w-[120px] text-sm"
-              >
-                <option value="">全部選手</option>
-                {Array.from(new Set(rows.filter(row => row.court).map(row => row.court!.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
-                  <option key={`court-${court}`} value={`Court ${court}`}>
-                    Court {court}
-                  </option>
-                ))}
-              </select>
-              {rankingFilter && (
-                <button
-                  onClick={() => setRankingFilter('')}
-                  className="text-gray-500 hover:text-gray-700 text-sm"
+            <div className="flex items-center space-x-4 mb-3">
+              <h3 className="text-lg font-semibold">排名 (Rankings)</h3>
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">
+                  排名篩選：
+                </label>
+                <select 
+                  value={rankingFilter}
+                  onChange={(e) => setRankingFilter(e.target.value)}
+                  className="border rounded px-3 py-2 min-w-[120px] text-sm"
                 >
-                  清除
-                </button>
-              )}
+                  <option value="">全部選手</option>
+                  {Array.from(new Set(rows.filter(row => row.court).map(row => row.court!.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
+                    <option key={`court-${court}`} value={`Court ${court}`}>
+                      Court {court}
+                    </option>
+                  ))}
+                </select>
+                {rankingFilter && (
+                  <button
+                    onClick={() => setRankingFilter('')}
+                    className="text-gray-500 hover:text-gray-700 text-sm"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           <div className="overflow-auto">
