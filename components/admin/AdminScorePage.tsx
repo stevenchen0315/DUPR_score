@@ -727,7 +727,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               <h3 className="text-lg font-semibold">排名 (Rankings)</h3>
               <div className="flex items-center space-x-3">
                 <label className="text-sm font-medium text-gray-700">
-                  排名篩選：
+                  排名範圍：
                 </label>
                 <select 
                   value={rankingFilter}
