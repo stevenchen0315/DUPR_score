@@ -734,7 +734,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 className="border rounded px-3 py-2 min-w-[120px] text-sm"
               >
                 <option value="">全部選手</option>
-                {Array.from(new Set(rows.filter(row => row.court).map(row => row.court.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
+                {Array.from(new Set(rows.filter(row => row.court).map(row => row.court!.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
                   <option key={`court-${court}`} value={`Court ${court}`}>
                     Court {court}
                   </option>
