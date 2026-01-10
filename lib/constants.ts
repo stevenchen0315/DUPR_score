@@ -54,12 +54,30 @@ export const getPlayersInTable = (rows: any[], partnerNumbers: {[key: string]: n
   })
 }
 
+export const getCourtsInTable = (rows: any[]) => {
+  const courtsInTable = new Set<string>()
+  rows.forEach(row => {
+    if (row.court && row.court.toString().trim()) {
+      courtsInTable.add(row.court.toString().trim())
+    }
+  })
+  return Array.from(courtsInTable).sort((a, b) => parseInt(a) - parseInt(b))
+}
+
 export const scrollToTop = () => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 export const createFilteredRows = (rows: any[], selectedPlayerFilter: string) => {
   if (!selectedPlayerFilter) return rows
+  
+  // 檢查是否為 court 篩選
+  if (selectedPlayerFilter.startsWith('Court ')) {
+    const courtNumber = selectedPlayerFilter.replace('Court ', '')
+    return rows.filter(row => row.court && row.court.toString() === courtNumber)
+  }
+  
+  // 原有的選手篩選
   return rows.filter(row => 
     row.values.some((player: string) => player === selectedPlayerFilter)
   )
