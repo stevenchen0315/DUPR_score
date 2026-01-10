@@ -45,6 +45,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     selectedPlayers: [] as string[],
     court: '' as string
   })
+  const [rankingFilter, setRankingFilter] = useState('')
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
   const showScrollTop = useScrollToTop()
@@ -57,7 +58,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const playerMatchCounts = useMemo(() => getPlayerMatchCounts(rows), [rows])
 
   const rankings = useMemo(() => {
-    if (filteredRows.length === 0) return []
+    // 根據排名篩選條件決定要使用的比賽資料
+    let matchesToAnalyze = rows
+    
+    if (rankingFilter) {
+      if (rankingFilter.startsWith('Court ')) {
+        const courtNumber = rankingFilter.replace('Court ', '')
+        matchesToAnalyze = rows.filter(row => row.court && row.court.toString() === courtNumber)
+      }
+    }
+    
+    if (matchesToAnalyze.length === 0) return []
     
     const playerStats: {[playerName: string]: {
       wins: number
@@ -72,7 +83,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       }>
     }} = {}
     
-    const validMatches = filteredRows.filter(row => 
+    const validMatches = matchesToAnalyze.filter(row => 
       row.lock === LOCKED && 
       row.h !== '' && 
       row.i !== '' &&
@@ -171,7 +182,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     })
     
     return sortedRanking.slice(0, 8)
-  }, [filteredRows])
+  }, [rows, rankingFilter])
 
   const debouncedSave = useDebouncedCallback(async (row: any, isLockingAction: boolean = false) => {
     lastLocalUpdateRef.current = Date.now()
@@ -711,7 +722,36 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       {/* 排名表格 - 只在桌面版顯示 */}
       {rankings.length > 0 && (
         <div className="hidden md:block mt-8 mb-6">
-          <h3 className="text-lg font-semibold mb-4 text-center">排名 (Rankings)</h3>
+          <div className="flex flex-col items-center mb-4">
+            <div className="flex items-center space-x-4 mb-3">
+              <h3 className="text-lg font-semibold">排名 (Rankings)</h3>
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700">
+                  排名範圍：
+                </label>
+                <select 
+                  value={rankingFilter}
+                  onChange={(e) => setRankingFilter(e.target.value)}
+                  className="border rounded px-3 py-2 min-w-[120px] text-sm"
+                >
+                  <option value="">全部選手</option>
+                  {Array.from(new Set(rows.filter(row => row.court).map(row => row.court!.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
+                    <option key={`court-${court}`} value={`Court ${court}`}>
+                      Court {court}
+                    </option>
+                  ))}
+                </select>
+                {rankingFilter && (
+                  <button
+                    onClick={() => setRankingFilter('')}
+                    className="text-gray-500 hover:text-gray-700 text-sm"
+                  >
+                    清除
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
           <div className="overflow-auto">
             <table className="w-full border text-sm max-w-4xl mx-auto">
               <thead>
