@@ -47,6 +47,7 @@ export default function UnifiedScoreTable({
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
                 <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">Time</th>
                 <th className="border p-1 text-center w-16 sticky top-0 bg-white z-10">Court</th>
+                <th className="border p-1 text-center w-24 sticky top-0 bg-white z-10">Type</th>
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
                 {isOpenMode && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
@@ -125,6 +126,21 @@ export default function UnifiedScoreTable({
                       />
                     )}
                   </td>
+                  <td className="border p-1 text-center">
+                    {readonly ? (
+                      row.scoretype || 'SIDEOUT'
+                    ) : (
+                      <select
+                        value={row.scoretype || 'SIDEOUT'}
+                        onChange={(e) => onUpdateCell?.(rowIndex, 'scoretype', e.target.value)}
+                        disabled={row.lock === 'Locked'}
+                        className="w-full border px-1 text-center text-xs"
+                      >
+                        <option value="SIDEOUT">SIDEOUT</option>
+                        <option value="RALLY">RALLY</option>
+                      </select>
+                    )}
+                  </td>
                   {!readonly && (
                     <td className="border p-1 text-center">
                       <button
@@ -200,15 +216,18 @@ export default function UnifiedScoreTable({
                   {row.sd || '--'}
                 </span>
                 {row.court && (
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
                     Court {row.court}
                   </span>
                 )}
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
+                  {row.scoretype || 'SIDEOUT'}
+                </span>
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
                 </span>
                 {row.check && isOpenMode && (
-                  <span className="text-xs font-medium text-red-600">棄賽(WD)</span>
+                  <span className="text-xs font-medium text-red-600 whitespace-nowrap">棄賽(WD)</span>
                 )}
               </div>
               {!readonly && (

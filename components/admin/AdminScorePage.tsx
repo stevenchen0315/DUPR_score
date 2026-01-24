@@ -38,12 +38,13 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingRowIndex, setEditingRowIndex] = useState<number | null>(null)
   const [newMatch, setNewMatch] = useState({
-    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: ''
+    a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '', scoretype: 'SIDEOUT' as 'SIDEOUT' | 'RALLY'
   })
   const [showTournamentModal, setShowTournamentModal] = useState(false)
   const [tournamentConfig, setTournamentConfig] = useState({
     selectedPlayers: [] as string[],
-    court: '' as string
+    court: '' as string,
+    scoretype: 'SIDEOUT' as 'SIDEOUT' | 'RALLY'
   })
   const [rankingFilter, setRankingFilter] = useState('')
   
@@ -197,7 +198,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       team_b_score: row.i === '' ? null : parseInt(row.i),
       lock: row.lock === LOCKED,
       check: row.check,
-      court: row.court || null
+      court: row.court || null,
+      scoretype: row.scoretype || 'SIDEOUT'
     }
     
     if (isLockingAction && row.lock === LOCKED) {
@@ -224,7 +226,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         values: [...r.values]
       }
 
-      if (['h', 'i', 'lock', 'check', 'court'].includes(field)) {
+      if (['h', 'i', 'lock', 'check', 'court', 'scoretype'].includes(field)) {
         if ((field === 'h' || field === 'i') && value !== '') {
           if (!/^\d{1,2}$/.test(value) || +value > 99) return r
         }
@@ -330,13 +332,13 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   }
 
   const openAddModal = () => {
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '', scoretype: 'SIDEOUT' })
     setShowAddModal(true)
   }
 
   const closeAddModal = () => {
     setShowAddModal(false)
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '', scoretype: 'SIDEOUT' })
   }
 
   const openEditModal = (rowIndex: number) => {
@@ -349,7 +351,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       scoreA: row.h || '',
       scoreB: row.i || '',
       check: row.check || false,
-      court: row.court ? row.court.toString() : ''
+      court: row.court ? row.court.toString() : '',
+      scoretype: row.scoretype || 'SIDEOUT'
     })
     setEditingRowIndex(rowIndex)
     setShowEditModal(true)
@@ -358,7 +361,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const closeEditModal = () => {
     setShowEditModal(false)
     setEditingRowIndex(null)
-    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '' })
+    setNewMatch({ a1: '', a2: '', b1: '', b2: '', scoreA: '', scoreB: '', check: false, court: '', scoretype: 'SIDEOUT' })
   }
 
   const submitEditMatch = async () => {
@@ -384,6 +387,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       i: newMatch.scoreB,
       check: newMatch.check,
       court: newMatch.court ? parseInt(newMatch.court) : null,
+      scoretype: newMatch.scoretype,
       lock: isDataComplete ? 'Locked' : 'Unlocked',
       updated_time: isDataComplete ? new Date().toISOString() : newRows[originalIndex].updated_time
     }
@@ -402,6 +406,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       lock: isDataComplete,
       check: newMatch.check,
       court: newMatch.court ? parseInt(newMatch.court) : null,
+      scoretype: newMatch.scoretype,
       updated_time: isDataComplete ? new Date().toISOString() : undefined
     }
     
@@ -446,6 +451,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       check: newMatch.check,
       sd: sd,
       court: newMatch.court ? parseInt(newMatch.court) : null,
+      scoretype: newMatch.scoretype,
       updated_time: new Date().toISOString()
     }
     
@@ -465,6 +471,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       lock: true,
       check: newMatch.check,
       court: newMatch.court ? parseInt(newMatch.court) : null,
+      scoretype: newMatch.scoretype,
       updated_time: new Date().toISOString()
     }
     
@@ -585,16 +592,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         const b1User = findUser(b1), b2User = findUser(b2)
 
         return [
-          '', '', '', row.sd, eventName, today,
-          a1User.name, a1User.dupr_id, '',
-          a2User.name, a2User.dupr_id, '',
-          b1User.name, b1User.dupr_id, '',
-          b2User.name, b2User.dupr_id, '', '',
+          row.sd, row.scoretype || 'SIDEOUT', eventName, today,
+          a1User.name, a1User.dupr_id,
+          a2User.name, a2User.dupr_id,
+          b1User.name, b1User.dupr_id,
+          b2User.name, b2User.dupr_id,
           row.h, row.i
         ]
       })
 
-    const csvContent = csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
+    const header = 'matchType,scoreType,event,date,playerA1,playerA1DuprId,playerA2,playerA2DuprId,playerB1,playerB1DuprId,playerB2,playerB2DuprId,teamAGame1,teamBGame1'
+    const csvContent = header + '\n' + csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -626,7 +634,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       lock: 'Unlocked',
       check: false,
       sd: 'D',
-      court: courtNumber
+      court: courtNumber,
+      scoretype: tournamentConfig.scoretype
     }))
 
     setRows(prev => [...prev, ...newRows])
@@ -645,7 +654,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           team_b_score: null,
           lock: false,
           check: false,
-          court: courtNumber
+          court: courtNumber,
+          scoretype: tournamentConfig.scoretype
         }
         
         const response = await fetch(`/api/write/scores/${username}?mode=admin`, {
@@ -921,6 +931,35 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
+              {/* Segmented Control for Score Type */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      newMatch.scoretype === 'SIDEOUT'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    發球得分(Sideout)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                      newMatch.scoretype === 'RALLY'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    直接得分(Rally)
+                  </button>
+                </div>
+              </div>
+
               {/* Team A */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
@@ -1087,6 +1126,35 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
+              {/* Segmented Control for Score Type */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      newMatch.scoretype === 'SIDEOUT'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    發球得分(Sideout)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                      newMatch.scoretype === 'RALLY'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    直接得分(Rally)
+                  </button>
+                </div>
+              </div>
+
               {/* Team A */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
@@ -1246,6 +1314,35 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
+              {/* Segmented Control for Score Type */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <div className="flex rounded-lg border border-gray-300 overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
+                      tournamentConfig.scoretype === 'SIDEOUT'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    發球得分(Sideout)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'RALLY' }))}
+                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
+                      tournamentConfig.scoretype === 'RALLY'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    直接得分(Rally)
+                  </button>
+                </div>
+              </div>
+
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   選擇選手 ({tournamentConfig.selectedPlayers.length} 人)
