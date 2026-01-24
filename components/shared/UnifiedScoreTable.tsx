@@ -206,9 +206,9 @@ export default function UnifiedScoreTable({
             row.values.some((val: string) => val === selectedPlayerFilter && selectedPlayerFilter) ? 'ring-2 ring-yellow-300' : ''
           }`}>
             <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center space-x-2">
-                <span className="text-lg font-bold text-gray-800">#{row.serial_number}</span>
-                <span className={`px-2 py-1 rounded text-xs font-medium ${
+              <div className="flex items-center space-x-2 flex-wrap">
+                <span className="text-lg font-bold text-gray-800 whitespace-nowrap">#{row.serial_number}</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
                   row.sd === 'S' ? 'bg-blue-100 text-blue-800' : 
                   row.sd === 'D' ? 'bg-green-100 text-green-800' : 
                   'bg-gray-100 text-gray-600'
@@ -216,18 +216,18 @@ export default function UnifiedScoreTable({
                   {row.sd || '--'}
                 </span>
                 {row.court && (
-                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  <span className="px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800 whitespace-nowrap">
                     Court {row.court}
                   </span>
                 )}
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
                   {row.scoretype || 'SIDEOUT'}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
                 </span>
                 {row.check && isOpenMode && (
-                  <span className="text-xs font-medium text-red-600">棄賽(WD)</span>
+                  <span className="text-xs font-medium text-red-600 whitespace-nowrap">棄賽(WD)</span>
                 )}
               </div>
               {!readonly && (
