@@ -220,7 +220,7 @@ export default function UnifiedScoreTable({
                     Court {row.court}
                   </span>
                 )}
-                <span className="px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800">
                   {row.scoretype || 'SIDEOUT'}
                 </span>
                 <span className="text-xs text-gray-500">
