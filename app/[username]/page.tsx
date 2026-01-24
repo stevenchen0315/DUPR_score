@@ -121,7 +121,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
       <MarqueeAd />
 
       <footer className="text-center text-gray-500 text-sm mt-4 border-t pt-4">
-        Copyright &copy; {new Date().getFullYear()}{' '}
+        Copyright &copy; 2025-{new Date().getFullYear()}{' '}
         <a
           href="mailto:steven0315@kimo.com"
           className="text-blue-500 hover:underline"
