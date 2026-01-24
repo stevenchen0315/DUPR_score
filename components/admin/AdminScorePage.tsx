@@ -601,8 +601,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         ]
       })
 
-    const header = 'matchType,scoreType,event,date,playerA1,playerA1DuprId,playerA2,playerA2DuprId,playerB1,playerB1DuprId,playerB2,playerB2DuprId,teamAGame1,teamBGame1'
-    const csvContent = header + '\n' + csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
+    const header = 'matchType,scoreType,event,date,playerA1,playerA1DuprId,playerA2,playerA2DuprId,playerB1,playerB1DuprId,playerB2,playerB2DuprId,teamAGame1,teamBGame1,teamAGame2,teamBGame2,teamAGame3,teamBGame3,teamAGame4,teamBGame4,teamAGame5,teamBGame5'
+    const csvContent = header + '\n' + csvRows.map((r) => r.map((v) => `"${v}"`).join(',') + ',,,,,,,,').join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
