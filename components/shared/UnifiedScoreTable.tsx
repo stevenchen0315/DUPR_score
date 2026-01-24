@@ -206,9 +206,9 @@ export default function UnifiedScoreTable({
             row.values.some((val: string) => val === selectedPlayerFilter && selectedPlayerFilter) ? 'ring-2 ring-yellow-300' : ''
           }`}>
             <div className="flex justify-between items-center mb-3">
-              <div className="flex items-center space-x-2 flex-wrap">
-                <span className="text-lg font-bold text-gray-800 whitespace-nowrap">#{row.serial_number}</span>
-                <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${
+              <div className="flex items-center space-x-2">
+                <span className="text-lg font-bold text-gray-800">#{row.serial_number}</span>
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
                   row.sd === 'S' ? 'bg-blue-100 text-blue-800' : 
                   row.sd === 'D' ? 'bg-green-100 text-green-800' : 
                   'bg-gray-100 text-gray-600'
