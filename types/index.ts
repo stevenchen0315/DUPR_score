@@ -15,4 +15,5 @@ export type score = {
   lock: boolean
   check: boolean
   court?: number | null
+  scoretype?: 'SIDEOUT' | 'RALLY'
 }

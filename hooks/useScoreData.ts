@@ -13,6 +13,7 @@ type Row = {
   lock: string
   check: boolean
   court?: number | null
+  scoretype?: string
   updated_time?: string
 }
 
@@ -44,6 +45,7 @@ export const useScoreData = (username: string) => {
         lock: item.lock ? 'Locked' : 'Unlocked',
         check: Boolean(item.check),
         court: item.court,
+        scoretype: item.scoretype || 'SIDEOUT',
         updated_time: item.updated_time,
         sd:
           [item.player_a1, item.player_a2].filter(Boolean).length === 1 &&

@@ -47,6 +47,7 @@ export default function UnifiedScoreTable({
                 <th className="border p-1 text-center w-20 sticky top-0 bg-white z-10">B Score</th>
                 <th className="border p-1 text-center w-32 sticky top-0 bg-white z-10">Time</th>
                 <th className="border p-1 text-center w-16 sticky top-0 bg-white z-10">Court</th>
+                <th className="border p-1 text-center w-24 sticky top-0 bg-white z-10">Type</th>
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Lock</th>}
                 {!readonly && <th className="border p-1 sticky top-0 bg-white z-10">Delete</th>}
                 {isOpenMode && <th className="border p-1 sticky top-0 bg-white z-10">WD</th>}
@@ -123,6 +124,21 @@ export default function UnifiedScoreTable({
                         min="1"
                         max="99"
                       />
+                    )}
+                  </td>
+                  <td className="border p-1 text-center">
+                    {readonly ? (
+                      row.scoretype || 'SIDEOUT'
+                    ) : (
+                      <select
+                        value={row.scoretype || 'SIDEOUT'}
+                        onChange={(e) => onUpdateCell?.(rowIndex, 'scoretype', e.target.value)}
+                        disabled={row.lock === 'Locked'}
+                        className="w-full border px-1 text-center text-xs"
+                      >
+                        <option value="SIDEOUT">SIDEOUT</option>
+                        <option value="RALLY">RALLY</option>
+                      </select>
                     )}
                   </td>
                   {!readonly && (
@@ -204,6 +220,9 @@ export default function UnifiedScoreTable({
                     Court {row.court}
                   </span>
                 )}
+                <span className="px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800">
+                  {row.scoretype || 'SIDEOUT'}
+                </span>
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
                 </span>

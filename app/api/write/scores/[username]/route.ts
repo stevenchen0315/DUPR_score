@@ -32,6 +32,7 @@ export async function POST(
       lock: body.lock || false,
       check: body.check || false,
       court: body.court || null,
+      scoretype: body.scoretype || 'SIDEOUT',
       updated_time: body.updated_time
     }
     const data = await DatabaseService.insertScore(scoreData)
@@ -71,6 +72,7 @@ export async function PUT(
       lock: body.lock || false,
       check: body.check || false,
       court: body.court || null,
+      scoretype: body.scoretype || 'SIDEOUT',
       updated_time: body.updated_time
     }
     const data = await DatabaseService.upsertScore(scoreData)
