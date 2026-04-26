@@ -6,6 +6,7 @@ import PlayerList from '@/components/shared/PlayerList'
 import { VALIDATION } from '@/lib/constants'
 import { player_info } from '@/types'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
+import { useLanguage } from '@/lib/i18n'
 
 interface AdminPlayerPageProps {
   username: string
@@ -25,6 +26,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     setPartnerNumbers
   } = usePlayerData(username)
 
+  const { t } = useLanguage()
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
   const [editIndex, setEditIndex] = useState<number | null>(null)
   const [deletePassword, setDeletePassword] = useState('')
@@ -266,18 +268,18 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     if (selectedArray.length === 1) {
       const player = userList[selectedArray[0]]
       const partnerNum = partnerNumbers[player.name]
-      return partnerNum ? '解除固定' : null
+      return partnerNum ? t('unlinkPartner') : null
     }
     
     if (selectedArray.length === 2) {
-      return '固定隊友'
+      return t('linkPartner')
     }
     
     return null
   }
 
   const handleDeleteAll = async () => {
-    const confirmed = window.confirm('⚠️ 確定要刪除所有玩家資料嗎？此操作無法復原！')
+    const confirmed = window.confirm(t('confirmDeleteAllPlayers'))
     if (!confirmed) return
 
     const response = await fetch(`/api/write/players/${username}?delete_all=true&mode=admin`, {
@@ -286,9 +288,9 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
 
     if (response.ok) {
       setUserList([])
-      setDeleteMessage('✅ 所有玩家資料已刪除')
+      setDeleteMessage(t('allPlayersDeleted'))
     } else {
-      setDeleteMessage('❌ 刪除失敗，請稍後再試')
+      setDeleteMessage(t('deleteFailed'))
     }
   }
 
@@ -404,7 +406,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
         />
         <input
           className="border rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1"
-          placeholder="名稱 (name)"
+          placeholder={t('namePlaceholder')}
           value={userInfo.name}
           onChange={(e) => {
             const value = e.target.value
@@ -427,10 +429,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           `}
         >
           <div className="leading-tight text-center">
-            <div>{editIndex !== null ? '更新選手' : '新增選手'}</div>
-            <div className="text-xs">
-              {editIndex !== null ? '(Update player)' : '(Add player)'}
-            </div>
+            <div>{editIndex !== null ? t('updatePlayer') : t('addPlayer')}</div>
           </div>
         </button>
         
@@ -439,7 +438,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           <button
             onClick={exportCSV}
             className="text-green-600 hover:text-green-800"
-            title="匯出 CSV"
+            title={t('exportCsvTooltip')}
           >
             <Download size={18} />
           </button>
@@ -447,7 +446,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
             onClick={() => hasActiveScores ? null : fileInputRef.current?.click()}
             disabled={hasActiveScores}
             className={`${hasActiveScores ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-800'}`}
-            title={hasActiveScores ? "比賽進行中，無法匯入選手名單" : "匯入 CSV"}
+            title={hasActiveScores ? t('importDisabledTooltip') : t('importCsvTooltip')}
           >
             <Upload size={18} />
           </button>
@@ -471,12 +470,12 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
             className={`px-4 py-2 text-white rounded-md ${
               isUpdatingPartner 
                 ? 'bg-gray-400 cursor-not-allowed'
-                : getButtonText() === '解除固定' 
+                : getButtonText() === t('unlinkPartner') 
                   ? 'bg-red-600 hover:bg-red-700' 
                   : 'bg-green-600 hover:bg-green-700'
             }`}
           >
-            {isUpdatingPartner ? '處理中...' : getButtonText()}
+            {isUpdatingPartner ? t('processing') : getButtonText()}
           </button>
         </div>
       )}
@@ -498,7 +497,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       <div className="relative w-full my-6">
         <hr className="border-t border-gray-300" />
         <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
-          Organizer only
+          {t('organizerOnly')}
         </span>
       </div>
 
@@ -519,7 +518,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
               : 'bg-gray-300 cursor-not-allowed'
           }`}
         >
-          一鍵刪除
+          {t('deleteAll')}
         </button>
       </div>
 
