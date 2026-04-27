@@ -1,4 +1,5 @@
 import './globals.css'
+import { LanguageProvider } from '@/lib/i18n'
 
 export const metadata = {
   title: 'DUPLA',
@@ -12,7 +13,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <LanguageProvider>{children}</LanguageProvider>
+      </body>
     </html>
   )
 }

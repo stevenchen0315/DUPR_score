@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useMemo, useEffect } from 'react'
 import { useScoreData } from '@/hooks/useScoreData'
@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/shared/LoadingSpinner'
 import ScrollToTopButton from '@/components/shared/ScrollToTopButton'
 import PlayerFilter from '@/components/shared/PlayerFilter'
 import UnifiedScoreTable from '@/components/shared/UnifiedScoreTable'
+import { useLanguage } from '@/lib/i18n'
 
 type CellField = 'D' | 'E' | 'F' | 'G'
 
@@ -50,6 +51,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   
   const { selectedPlayerFilter, setSelectedPlayerFilter, FILTER_STORAGE_KEY } = usePlayerFilter(username, userList)
   const showScrollTop = useScrollToTop()
+  const { t } = useLanguage()
   
   const LOCKED = 'Locked'
   const isOpenMode = defaultMode === 'open'
@@ -59,7 +61,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const playerMatchCounts = useMemo(() => getPlayerMatchCounts(rows), [rows])
 
   const rankings = useMemo(() => {
-    // 根據排名篩選條件決定要使用的比賽資料
+    // ?寞???蝭拚璇辣瘙箏?閬蝙?函?瘥魚鞈?
     let matchesToAnalyze = rows
     
     if (rankingFilter) {
@@ -370,7 +372,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     const row = filteredRows[editingRowIndex]
     const originalIndex = rows.findIndex(r => r.serial_number === row.serial_number)
     
-    // 檢查資料是否完整（比照 validateNewMatch 邏輯）
+    // 瑼Ｘ鞈??臬摰嚗???validateNewMatch ?摩嚗?
     const { a1, a2, b1, b2, scoreA, scoreB } = newMatch
     const teamACount = [a1, a2].filter(Boolean).length
     const teamBCount = [b1, b2].filter(Boolean).length
@@ -418,17 +420,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
       })
       
       if (!response.ok) {
-        alert('儲存失敗，請重試')
+        alert(t('saveFailed'))
       }
     } catch (error) {
-      alert('網路錯誤，請重試')
+      alert(t('networkError'))
     }
   }
 
   const deleteEditingMatch = async () => {
     if (editingRowIndex === null) return
     
-    const confirmed = window.confirm('確定要刪除這場比賽嗎？')
+    const confirmed = window.confirm(t('confirmDeleteMatch'))
     if (!confirmed) return
     
     await deleteRow(editingRowIndex)
@@ -485,11 +487,11 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         
         if (!response.ok) {
           setRows(prev => prev.filter(row => row.serial_number !== nextSerial))
-          alert('儲存失敗，請重試')
+          alert(t('saveFailed'))
         }
       } catch (error) {
         setRows(prev => prev.filter(row => row.serial_number !== nextSerial))
-        alert('網路錯誤，請重試')
+        alert(t('networkError'))
       }
     }, 0)
   }
@@ -547,7 +549,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   }
 
   const handleDeleteAll = async () => {
-    const confirmed = window.confirm('⚠️ 確定要刪除所有比賽資料嗎？此操作無法復原！')
+    const confirmed = window.confirm(t('confirmDeleteAllScores'))
     if (!confirmed) return
 
     const response = await fetch(`/api/write/scores/${username}?delete_all=true&mode=admin`, {
@@ -555,9 +557,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     })
     if (response.ok) {
       setRows([])
-      setDeleteMessage('✅ 所有比賽資料已刪除')
+      setDeleteMessage(t('allScoresDeleted'))
     } else {
-      setDeleteMessage('❌ 刪除失敗，請稍後再試')
+      setDeleteMessage(t('deleteFailed'))
     }
   }
 
@@ -619,7 +621,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
   const generateTournament = async () => {
     const matches = generateRoundRobin(tournamentConfig.selectedPlayers)
     if (matches.length === 0) {
-      alert('無法生成賽程，請檢查選手人數設定')
+      alert(t('generateFailed'))
       return
     }
 
@@ -641,7 +643,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
     setRows(prev => [...prev, ...newRows])
     setShowTournamentModal(false)
     
-    // 批量新增到資料庫
+    // ?寥??啣??啗??澈
     try {
       await Promise.all(newRows.map(async (row, index) => {
         const payload = {
@@ -667,8 +669,8 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         if (!response.ok) throw new Error('API Error')
       }))      
     } catch (error) {
-      alert('部分比賽新增失敗，請重試')
-      // 回滾本地狀態
+      alert(t('partialAddFailed'))
+      // ?遝?砍???
       setRows(prev => prev.filter(row => row.serial_number < nextSerial))
     }
   }
@@ -729,22 +731,22 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
         storedPassword={storedPassword}
       />
 
-      {/* 排名表格 - 只在桌面版顯示 */}
+      {/* ??銵冽 - ?芸獢?＊蝷?*/}
       {rankings.length > 0 && (
         <div className="hidden md:block mt-8 mb-6">
           <div className="flex flex-col items-center mb-4">
             <div className="flex items-center space-x-4 mb-3">
-              <h3 className="text-lg font-semibold">排名 (Rankings)</h3>
+              <h3 className="text-lg font-semibold">{t('ranking')}</h3>
               <div className="flex items-center space-x-3">
                 <label className="text-sm font-medium text-gray-700">
-                  排名範圍：
+                  {t('rankingScope')}
                 </label>
                 <select 
                   value={rankingFilter}
                   onChange={(e) => setRankingFilter(e.target.value)}
                   className="border rounded px-3 py-2 min-w-[120px] text-sm"
                 >
-                  <option value="">全部選手</option>
+                  <option value="">{t('allPlayers')}</option>
                   {Array.from(new Set(rows.filter(row => row.court).map(row => row.court!.toString()))).sort((a, b) => parseInt(a) - parseInt(b)).map(court => (
                     <option key={`court-${court}`} value={`Court ${court}`}>
                       Court {court}
@@ -756,7 +758,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                     onClick={() => setRankingFilter('')}
                     className="text-gray-500 hover:text-gray-700 text-sm"
                   >
-                    清除
+                    {t('clear')}
                   </button>
                 )}
               </div>
@@ -766,10 +768,10 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             <table className="w-full border text-sm max-w-4xl mx-auto">
               <thead>
                 <tr className="bg-gray-50">
-                  <th className="border p-2 text-center">排名</th>
-                  <th className="border p-2">選手</th>
-                  <th className="border p-2 text-center">勝場</th>
-                  <th className="border p-2 text-center">敗場</th>
+                  <th className="border p-2 text-center">{t('rankCol')}</th>
+                  <th className="border p-2">{t('playerCol')}</th>
+                  <th className="border p-2 text-center">{t('winsCol')}</th>
+                  <th className="border p-2 text-center">{t('lossesCol')}</th>
                   <th className="border p-2 text-center">PD</th>
                 </tr>
               </thead>
@@ -808,7 +810,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
           filteredRowsLength={filteredRows.length}
         />
 
-        {/* 手機版按鈕 */}
+        {/* ??????*/}
         <div className="md:hidden flex flex-col space-y-2">
           <button
             id="add-match-button-mobile"
@@ -818,8 +820,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             <div className="flex items-center">
               <Plus size={16} className="mr-2" />
               <div className="leading-tight text-left">
-                <div>添加比賽</div>
-                <div className="text-xs">(Add Match)</div>
+                <div>{t('addMatch')}</div>
               </div>
             </div>
           </button>
@@ -829,14 +830,13 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
             >
               <div className="leading-tight text-center">
-                <div>循環賽</div>
-                <div className="text-xs">(Round-robin)</div>
+                <div>{t('roundRobin')}</div>
               </div>
             </button>
           )}
         </div>
 
-        {/* 桌面版按鈕 */}
+        {/* 獢????*/}
         <div className="hidden md:flex space-x-3">
           <button
             id="add-match-button-desktop"
@@ -846,8 +846,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             <div className="flex items-center">
               <Plus size={16} className="mr-2" />
               <div className="leading-tight text-left">
-                <div>添加比賽</div>
-                <div className="text-xs">(Add Match)</div>
+                <div>{t('addMatch')}</div>
               </div>
             </div>
           </button>
@@ -856,17 +855,16 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             className="bg-blue-600 text-white px-3 py-1 rounded w-36 flex justify-center"
           >
             <div className="leading-tight text-center">
-              <div>循環賽</div>
-              <div className="text-xs">(Round-robin)</div>
+              <div>{t('roundRobin')}</div>
             </div>
           </button>
         </div>
           
-        {/* 管理員專用區塊 */}
+        {/* 蝞∠??∪??典?憛?*/}
         <div className="relative w-full my-4">
           <hr className="border-t border-gray-300" />
           <span className="absolute left-1/2 -translate-x-1/2 -top-2 bg-white px-2 text-sm text-gray-500 italic">
-            Organizer only
+            {t('organizerOnly')}
           </span>
         </div>
           
@@ -883,7 +881,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             onClick={exportCSV}
             className="bg-yellow-500 text-white px-4 py-2 rounded inline-flex items-center text-sm h-10"
           >
-            <Download size={18} className="mr-2" /> 匯出 CSV
+            <Download size={18} className="mr-2" /> {t('exportCsv')}
           </button>
 
           <button
@@ -895,7 +893,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                 : 'bg-gray-300 cursor-not-allowed'
             }`}
           >
-            一鍵刪除
+            {t('deleteAll')}
           </button>
         </div>
 
@@ -907,7 +905,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               value={eventName}
               onChange={(e) => setEventName(e.target.value)}
               className="border px-3 py-2 rounded flex-1 text-sm h-10 bg-white"
-              placeholder="輸入 Event 名稱"
+              placeholder={t('eventPlaceholder')}
             />
           </div>
         )}
@@ -917,12 +915,12 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
 
       <ScrollToTopButton show={showScrollTop} />
 
-      {/* 新增比賽 Modal */}
+      {/* Add Match Modal */}
       {showAddModal && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">新增比賽(New Match)</h2>
+              <h2 className="text-lg font-semibold">{t('newMatch')}</h2>
               <button onClick={closeAddModal} className="text-gray-500 hover:text-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -931,193 +929,84 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
-              {/* Segmented Control for Score Type */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('scoreType')}</label>
                 <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                      newMatch.scoretype === 'SIDEOUT'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    發球得分(Sideout)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
-                      newMatch.scoretype === 'RALLY'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    直接得分(Rally)
-                  </button>
+                  <button type="button" onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${newMatch.scoretype === 'SIDEOUT' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('sideout')}</button>
+                  <button type="button" onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${newMatch.scoretype === 'RALLY' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('rally')}</button>
                 </div>
               </div>
 
-              {/* Team A */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 space-y-3">
-                    <select
-                      value={newMatch.a1}
-                      onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.a1} onChange={(e) => handleNewMatchChange('a1', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
-                    <select
-                      value={newMatch.a2}
-                      onChange={(e) => handleNewMatchChange('a2', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.a2} onChange={(e) => handleNewMatchChange('a2', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
                   </div>
                   <div className="w-20">
-                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="21"
-                      step="1"
-                      value={newMatch.scoreA}
-                      onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
-                    />
+                    <label className="block text-xs text-gray-600 mb-1 text-center">{t('score')}</label>
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="21" step="1" value={newMatch.scoreA} onChange={(e) => handleNewMatchChange('scoreA', e.target.value)} className="w-full border rounded px-3 py-2 text-center text-lg font-semibold" placeholder="0" />
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-gray-300 my-4"></div>
 
-              {/* Team B */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 space-y-3">
-                    <select
-                      value={newMatch.b1}
-                      onChange={(e) => handleNewMatchChange('b1', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.b1} onChange={(e) => handleNewMatchChange('b1', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
-                    <select
-                      value={newMatch.b2}
-                      onChange={(e) => handleNewMatchChange('b2', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.b2} onChange={(e) => handleNewMatchChange('b2', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
                   </div>
                   <div className="w-20">
-                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="21"
-                      step="1"
-                      value={newMatch.scoreB}
-                      onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
-                    />
+                    <label className="block text-xs text-gray-600 mb-1 text-center">{t('score')}</label>
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="21" step="1" value={newMatch.scoreB} onChange={(e) => handleNewMatchChange('scoreB', e.target.value)} className="w-full border rounded px-3 py-2 text-center text-lg font-semibold" placeholder="0" />
                   </div>
                 </div>
               </div>
 
-              {/* Court 輸入欄位 */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={newMatch.court}
-                  onChange={(e) => handleNewMatchChange('court', e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="輸入場地編號"
-                  min="1"
-                  max="99"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('courtOptional')}</label>
+                <input type="number" inputMode="numeric" pattern="[0-9]*" value={newMatch.court} onChange={(e) => handleNewMatchChange('court', e.target.value)} className="w-full border rounded px-3 py-2" placeholder={t('courtPlaceholder')} min="1" max="99" />
               </div>
             </div>
 
             <div className="flex justify-between items-center p-4 border-t">
               {isOpenMode && (
                 <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={newMatch.check}
-                    onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))}
-                    className="w-4 h-4"
-                  />
-                  <label className="text-sm text-gray-600">棄賽(WD)</label>
+                  <input type="checkbox" checked={newMatch.check} onChange={(e) => setNewMatch(prev => ({ ...prev, check: e.target.checked }))} className="w-4 h-4" />
+                  <label className="text-sm text-gray-600">{t('wd')}</label>
                 </div>
               )}
-              
               <div className={`flex space-x-3 ${!isOpenMode ? 'w-full justify-end' : ''}`}>
-                <button
-                  onClick={closeAddModal}
-                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={submitNewMatch}
-                  disabled={!validateNewMatch()}
-                  className={`px-4 py-2 rounded ${
-                    validateNewMatch()
-                      ? 'bg-green-600 text-white hover:bg-green-700'
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  確認新增
-                </button>
+                <button onClick={closeAddModal} className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">{t('cancel')}</button>
+                <button onClick={submitNewMatch} disabled={!validateNewMatch()} className={`px-4 py-2 rounded ${validateNewMatch() ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>{t('confirmAdd')}</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 編輯比賽 Modal */}
+      {/* Edit Match Modal */}
       {showEditModal && (
         <div className="md:hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">編輯比賽(Edit Match)</h2>
+              <h2 className="text-lg font-semibold">{t('editMatch')}</h2>
               <button onClick={closeEditModal} className="text-gray-500 hover:text-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1126,187 +1015,80 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
-              {/* Segmented Control for Score Type */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('scoreType')}</label>
                 <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                      newMatch.scoretype === 'SIDEOUT'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    發球得分(Sideout)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
-                      newMatch.scoretype === 'RALLY'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    直接得分(Rally)
-                  </button>
+                  <button type="button" onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'SIDEOUT' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${newMatch.scoretype === 'SIDEOUT' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('sideout')}</button>
+                  <button type="button" onClick={() => setNewMatch(prev => ({ ...prev, scoretype: 'RALLY' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${newMatch.scoretype === 'RALLY' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('rally')}</button>
                 </div>
               </div>
 
-              {/* Team A */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team A</label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 space-y-3">
-                    <select
-                      value={newMatch.a1}
-                      onChange={(e) => handleNewMatchChange('a1', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.a1} onChange={(e) => handleNewMatchChange('a1', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a2', 'b1', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
-                    <select
-                      value={newMatch.a2}
-                      onChange={(e) => handleNewMatchChange('a2', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.a2} onChange={(e) => handleNewMatchChange('a2', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'b1', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
                   </div>
                   <div className="w-20">
-                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="21"
-                      step="1"
-                      value={newMatch.scoreA}
-                      onChange={(e) => handleNewMatchChange('scoreA', e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
-                    />
+                    <label className="block text-xs text-gray-600 mb-1 text-center">{t('score')}</label>
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="21" step="1" value={newMatch.scoreA} onChange={(e) => handleNewMatchChange('scoreA', e.target.value)} className="w-full border rounded px-3 py-2 text-center text-lg font-semibold" placeholder="0" />
                   </div>
                 </div>
               </div>
 
               <div className="border-t border-gray-300 my-4"></div>
 
-              {/* Team B */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Team B</label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 space-y-3">
-                    <select
-                      value={newMatch.b1}
-                      onChange={(e) => handleNewMatchChange('b1', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.b1} onChange={(e) => handleNewMatchChange('b1', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'a2', 'b2']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
-                    <select
-                      value={newMatch.b2}
-                      onChange={(e) => handleNewMatchChange('b2', e.target.value)}
-                      className="w-full border rounded px-4 py-3 text-base"
-                    >
+                    <select value={newMatch.b2} onChange={(e) => handleNewMatchChange('b2', e.target.value)} className="w-full border rounded px-4 py-3 text-base">
                       <option value="">--</option>
-                      {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (
-                        <option key={name} value={name}>
-                          {partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}
-                        </option>
-                      ))}
+                      {getAvailableOptions(['a1', 'a2', 'b1']).map(name => (<option key={name} value={name}>{partnerNumbers[name] ? `(${partnerNumbers[name]}) ` : ''}{name}</option>))}
                     </select>
                   </div>
                   <div className="w-20">
-                    <label className="block text-xs text-gray-600 mb-1 text-center">分數(Score)</label>
-                    <input
-                      type="number"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      min="0"
-                      max="21"
-                      step="1"
-                      value={newMatch.scoreB}
-                      onChange={(e) => handleNewMatchChange('scoreB', e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-center text-lg font-semibold"
-                      placeholder="0"
-                    />
+                    <label className="block text-xs text-gray-600 mb-1 text-center">{t('score')}</label>
+                    <input type="number" inputMode="numeric" pattern="[0-9]*" min="0" max="21" step="1" value={newMatch.scoreB} onChange={(e) => handleNewMatchChange('scoreB', e.target.value)} className="w-full border rounded px-3 py-2 text-center text-lg font-semibold" placeholder="0" />
                   </div>
                 </div>
               </div>
 
-              {/* Court 輸入欄位 */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Court (Optional)</label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={newMatch.court}
-                  onChange={(e) => handleNewMatchChange('court', e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="輸入場地編號"
-                  min="1"
-                  max="99"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('courtOptional')}</label>
+                <input type="number" inputMode="numeric" pattern="[0-9]*" value={newMatch.court} onChange={(e) => handleNewMatchChange('court', e.target.value)} className="w-full border rounded px-3 py-2" placeholder={t('courtPlaceholder')} min="1" max="99" />
               </div>
             </div>
 
             <div className="flex justify-between items-center p-4 border-t">
-              <button
-                onClick={deleteEditingMatch}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                刪除
-              </button>
-              
+              <button onClick={deleteEditingMatch} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">{t('delete')}</button>
               <div className="flex space-x-3">
-                <button
-                  onClick={closeEditModal}
-                  className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-                >
-                  取消
-                </button>
-                <button
-                  onClick={submitEditMatch}
-                  className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-                >
-                  完成
-                </button>
+                <button onClick={closeEditModal} className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">{t('cancel')}</button>
+                <button onClick={submitEditMatch} className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">{t('done')}</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* 循環賽設定 Modal */}
+      {/* Tournament Modal */}
       {showTournamentModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="p-4 border-b flex justify-between items-center">
-              <h2 className="text-lg font-semibold">循環賽設定</h2>
-              <button 
-                onClick={() => setShowTournamentModal(false)} 
-                className="text-gray-500 hover:text-gray-700"
-              >
+              <h2 className="text-lg font-semibold">{t('tournamentSettings')}</h2>
+              <button onClick={() => setShowTournamentModal(false)} className="text-gray-500 hover:text-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -1314,75 +1096,28 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
             </div>
             
             <div className="p-4">
-              {/* Segmented Control for Score Type */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">計分方式(ScoreType)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('scoreType')}</label>
                 <div className="flex rounded-lg border border-gray-300 overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'SIDEOUT' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-                      tournamentConfig.scoretype === 'SIDEOUT'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    發球得分(Sideout)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'RALLY' }))}
-                    className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${
-                      tournamentConfig.scoretype === 'RALLY'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-white text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    直接得分(Rally)
-                  </button>
+                  <button type="button" onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'SIDEOUT' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${tournamentConfig.scoretype === 'SIDEOUT' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('sideout')}</button>
+                  <button type="button" onClick={() => setTournamentConfig(prev => ({ ...prev, scoretype: 'RALLY' }))} className={`flex-1 px-4 py-2 text-sm font-medium transition-colors border-l border-gray-300 ${tournamentConfig.scoretype === 'RALLY' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}>{t('rally')}</button>
                 </div>
               </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  選擇選手 ({tournamentConfig.selectedPlayers.length} 人)
+                  {t('selectPlayers')} ({tournamentConfig.selectedPlayers.length}{t('personUnit') ? ` ${t('personUnit')}` : ''})
                 </label>
-                <div className="text-xs text-gray-500 mb-2">
-                  系統會根據人數自動安排最佳場數，選手只能選4-8位
-                </div>
+                <div className="text-xs text-gray-500 mb-2">{t('autoArrangeHint')}</div>
                 <div className="flex items-center space-x-3 py-2 border-b border-gray-200 mb-3 pb-3">
                   <div className="relative">
-                    <input
-                      type="checkbox"
-                      checked={isAllSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = isPartialSelected
-                      }}
-                      onChange={toggleSelectAll}
-                      className="sr-only"
-                      id="select-all-checkbox"
-                    />
-                    <label 
-                      htmlFor="select-all-checkbox"
-                      className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500"
-                      style={{
-                        backgroundColor: isAllSelected ? '#3B82F6' : isPartialSelected ? '#3B82F6' : 'transparent',
-                        borderColor: isAllSelected || isPartialSelected ? '#3B82F6' : '#D1D5DB'
-                      }}
-                    >
-                      {isAllSelected && (
-                        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                      {isPartialSelected && !isAllSelected && (
-                        <div className="w-3 h-0.5 bg-white rounded"></div>
-                      )}
+                    <input type="checkbox" checked={isAllSelected} ref={(el) => { if (el) el.indeterminate = isPartialSelected }} onChange={toggleSelectAll} className="sr-only" id="select-all-checkbox" />
+                    <label htmlFor="select-all-checkbox" className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500" style={{ backgroundColor: isAllSelected ? '#3B82F6' : isPartialSelected ? '#3B82F6' : 'transparent', borderColor: isAllSelected || isPartialSelected ? '#3B82F6' : '#D1D5DB' }}>
+                      {isAllSelected && (<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>)}
+                      {isPartialSelected && !isAllSelected && (<div className="w-3 h-0.5 bg-white rounded"></div>)}
                     </label>
                   </div>
-                  <label htmlFor="select-all-checkbox" className="text-sm font-medium text-gray-700 cursor-pointer">
-                    全選/全不選 (Select All)
-                  </label>
+                  <label htmlFor="select-all-checkbox" className="text-sm font-medium text-gray-700 cursor-pointer">{t('selectAll')}</label>
                 </div>
                 <div className="max-h-48 overflow-y-auto border rounded p-3">
                   {userList.map((user, index) => {
@@ -1391,33 +1126,14 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
                     return (
                       <div key={user.name} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2 -mx-2">
                         <div className="relative">
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => togglePlayerSelection(user.name)}
-                            className="sr-only"
-                            id={checkboxId}
-                          />
-                          <label 
-                            htmlFor={checkboxId}
-                            className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500"
-                            style={{
-                              backgroundColor: isChecked ? '#3B82F6' : 'transparent',
-                              borderColor: isChecked ? '#3B82F6' : '#D1D5DB'
-                            }}
-                          >
-                            {isChecked && (
-                              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
+                          <input type="checkbox" checked={isChecked} onChange={() => togglePlayerSelection(user.name)} className="sr-only" id={checkboxId} />
+                          <label htmlFor={checkboxId} className="flex items-center justify-center w-6 h-6 border-2 border-gray-300 rounded cursor-pointer transition-colors hover:border-blue-500" style={{ backgroundColor: isChecked ? '#3B82F6' : 'transparent', borderColor: isChecked ? '#3B82F6' : '#D1D5DB' }}>
+                            {isChecked && (<svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>)}
                           </label>
                         </div>
                         <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1 flex justify-between">
                           <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}</span>
-                          <span className="text-gray-500">
-                            {playerMatchCounts[user.name] || 0} matches
-                          </span>
+                          <span className="text-gray-500">{playerMatchCounts[user.name] || 0} matches</span>
                         </label>
                       </div>
                     )
@@ -1426,44 +1142,15 @@ export default function AdminScorePage({ username, defaultMode = 'dupr' }: Admin
               </div>
 
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Court (Optional)
-                </label>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  value={tournamentConfig.court}
-                  onChange={(e) => setTournamentConfig(prev => ({ ...prev, court: e.target.value }))}
-                  className="w-full border rounded px-3 py-2"
-                  placeholder="輸入場地編號"
-                  min="1"
-                  max="99"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  如果填寫，所有生成的比賽都會設定為此場地
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t('courtOptional')}</label>
+                <input type="number" inputMode="numeric" pattern="[0-9]*" value={tournamentConfig.court} onChange={(e) => setTournamentConfig(prev => ({ ...prev, court: e.target.value }))} className="w-full border rounded px-3 py-2" placeholder={t('courtPlaceholder')} min="1" max="99" />
+                <div className="text-xs text-gray-500 mt-1">{t('courtHintAll')}</div>
               </div>
             </div>
 
             <div className="flex justify-end space-x-3 p-4 border-t">
-              <button
-                onClick={() => setShowTournamentModal(false)}
-                className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50"
-              >
-                取消
-              </button>
-              <button
-                onClick={generateTournament}
-                disabled={tournamentConfig.selectedPlayers.length < 4 || tournamentConfig.selectedPlayers.length > 8}
-                className={`px-4 py-2 rounded ${
-                  tournamentConfig.selectedPlayers.length >= 4 && tournamentConfig.selectedPlayers.length <= 8
-                    ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                生成賽程
-              </button>
+              <button onClick={() => setShowTournamentModal(false)} className="px-4 py-2 border border-gray-300 rounded text-gray-700 hover:bg-gray-50">{t('cancel')}</button>
+              <button onClick={generateTournament} disabled={tournamentConfig.selectedPlayers.length < 4 || tournamentConfig.selectedPlayers.length > 8} className={`px-4 py-2 rounded ${tournamentConfig.selectedPlayers.length >= 4 && tournamentConfig.selectedPlayers.length <= 8 ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}>{t('generateSchedule')}</button>
             </div>
           </div>
         </div>

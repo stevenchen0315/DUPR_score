@@ -1,6 +1,7 @@
 import { formatDateTime } from '@/lib/constants'
 import { FaLock, FaLockOpen, FaEdit } from 'react-icons/fa'
 import { FiTrash2 as Trash2 } from 'react-icons/fi'
+import { useLanguage } from '@/lib/i18n'
 
 interface UnifiedScoreTableProps {
   filteredRows: any[]
@@ -29,9 +30,11 @@ export default function UnifiedScoreTable({
   deletePassword,
   storedPassword
 }: UnifiedScoreTableProps) {
+  const { t } = useLanguage()
+
   return (
     <>
-      {/* 桌面版表格 */}
+      {/* Desktop table */}
       <div className="hidden md:block">
         <div className="overflow-auto max-h-[70vh] relative">
           <table className="w-full border text-sm mb-6">
@@ -128,7 +131,7 @@ export default function UnifiedScoreTable({
                   </td>
                   <td className="border p-1 text-center">
                     {readonly ? (
-                      row.scoretype || 'SIDEOUT'
+                      row.scoretype === 'RALLY' ? t('rally') : t('sideout')
                     ) : (
                       <select
                         value={row.scoretype || 'SIDEOUT'}
@@ -136,8 +139,8 @@ export default function UnifiedScoreTable({
                         disabled={row.lock === 'Locked'}
                         className="w-full border px-1 text-center text-xs"
                       >
-                        <option value="SIDEOUT">SIDEOUT</option>
-                        <option value="RALLY">RALLY</option>
+                        <option value="SIDEOUT">{t('sideout')}</option>
+                        <option value="RALLY">{t('rally')}</option>
                       </select>
                     )}
                   </td>
@@ -199,7 +202,7 @@ export default function UnifiedScoreTable({
         </div>
       </div>
 
-      {/* 手機版卡片 */}
+      {/* Mobile cards */}
       <div className="md:hidden space-y-3 mb-6">
         {filteredRows.map((row, rowIndex) => (
           <div key={rowIndex} className={`bg-white border rounded-lg shadow-sm p-4 ${
@@ -221,13 +224,13 @@ export default function UnifiedScoreTable({
                   </span>
                 )}
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
-                  {row.scoretype || 'SIDEOUT'}
+                  {row.scoretype === 'RALLY' ? t('rally') : t('sideout')}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
                 </span>
                 {row.check && isOpenMode && (
-                  <span className="text-xs font-medium text-red-600 whitespace-nowrap">棄賽(WD)</span>
+                  <span className="text-xs font-medium text-red-600 whitespace-nowrap">{t('wd')}</span>
                 )}
               </div>
               {!readonly && (
@@ -351,7 +354,7 @@ export default function UnifiedScoreTable({
                     disabled={row.lock === 'Locked'}
                     className="w-4 h-4"
                   />
-                  <label className="text-sm text-gray-600">棄賽(WD)</label>
+                  <label className="text-sm text-gray-600">{t('wd')}</label>
                 </div>
               </div>
             )}

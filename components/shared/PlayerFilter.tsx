@@ -1,5 +1,6 @@
 import { getPlayersInTable, getCourtsInTable } from '@/lib/constants'
 import { FaFilter } from 'react-icons/fa'
+import { useLanguage } from '@/lib/i18n'
 
 interface PlayerFilterProps {
   selectedPlayerFilter: string
@@ -18,13 +19,14 @@ export default function PlayerFilter({
 }: PlayerFilterProps) {
   const players = getPlayersInTable(rows, partnerNumbers)
   const courts = getCourtsInTable(rows)
+  const { t } = useLanguage()
   
   return (
     <div className="flex flex-col items-center space-y-4">
       <div className="flex items-center space-x-3">
         <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
           <FaFilter size={14} />
-          篩選(Filter)：
+          {t('filter')}
         </label>
         <select 
           value={selectedPlayerFilter}
@@ -48,7 +50,7 @@ export default function PlayerFilter({
             onClick={() => onFilterChange('')}
             className="text-gray-500 hover:text-gray-700 text-sm"
           >
-            清除(Clear)
+            {t('clearFilter')}
           </button>
         )}
       </div>

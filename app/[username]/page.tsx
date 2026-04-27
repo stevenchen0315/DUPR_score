@@ -9,6 +9,7 @@ import AdminScorePage from '@/components/admin/AdminScorePage'
 import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
+import { useLanguage } from '@/lib/i18n'
 
 export default function UserPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
@@ -18,6 +19,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
   const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
   const [userDefaultMode, setUserDefaultMode] = useState<string>('dupr')
   const searchParams = useSearchParams()
+  const { lang, toggle, t } = useLanguage()
   
   // 決定最終模式
   const modeParam = searchParams.get('mode')
@@ -68,12 +70,18 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
 
   return (
     <div className="px-6 pt-3 pb-6">
-      <header className="flex justify-between sm:justify-start sm:relative items-center mb-3 border-b pb-2">
+      <header className="flex justify-between items-center mb-3 border-b pb-2">
         <a href={`/${username}`} className="text-2xl font-black text-blue-600 hover:text-blue-700 transition-colors" style={{fontWeight: 900, textShadow: '0 0 1px currentColor'}}>DUPLA</a>
+        <button
+          onClick={toggle}
+          className="px-2.5 py-1 text-sm border rounded-md hover:bg-gray-100 transition font-medium"
+        >
+          {lang === 'zh' ? 'EN' : '中文'}
+        </button>
       </header>
 
       <h1 className="text-xl sm:text-2xl font-bold text-blue-600 text-center mb-4 mt-2">
-        {webEvent || `Organizer: ${capitalizeFirstLetter(username)}`}
+        {webEvent || `${t('organizer')}: ${capitalizeFirstLetter(username)}`}
       </h1>
 
       <div className="flex justify-center gap-4 mb-4">
@@ -86,8 +94,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
           }`}
         >
           <div className="text-center leading-tight">
-            <div>選手資料</div>
-            <div className="text-xs">(Players)</div>
+            <div>{t('playerData')}</div>
           </div>
         </button>
         <button
@@ -99,8 +106,7 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
           }`}
         >
           <div className="text-center leading-tight">
-            <div>比賽分數</div>
-            <div className="text-xs">(Matches)</div>
+            <div>{t('matchScores')}</div>
           </div>
         </button>
       </div>
