@@ -131,7 +131,7 @@ export default function UnifiedScoreTable({
                   </td>
                   <td className="border p-1 text-center">
                     {readonly ? (
-                      row.scoretype || 'SIDEOUT'
+                      row.scoretype === 'RALLY' ? t('rally') : t('sideout')
                     ) : (
                       <select
                         value={row.scoretype || 'SIDEOUT'}
@@ -139,8 +139,8 @@ export default function UnifiedScoreTable({
                         disabled={row.lock === 'Locked'}
                         className="w-full border px-1 text-center text-xs"
                       >
-                        <option value="SIDEOUT">SIDEOUT</option>
-                        <option value="RALLY">RALLY</option>
+                        <option value="SIDEOUT">{t('sideout')}</option>
+                        <option value="RALLY">{t('rally')}</option>
                       </select>
                     )}
                   </td>
@@ -224,7 +224,7 @@ export default function UnifiedScoreTable({
                   </span>
                 )}
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-100 text-orange-800 whitespace-nowrap">
-                  {row.scoretype || 'SIDEOUT'}
+                  {row.scoretype === 'RALLY' ? t('rally') : t('sideout')}
                 </span>
                 <span className="text-xs text-gray-500">
                   {formatDateTime(row.updated_time)}
