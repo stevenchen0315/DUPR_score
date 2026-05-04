@@ -81,6 +81,7 @@ const dict = {
   duprLoggingIn: { zh: '登入中...', en: 'Logging in...' },
   duprLoginFailed: { zh: '登入失敗，請確認帳號密碼', en: 'Login failed, check credentials' },
   duprClose: { zh: '關閉', en: 'Close' },
+  duprInvalidId: { zh: '無效ID', en: 'Invalid ID' },
 
   // PlayerFilter
   filter: { zh: '篩選：', en: 'Filter:' },
