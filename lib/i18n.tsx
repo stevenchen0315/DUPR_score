@@ -71,6 +71,10 @@ const dict = {
   generateFailed: { zh: '無法生成賽程，請檢查選手人數設定', en: 'Cannot generate, check player count' },
   partialAddFailed: { zh: '部分比賽新增失敗，請重試', en: 'Some matches failed, please retry' },
 
+  // DUPR Ratings
+  fetchDuprRatings: { zh: '查詢 DUPR', en: 'Fetch DUPR' },
+  fetchingDupr: { zh: '查詢中...', en: 'Fetching...' },
+
   // PlayerFilter
   filter: { zh: '篩選：', en: 'Filter:' },
   clearFilter: { zh: '清除', en: 'Clear' },
