@@ -3,6 +3,13 @@
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
 
+export interface DuprRating {
+  duprId: string
+  name: string
+  doubles: string
+  doublesRS: number
+}
+
 interface PlayerListProps {
   userList: player_info[]
   partnerNumbers: {[key: string]: number | null}
@@ -10,6 +17,7 @@ interface PlayerListProps {
   loadingLockedNames: boolean
   selectedPlayers: Set<number>
   readonly?: boolean
+  duprRatings?: {[duprId: string]: DuprRating}
   onEdit?: (index: number) => void
   onDelete?: (index: number) => void
   onToggleSelection?: (index: number) => void
@@ -22,6 +30,7 @@ export default function PlayerList({
   loadingLockedNames,
   selectedPlayers,
   readonly = false,
+  duprRatings = {},
   onEdit,
   onDelete,
   onToggleSelection
@@ -31,6 +40,23 @@ export default function PlayerList({
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
+    )
+  }
+
+  const RatingBadge = ({ duprId }: { duprId: string }) => {
+    const rating = duprRatings[duprId.toUpperCase()]
+    if (!rating) return null
+
+    const isNR = rating.doubles === 'NR'
+    return (
+      <span className={`inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
+        isNR ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-800'
+      }`}>
+        {isNR ? 'NR' : rating.doubles}
+        {!isNR && (
+          <span className="text-blue-500">RS:{rating.doublesRS}</span>
+        )}
+      </span>
     )
   }
 
@@ -83,6 +109,7 @@ export default function PlayerList({
           >
             <div className="text-base font-medium text-gray-800">
               {player1.name} <span className="text-sm text-gray-500">({player1.dupr_id})</span>
+              <RatingBadge duprId={player1.dupr_id} />
             </div>
             {!readonly && (
               <div className="flex gap-3">
@@ -118,6 +145,7 @@ export default function PlayerList({
           >
             <div className="text-base font-medium text-gray-800">
               {player2.name} <span className="text-sm text-gray-500">({player2.dupr_id})</span>
+              <RatingBadge duprId={player2.dupr_id} />
             </div>
             {!readonly && (
               <div className="flex gap-3">
@@ -176,6 +204,7 @@ export default function PlayerList({
       >
         <div className="text-base font-medium text-gray-800">
           {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
+          <RatingBadge duprId={user.dupr_id} />
         </div>
         {!readonly && (
           <div className="flex gap-3">
