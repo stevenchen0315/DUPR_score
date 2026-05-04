@@ -28,6 +28,43 @@ export default function ReadonlyPlayerPage({ username }: ReadonlyPlayerPageProps
   const [duprPassword, setDuprPassword] = useState('')
   const [duprLoginError, setDuprLoginError] = useState('')
 
+  const fetchRatingsWithToken = async (token: string): Promise<boolean> => {
+    const res = await fetch(API_ENDPOINTS.DUPR_RATINGS(username), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    })
+    const data = await res.json()
+    console.log('[DUPR Debug]', JSON.stringify(data.debug, null, 2))
+    if (!res.ok) return false
+    const ratingsMap: {[duprId: string]: any} = {}
+    data.ratings?.forEach((r: any) => {
+      ratingsMap[r.duprId.toUpperCase()] = r
+    })
+    setDuprRatings(ratingsMap)
+    return true
+  }
+
+  const handleDuprFetch = async () => {
+    setIsFetchingDupr(true)
+    try {
+      const savedToken = localStorage.getItem('dupr_token')
+      if (savedToken) {
+        const success = await fetchRatingsWithToken(savedToken)
+        if (success) {
+          setIsFetchingDupr(false)
+          return
+        }
+        localStorage.removeItem('dupr_token')
+      }
+      setShowDuprLogin(true)
+    } catch {
+      setShowDuprLogin(true)
+    } finally {
+      setIsFetchingDupr(false)
+    }
+  }
+
   const handleDuprLogin = async () => {
     if (!duprEmail || !duprPassword) return
     setIsFetchingDupr(true)
@@ -45,18 +82,13 @@ export default function ReadonlyPlayerPage({ username }: ReadonlyPlayerPageProps
         return
       }
 
-      const res = await fetch(API_ENDPOINTS.DUPR_RATINGS(username), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: loginData.accessToken })
-      })
-      if (res.ok) {
-        const data = await res.json()
-        const ratingsMap: {[duprId: string]: any} = {}
-        data.ratings?.forEach((r: any) => {
-          ratingsMap[r.duprId.toUpperCase()] = r
-        })
-        setDuprRatings(ratingsMap)
+      localStorage.setItem('dupr_token', loginData.accessToken)
+
+      const success = await fetchRatingsWithToken(loginData.accessToken)
+      if (!success) {
+        setDuprLoginError(t('duprLoginFailed'))
+        setIsFetchingDupr(false)
+        return
       }
       setShowDuprLogin(false)
       setDuprPassword('')
@@ -84,7 +116,7 @@ export default function ReadonlyPlayerPage({ username }: ReadonlyPlayerPageProps
       <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
         {userList.length} players
         <button
-          onClick={() => setShowDuprLogin(true)}
+          onClick={handleDuprFetch}
           disabled={isFetchingDupr || userList.length === 0}
           className={`ml-2 px-3 py-1 rounded text-xs font-medium ${
             isFetchingDupr || userList.length === 0
