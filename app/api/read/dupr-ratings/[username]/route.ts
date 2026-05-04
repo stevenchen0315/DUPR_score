@@ -21,8 +21,8 @@ async function fetchDuprRating(duprId: string, token: string) {
         exclude: [],
         includeUnclaimedPlayers: true,
         filter: {
-          lat: 25.0599924,
-          lng: 121.4806088,
+          lat: null,
+          lng: null,
           rating: { maxRating: null, minRating: null },
           locationText: ''
         }
