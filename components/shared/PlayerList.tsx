@@ -2,12 +2,14 @@
 
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
+import { useLanguage } from '@/lib/i18n'
 
 export interface DuprRating {
   duprId: string
   name: string
   doubles: string
   doublesRS: number
+  status?: string
 }
 
 interface PlayerListProps {
@@ -35,6 +37,8 @@ export default function PlayerList({
   onDelete,
   onToggleSelection
 }: PlayerListProps) {
+  const { t } = useLanguage()
+
   if (loadingLockedNames) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
@@ -47,15 +51,27 @@ export default function PlayerList({
     const rating = duprRatings[duprId.toUpperCase()]
     if (!rating) return null
 
+    if (rating.doubles === 'NOT_FOUND' || rating.status === 'NOT_FOUND') {
+      return (
+        <span className="inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700 border border-orange-300">
+          ⚠️ {t('duprInvalidId')}
+        </span>
+      )
+    }
+
     const isNR = rating.doubles === 'NR'
+    if (isNR) {
+      return (
+        <span className="inline-flex items-center ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+          NR
+        </span>
+      )
+    }
+
     return (
-      <span className={`inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium ${
-        isNR ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-800'
-      }`}>
-        {isNR ? 'NR' : rating.doubles}
-        {!isNR && (
-          <span className="text-blue-500">RS:{rating.doublesRS}</span>
-        )}
+      <span className="inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
+        {rating.doubles}
+        <span className="text-blue-500">RS:{rating.doublesRS}</span>
       </span>
     )
   }
