@@ -28,13 +28,29 @@ async function fetchDuprRating(duprId: string, token: string) {
       })
     })
 
-    if (!res.ok) return null
+    console.log(`[DUPR] Search ${duprId} - status: ${res.status}`)
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.log(`[DUPR] Search ${duprId} - error: ${errText}`)
+      return null
+    }
 
     const data = await res.json()
+    console.log(`[DUPR] Search ${duprId} - hits: ${data.result?.hits?.length ?? 0}`)
+
+    if (data.result?.hits?.length > 0) {
+      const hit = data.result.hits[0]
+      console.log(`[DUPR] Search ${duprId} - found duprId: ${hit.duprId}, doubles: ${hit.ratings?.doubles}`)
+    }
+
     const hit = data.result?.hits?.find(
       (h: any) => h.duprId?.toUpperCase() === duprId.toUpperCase()
     )
-    if (!hit) return null
+    if (!hit) {
+      console.log(`[DUPR] Search ${duprId} - no exact match found`)
+      return null
+    }
 
     return {
       duprId: hit.duprId,
@@ -44,7 +60,8 @@ async function fetchDuprRating(duprId: string, token: string) {
       singles: hit.ratings?.singles ?? 'NR',
       singlesRS: hit.ratings?.singlesReliabilityScore ?? 0,
     }
-  } catch {
+  } catch (err) {
+    console.error(`[DUPR] Search ${duprId} - exception:`, err)
     return null
   }
 }
@@ -62,11 +79,14 @@ export async function POST(
     const username = await extractUsername(params)
     const players = await DatabaseService.getPlayersByUsername(username)
 
+    console.log(`[DUPR] Username: ${username}, players count: ${players?.length ?? 0}`)
+
     if (!players || players.length === 0) {
       return createApiResponse({ ratings: [] })
     }
 
     const duprIds = players.map(p => p.dupr_id.replace(`_${username}`, ''))
+    console.log(`[DUPR] DUPR IDs to search:`, duprIds)
 
     const ratings: any[] = []
     for (const duprId of duprIds) {
