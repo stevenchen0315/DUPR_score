@@ -49,14 +49,14 @@ async function fetchDuprRating(duprId: string, token: string) {
   }
 }
 
-export async function GET(
+export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const token = process.env.DUPR_AUTH_TOKEN
+    const { token } = await request.json()
     if (!token) {
-      return createApiResponse({ error: 'DUPR token not configured' }, 500)
+      return createApiResponse({ error: 'DUPR token required' }, 401)
     }
 
     const username = await extractUsername(params)
