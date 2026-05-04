@@ -74,6 +74,13 @@ const dict = {
   // DUPR Ratings
   fetchDuprRatings: { zh: '查詢 DUPR', en: 'Fetch DUPR' },
   fetchingDupr: { zh: '查詢中...', en: 'Fetching...' },
+  duprLogin: { zh: 'DUPR 登入', en: 'DUPR Login' },
+  duprEmail: { zh: 'Email', en: 'Email' },
+  duprPassword: { zh: '密碼', en: 'Password' },
+  duprLoginBtn: { zh: '登入並查詢', en: 'Login & Fetch' },
+  duprLoggingIn: { zh: '登入中...', en: 'Logging in...' },
+  duprLoginFailed: { zh: '登入失敗，請確認帳號密碼', en: 'Login failed, check credentials' },
+  duprClose: { zh: '關閉', en: 'Close' },
 
   // PlayerFilter
   filter: { zh: '篩選：', en: 'Filter:' },
