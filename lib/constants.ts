@@ -12,7 +12,8 @@ export const API_ENDPOINTS = {
   PLAYERS: (username: string) => `/api/read/players/${username}`,
   SCORES: (username: string) => `/api/read/scores/${username}`,
   ACCOUNT: (username: string) => `/api/read/account/${username}`,
-  ACCOUNTS: '/api/read/account'
+  ACCOUNTS: '/api/read/account',
+  DUPR_RATINGS: (username: string) => `/api/read/dupr-ratings/${username}`,
 } as const
 
 export const VALIDATION = {
