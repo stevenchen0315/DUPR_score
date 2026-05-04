@@ -64,9 +64,8 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: loginData.accessToken })
       })
-      const data = await res.json()
-      console.log('[DUPR Debug]', JSON.stringify(data.debug, null, 2))
       if (res.ok) {
+        const data = await res.json()
         const ratingsMap: {[duprId: string]: any} = {}
         data.ratings?.forEach((r: any) => {
           ratingsMap[r.duprId.toUpperCase()] = r
