@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { usePlayerData } from '@/hooks/usePlayerData'
 import PlayerList from '@/components/shared/PlayerList'
-import { VALIDATION } from '@/lib/constants'
+import { VALIDATION, API_ENDPOINTS } from '@/lib/constants'
 import { player_info } from '@/types'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
 import { useLanguage } from '@/lib/i18n'
@@ -33,8 +33,29 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
+  const [duprRatings, setDuprRatings] = useState<{[duprId: string]: any}>({})
+  const [isFetchingDupr, setIsFetchingDupr] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const suffix = `_${username}`
+
+  const fetchDuprRatings = async () => {
+    setIsFetchingDupr(true)
+    try {
+      const res = await fetch(API_ENDPOINTS.DUPR_RATINGS(username))
+      if (res.ok) {
+        const data = await res.json()
+        const ratingsMap: {[duprId: string]: any} = {}
+        data.ratings?.forEach((r: any) => {
+          ratingsMap[r.duprId.toUpperCase()] = r
+        })
+        setDuprRatings(ratingsMap)
+      }
+    } catch (error) {
+      console.error('Fetch DUPR ratings error:', error)
+    } finally {
+      setIsFetchingDupr(false)
+    }
+  }
 
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
@@ -450,6 +471,17 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           >
             <Upload size={18} />
           </button>
+          <button
+            onClick={fetchDuprRatings}
+            disabled={isFetchingDupr || userList.length === 0}
+            className={`ml-1 px-3 py-1 rounded text-xs font-medium ${
+              isFetchingDupr || userList.length === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700'
+            }`}
+          >
+            {isFetchingDupr ? t('fetchingDupr') : t('fetchDuprRatings')}
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -488,6 +520,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
         loadingLockedNames={loadingLockedNames}
         selectedPlayers={selectedPlayers}
         readonly={false}
+        duprRatings={duprRatings}
         onEdit={editUser}
         onDelete={deleteUser}
         onToggleSelection={togglePlayerSelection}
