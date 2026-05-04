@@ -3,6 +3,7 @@ import { DatabaseService } from '@/lib/database'
 import { createApiResponse, handleApiError, extractUsername } from '@/lib/api-utils'
 
 async function fetchDuprRating(duprId: string, token: string) {
+  const debug: any = { duprId }
   try {
     const res = await fetch('https://api.dupr.gg/player/v1.0/search', {
       method: 'POST',
@@ -28,41 +29,48 @@ async function fetchDuprRating(duprId: string, token: string) {
       })
     })
 
-    console.log(`[DUPR] Search ${duprId} - status: ${res.status}`)
+    debug.httpStatus = res.status
 
     if (!res.ok) {
-      const errText = await res.text()
-      console.log(`[DUPR] Search ${duprId} - error: ${errText}`)
-      return null
+      debug.error = await res.text()
+      return { rating: null, debug }
     }
 
     const data = await res.json()
-    console.log(`[DUPR] Search ${duprId} - hits: ${data.result?.hits?.length ?? 0}`)
+    debug.totalHits = data.result?.hits?.length ?? 0
 
     if (data.result?.hits?.length > 0) {
-      const hit = data.result.hits[0]
-      console.log(`[DUPR] Search ${duprId} - found duprId: ${hit.duprId}, doubles: ${hit.ratings?.doubles}`)
+      debug.firstHit = {
+        duprId: data.result.hits[0].duprId,
+        doubles: data.result.hits[0].ratings?.doubles,
+        doublesRS: data.result.hits[0].ratings?.doublesReliabilityScore,
+      }
     }
 
     const hit = data.result?.hits?.find(
       (h: any) => h.duprId?.toUpperCase() === duprId.toUpperCase()
     )
+
     if (!hit) {
-      console.log(`[DUPR] Search ${duprId} - no exact match found`)
-      return null
+      debug.matchResult = 'NOT_FOUND'
+      return { rating: null, debug }
     }
 
+    debug.matchResult = 'found'
     return {
-      duprId: hit.duprId,
-      fullName: hit.fullName,
-      doubles: hit.ratings?.doubles ?? 'NR',
-      doublesRS: hit.ratings?.doublesReliabilityScore ?? 0,
-      singles: hit.ratings?.singles ?? 'NR',
-      singlesRS: hit.ratings?.singlesReliabilityScore ?? 0,
+      rating: {
+        duprId: hit.duprId,
+        fullName: hit.fullName,
+        doubles: hit.ratings?.doubles ?? 'NR',
+        doublesRS: hit.ratings?.doublesReliabilityScore ?? 0,
+        singles: hit.ratings?.singles ?? 'NR',
+        singlesRS: hit.ratings?.singlesReliabilityScore ?? 0,
+      },
+      debug
     }
-  } catch (err) {
-    console.error(`[DUPR] Search ${duprId} - exception:`, err)
-    return null
+  } catch (err: any) {
+    debug.exception = err.message
+    return { rating: null, debug }
   }
 }
 
@@ -79,32 +87,55 @@ export async function POST(
     const username = await extractUsername(params)
     const players = await DatabaseService.getPlayersByUsername(username)
 
-    console.log(`[DUPR] Username: ${username}, players count: ${players?.length ?? 0}`)
+    const debugInfo: any = {
+      username,
+      playersCount: players?.length ?? 0,
+      rawDuprIds: players?.map(p => p.dupr_id) ?? [],
+    }
 
     if (!players || players.length === 0) {
-      return createApiResponse({ ratings: [] })
+      return createApiResponse({ ratings: [], debug: debugInfo })
     }
 
     const duprIds = players.map(p => p.dupr_id.replace(`_${username}`, ''))
-    console.log(`[DUPR] DUPR IDs to search:`, duprIds)
+    debugInfo.cleanDuprIds = duprIds
 
     const ratings: any[] = []
+    const searchDebug: any[] = []
+
     for (const duprId of duprIds) {
-      const rating = await fetchDuprRating(duprId, token)
+      const { rating, debug } = await fetchDuprRating(duprId, token)
+      searchDebug.push(debug)
       const player = players.find(p => p.dupr_id.replace(`_${username}`, '') === duprId)
-      ratings.push({
-        duprId,
-        name: player?.name ?? '',
-        doubles: rating?.doubles ?? 'NR',
-        doublesRS: rating?.doublesRS ?? 0,
-        singles: rating?.singles ?? 'NR',
-        singlesRS: rating?.singlesRS ?? 0,
-        fullName: rating?.fullName ?? '',
-      })
+
+      if (rating) {
+        ratings.push({
+          duprId,
+          name: player?.name ?? '',
+          doubles: rating.doubles,
+          doublesRS: rating.doublesRS,
+          singles: rating.singles,
+          singlesRS: rating.singlesRS,
+          fullName: rating.fullName,
+          status: 'FOUND',
+        })
+      } else {
+        ratings.push({
+          duprId,
+          name: player?.name ?? '',
+          doubles: 'NOT_FOUND',
+          doublesRS: 0,
+          singles: 'NOT_FOUND',
+          singlesRS: 0,
+          fullName: '',
+          status: 'NOT_FOUND',
+        })
+      }
       await new Promise(r => setTimeout(r, 200))
     }
 
-    return createApiResponse({ ratings })
+    debugInfo.searchResults = searchDebug
+    return createApiResponse({ ratings, debug: debugInfo })
   } catch (error) {
     return handleApiError(error, 'Failed to fetch DUPR ratings')
   }
