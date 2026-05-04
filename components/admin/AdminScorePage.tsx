@@ -11,15 +11,18 @@ import ScrollToTopButton from '@/components/shared/ScrollToTopButton'
 import PlayerFilter from '@/components/shared/PlayerFilter'
 import UnifiedScoreTable from '@/components/shared/UnifiedScoreTable'
 import { useLanguage } from '@/lib/i18n'
+import { DuprFilter } from '@/components/shared/DuprFilterModal'
 
 type CellField = 'D' | 'E' | 'F' | 'G'
 
 interface AdminScorePageProps {
   username: string
   defaultMode?: string
+  duprRatings?: {[duprId: string]: any}
+  duprFilter?: DuprFilter | null
 }
 
-export default function AdminScorePage({ username, defaultMode = 'dupr' }: AdminScorePageProps) {
+export default function AdminScorePage({ username, defaultMode = 'dupr', duprRatings = {}, duprFilter = null }: AdminScorePageProps) {
   const {
     userList,
     rows,

@@ -28,7 +28,6 @@ export async function POST(request: NextRequest) {
 
     return createApiResponse({ accessToken: data.result?.accessToken })
   } catch (error) {
-    console.error('DUPR login error:', error)
     return createApiResponse({ error: 'Login failed' }, 500)
   }
 }

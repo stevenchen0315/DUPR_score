@@ -7,12 +7,17 @@ import { VALIDATION, API_ENDPOINTS } from '@/lib/constants'
 import { player_info } from '@/types'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
 import { useLanguage } from '@/lib/i18n'
+import DuprFilterModal, { DuprFilter } from '@/components/shared/DuprFilterModal'
 
 interface AdminPlayerPageProps {
   username: string
+  duprRatings: {[duprId: string]: any}
+  setDuprRatings: (ratings: {[duprId: string]: any}) => void
+  duprFilter: DuprFilter | null
+  setDuprFilter: (filter: DuprFilter | null) => void
 }
 
-export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
+export default function AdminPlayerPage({ username, duprRatings, setDuprRatings, duprFilter, setDuprFilter }: AdminPlayerPageProps) {
   const {
     userList,
     partnerNumbers,
@@ -33,25 +38,30 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
-  const [duprRatings, setDuprRatings] = useState<{[duprId: string]: any}>({})
   const [isFetchingDupr, setIsFetchingDupr] = useState(false)
   const [showDuprLogin, setShowDuprLogin] = useState(false)
+  const [showDuprFilter, setShowDuprFilter] = useState(false)
   const [duprEmail, setDuprEmail] = useState('')
   const [duprPassword, setDuprPassword] = useState('')
   const [duprLoginError, setDuprLoginError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const suffix = `_${username}`
 
-  const fetchRatingsWithToken = async (token: string): Promise<boolean> => {
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+
+  const ratingDisplayType = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
+
+  const fetchRatingsWithToken = async (token: string, filter?: DuprFilter): Promise<boolean> => {
     const res = await fetch(API_ENDPOINTS.DUPR_RATINGS(username), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token })
+      body: JSON.stringify({ token, filter })
     })
     const data = await res.json()
-    console.log('[DUPR Debug]', JSON.stringify(data.debug, null, 2))
+    if (isDev) {
+      console.log('[DUPR] response:', JSON.stringify(data, null, 2))
+    }
     if (!res.ok) return false
-    const hasValidRating = data.ratings?.some((r: any) => r.doubles !== 'NR' || r.singles !== 'NR')
     const ratingsMap: {[duprId: string]: any} = {}
     data.ratings?.forEach((r: any) => {
       ratingsMap[r.duprId.toUpperCase()] = r
@@ -60,12 +70,18 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     return true
   }
 
-  const handleDuprFetch = async () => {
+  const handleDuprFetch = () => {
+    setShowDuprFilter(true)
+  }
+
+  const handleFilterConfirm = async (filter: DuprFilter) => {
+    setDuprFilter(filter)
+    setShowDuprFilter(false)
     setIsFetchingDupr(true)
     try {
       const savedToken = localStorage.getItem('dupr_token')
       if (savedToken) {
-        const success = await fetchRatingsWithToken(savedToken)
+        const success = await fetchRatingsWithToken(savedToken, filter)
         if (success) {
           setIsFetchingDupr(false)
           return
@@ -99,7 +115,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
 
       localStorage.setItem('dupr_token', loginData.accessToken)
 
-      const success = await fetchRatingsWithToken(loginData.accessToken)
+      const success = await fetchRatingsWithToken(loginData.accessToken, duprFilter || undefined)
       if (!success) {
         setDuprLoginError(t('duprLoginFailed'))
         setIsFetchingDupr(false)
@@ -107,8 +123,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       }
       setShowDuprLogin(false)
       setDuprPassword('')
-    } catch (error) {
-      console.error('DUPR fetch error:', error)
+    } catch {
       setDuprLoginError(t('duprLoginFailed'))
     } finally {
       setIsFetchingDupr(false)
@@ -137,7 +152,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       })
       setPartnerNumbers(updatedPartners)
     } catch (error: any) {
-      console.error('Save error:', error.message)
     }
   }
 
@@ -200,7 +214,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     })
 
     if (!response.ok) {
-      console.error('Delete error:', await response.text())
     }
   }
 
@@ -334,7 +347,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       
       setSelectedPlayers(new Set())
     } catch (error) {
-      console.error('Partner action error:', error)
     } finally {
       setIsUpdatingPartner(false)
     }
@@ -579,6 +591,8 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
         selectedPlayers={selectedPlayers}
         readonly={false}
         duprRatings={duprRatings}
+        ratingDisplayType={ratingDisplayType as any}
+        minRS={duprFilter?.minRS ?? 0}
         onEdit={editUser}
         onDelete={deleteUser}
         onToggleSelection={togglePlayerSelection}
@@ -614,6 +628,13 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       </div>
 
       {deleteMessage && <div className="text-center text-red-600 mt-1">{deleteMessage}</div>}
+
+      <DuprFilterModal
+        open={showDuprFilter}
+        onClose={() => setShowDuprFilter(false)}
+        onConfirm={handleFilterConfirm}
+        isFetching={isFetchingDupr}
+      />
 
       {/* DUPR 登入彈窗 */}
       {showDuprLogin && (

@@ -9,8 +9,13 @@ export interface DuprRating {
   name: string
   doubles: string
   doublesRS: number
+  singles: string
+  singlesRS: number
+  gender?: string | null
   status?: string
 }
+
+type RatingDisplayType = 'doubles' | 'singles' | 'both'
 
 interface PlayerListProps {
   userList: player_info[]
@@ -20,6 +25,8 @@ interface PlayerListProps {
   selectedPlayers: Set<number>
   readonly?: boolean
   duprRatings?: {[duprId: string]: DuprRating}
+  ratingDisplayType?: RatingDisplayType
+  minRS?: number
   onEdit?: (index: number) => void
   onDelete?: (index: number) => void
   onToggleSelection?: (index: number) => void
@@ -33,6 +40,8 @@ export default function PlayerList({
   selectedPlayers,
   readonly = false,
   duprRatings = {},
+  ratingDisplayType = 'doubles',
+  minRS = 0,
   onEdit,
   onDelete,
   onToggleSelection
@@ -59,21 +68,42 @@ export default function PlayerList({
       )
     }
 
-    const isNR = rating.doubles === 'NR'
-    if (isNR) {
-      return (
-        <span className="inline-flex items-center ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
-          NR
-        </span>
-      )
-    }
+    const badges: React.ReactElement[] = []
+    const types: ('doubles' | 'singles')[] =
+      ratingDisplayType === 'both' ? ['doubles', 'singles'] : [ratingDisplayType]
 
-    return (
-      <span className="inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-800">
-        {rating.doubles}
-        <span className="text-blue-500">RS:{rating.doublesRS}</span>
-      </span>
-    )
+    types.forEach(type => {
+      const val = type === 'doubles' ? rating.doubles : rating.singles
+      const rs = type === 'doubles' ? rating.doublesRS : rating.singlesRS
+      const label = type === 'doubles' ? 'D' : 'S'
+      const isFemale = rating.gender === 'FEMALE'
+
+      if (val === 'NR') {
+        badges.push(
+          <span key={type} className="inline-flex items-center ml-1 text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+            {label}:NR
+          </span>
+        )
+      } else {
+        const isBelowRS = rs < minRS
+        const colorClass = isBelowRS
+          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+          : isFemale
+            ? 'bg-pink-100 text-pink-800'
+            : 'bg-blue-100 text-blue-800'
+        const rsColorClass = isBelowRS
+          ? 'text-yellow-600'
+          : isFemale ? 'text-pink-500' : 'text-blue-500'
+        badges.push(
+          <span key={type} className={`inline-flex items-center gap-1 ml-1 text-xs px-2 py-0.5 rounded-full font-medium ${colorClass}`}>
+            {isBelowRS && '⚠️ '}{label}:{val}
+            <span className={rsColorClass}>RS:{rs}</span>
+          </span>
+        )
+      }
+    })
+
+    return <>{badges}</>
   }
 
   const partneredGroups: { [key: number]: any[] } = {}

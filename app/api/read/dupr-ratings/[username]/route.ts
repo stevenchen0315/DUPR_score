@@ -2,9 +2,50 @@ import { NextRequest } from 'next/server'
 import { DatabaseService } from '@/lib/database'
 import { createApiResponse, handleApiError, extractUsername } from '@/lib/api-utils'
 
-async function fetchDuprRating(duprId: string, token: string) {
+async function fetchDuprRating(duprId: string, token: string, filter?: any) {
   const debug: any = { duprId }
   try {
+    const searchFilter: any = {
+      lat: null,
+      lng: null,
+      rating: { maxRating: null, minRating: null },
+      locationText: ''
+    }
+
+    if (filter) {
+      if (filter.gender && filter.gender !== 'ALL') {
+        searchFilter.gender = filter.gender
+      }
+      if (filter.ratingRange) {
+        const isFullRange = filter.ratingRange[0] <= 2 && filter.ratingRange[1] >= 8
+        searchFilter.rating = {
+          minRating: isFullRange ? null : filter.ratingRange[0],
+          maxRating: isFullRange ? null : filter.ratingRange[1],
+          ...(filter.type === 'DOUBLES' && { type: 'DOUBLES' }),
+          ...(filter.type === 'SINGLES' && { type: 'SINGLES' }),
+        }
+      }
+      if (filter.ageRange) {
+        searchFilter.ageRange = {
+          minAge: filter.ageRange[0] <= 19 ? 0 : filter.ageRange[0],
+          maxAge: filter.ageRange[1] >= 80 ? 105 : filter.ageRange[1],
+        }
+      }
+    }
+
+    const requestBody = {
+      limit: 1,
+      offset: 0,
+      query: duprId,
+      exclude: [],
+      includeUnclaimedPlayers: true,
+      filter: searchFilter
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DUPR] request for ${duprId}:`, JSON.stringify(requestBody, null, 2))
+    }
+
     const res = await fetch('https://api.dupr.gg/player/v1.0/search', {
       method: 'POST',
       headers: {
@@ -14,19 +55,7 @@ async function fetchDuprRating(duprId: string, token: string) {
         'origin': 'https://dashboard.dupr.com',
         'referer': 'https://dashboard.dupr.com/',
       },
-      body: JSON.stringify({
-        limit: 1,
-        offset: 0,
-        query: duprId,
-        exclude: [],
-        includeUnclaimedPlayers: true,
-        filter: {
-          lat: null,
-          lng: null,
-          rating: { maxRating: null, minRating: null },
-          locationText: ''
-        }
-      })
+      body: JSON.stringify(requestBody)
     })
 
     debug.httpStatus = res.status
@@ -37,14 +66,15 @@ async function fetchDuprRating(duprId: string, token: string) {
     }
 
     const data = await res.json()
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DUPR] response for ${duprId}:`, JSON.stringify(data, null, 2))
+    }
+
     debug.totalHits = data.result?.hits?.length ?? 0
 
     if (data.result?.hits?.length > 0) {
-      debug.firstHit = {
-        duprId: data.result.hits[0].duprId,
-        doubles: data.result.hits[0].ratings?.doubles,
-        doublesRS: data.result.hits[0].ratings?.doublesReliabilityScore,
-      }
+      debug.firstHit = data.result.hits[0]
     }
 
     const hit = data.result?.hits?.find(
@@ -61,6 +91,7 @@ async function fetchDuprRating(duprId: string, token: string) {
       rating: {
         duprId: hit.duprId,
         fullName: hit.fullName,
+        gender: hit.gender ?? null,
         doubles: hit.ratings?.doubles ?? 'NR',
         doublesRS: hit.ratings?.doublesReliabilityScore ?? 0,
         singles: hit.ratings?.singles ?? 'NR',
@@ -79,7 +110,7 @@ export async function POST(
   { params }: { params: Promise<{ username: string }> }
 ) {
   try {
-    const { token } = await request.json()
+    const { token, filter } = await request.json()
     if (!token) {
       return createApiResponse({ error: 'DUPR token required' }, 401)
     }
@@ -104,7 +135,7 @@ export async function POST(
     const searchDebug: any[] = []
 
     for (const duprId of duprIds) {
-      const { rating, debug } = await fetchDuprRating(duprId, token)
+      const { rating, debug } = await fetchDuprRating(duprId, token, filter)
       searchDebug.push(debug)
       const player = players.find(p => p.dupr_id.replace(`_${username}`, '') === duprId)
 
@@ -117,6 +148,7 @@ export async function POST(
           singles: rating.singles,
           singlesRS: rating.singlesRS,
           fullName: rating.fullName,
+          gender: rating.gender,
           status: 'FOUND',
         })
       } else {
