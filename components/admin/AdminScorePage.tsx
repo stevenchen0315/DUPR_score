@@ -64,20 +64,21 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
   const playerMatchCounts = useMemo(() => getPlayerMatchCounts(rows), [rows])
 
   const sortedUserListByRating = useMemo(() => {
+    const ratingType = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
     return [...userList].sort((a, b) => {
       const getRatingValue = (user: any): number => {
         const duprId = user.dupr_id
         const rating = duprRatings[duprId?.toUpperCase()]
-        if (!rating || rating.doubles === 'NOT_FOUND' || rating.status === 'NOT_FOUND' || rating.doubles === 'NR' || !rating.doubles) {
+        if (!rating || rating[ratingType] === 'NOT_FOUND' || rating.status === 'NOT_FOUND' || rating[ratingType] === 'NR' || !rating[ratingType]) {
           return -1
         }
-        return parseFloat(rating.doubles)
+        return parseFloat(rating[ratingType])
       }
       const ratingA = getRatingValue(a)
       const ratingB = getRatingValue(b)
       return ratingB - ratingA
     })
-  }, [userList, duprRatings])
+  }, [userList, duprRatings, duprFilter])
 
   const rankings = useMemo(() => {
     // ?寞???蝭拚璇辣瘙箏?閬蝙?函?瘥魚鞈?
@@ -1143,8 +1144,9 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
                     const isChecked = tournamentConfig.selectedPlayers.includes(user.name)
                     const checkboxId = `player-checkbox-${index}`
                     const rating = duprRatings[user.dupr_id?.toUpperCase()]
-                    const ratingDisplay = rating && rating.doubles !== 'NOT_FOUND' && rating.status !== 'NOT_FOUND' && rating.doubles
-                      ? rating.doubles === 'NR' ? 'NR' : rating.doubles
+                    const ratingField = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
+                    const ratingDisplay = rating && rating[ratingField] !== 'NOT_FOUND' && rating.status !== 'NOT_FOUND' && rating[ratingField]
+                      ? rating[ratingField] === 'NR' ? 'NR' : rating[ratingField]
                       : 'NR'
                     return (
                       <div key={user.name} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2 -mx-2">
