@@ -1145,9 +1145,12 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
                     const checkboxId = `player-checkbox-${index}`
                     const rating = duprRatings[user.dupr_id?.toUpperCase()]
                     const ratingField = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
-                    const ratingDisplay = rating && rating[ratingField] !== 'NOT_FOUND' && rating.status !== 'NOT_FOUND' && rating[ratingField]
-                      ? rating[ratingField] === 'NR' ? 'NR' : rating[ratingField]
-                      : 'NR'
+                    const isInvalidId = rating && (rating.doubles === 'NOT_FOUND' || rating.status === 'NOT_FOUND')
+                    const ratingDisplay = isInvalidId
+                      ? t('duprInvalidId')
+                      : rating && rating[ratingField] && rating[ratingField] !== 'NR'
+                        ? rating[ratingField]
+                        : 'NR'
                     return (
                       <div key={user.name} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2 -mx-2">
                         <div className="relative">
@@ -1157,7 +1160,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
                           </label>
                         </div>
                         <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1 flex justify-between">
-                          <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name} <span className="text-xs text-blue-600 font-medium">[{ratingDisplay}]</span></span>
+                          <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name} <span className={`text-xs font-medium ${isInvalidId ? 'text-red-600' : 'text-blue-600'}`}>[{ratingDisplay}]</span></span>
                           <span className="text-gray-500">{playerMatchCounts[user.name] || 0} matches</span>
                         </label>
                       </div>
