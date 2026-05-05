@@ -10,6 +10,7 @@ import { notFound } from 'next/navigation'
 import MarqueeAd from '@/components/MarqueeAd'
 import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/lib/i18n'
+import { DuprFilter } from '@/components/shared/DuprFilterModal'
 
 export default function UserPage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
@@ -18,6 +19,8 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
   const [webEvent, setWebEvent] = useState<string>('')
   const [defaultMode, setDefaultMode] = useState<'admin' | 'readonly'>('admin')
   const [userDefaultMode, setUserDefaultMode] = useState<string>('dupr')
+  const [duprRatings, setDuprRatings] = useState<{[duprId: string]: any}>({})
+  const [duprFilter, setDuprFilter] = useState<DuprFilter | null>(null)
   const searchParams = useSearchParams()
   const { lang, toggle, t } = useLanguage()
   
@@ -34,22 +37,17 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
         if (response.ok) {
           const data = await response.json()
           setAllowedUsernames(data.map((d: any) => d.username))
-          // 找到對應的 web_event 和 default_mode
           const userAccount = data.find((d: any) => d.username === username)
           if (userAccount?.web_event) {
             setWebEvent(userAccount.web_event)
           }
-          // 保存原始的 default_mode
           setUserDefaultMode(userAccount?.default_mode || 'dupr')
-          // 決定 readonly 模式
           const mode = userAccount?.default_mode === 'open' ? 'readonly' : 'admin'
           setDefaultMode(mode)
         } else {
-          console.error('Failed to fetch usernames')
           setAllowedUsernames([])
         }
       } catch (error) {
-        console.error('Failed to fetch usernames:', error)
         setAllowedUsernames([])
       }
     }
@@ -57,10 +55,8 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
     fetchUsernames()
   }, [username])
 
-  // ✅ 還沒載入完成就先不顯示頁面
   if (allowedUsernames === null) return null
 
-  // ❌ 不在白名單 → 顯示 404
   if (!allowedUsernames.includes(username)) {
     notFound()
   }
@@ -115,12 +111,23 @@ export default function UserPage({ params }: { params: Promise<{ username: strin
         {tab === 'players' && (
           isReadOnly ? 
             <ReadonlyPlayerPage username={username} /> : 
-            <AdminPlayerPage username={username} />
+            <AdminPlayerPage
+              username={username}
+              duprRatings={duprRatings}
+              setDuprRatings={setDuprRatings}
+              duprFilter={duprFilter}
+              setDuprFilter={setDuprFilter}
+            />
         )}
         {tab === 'scores' && (
           isReadOnly ? 
             <ReadonlyScorePage username={username} defaultMode={userDefaultMode} /> : 
-            <AdminScorePage username={username} defaultMode={userDefaultMode} />
+            <AdminScorePage
+              username={username}
+              defaultMode={userDefaultMode}
+              duprRatings={duprRatings}
+              duprFilter={duprFilter}
+            />
         )}
       </div>
 

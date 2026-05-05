@@ -3,16 +3,21 @@
 import { useState, useRef } from 'react'
 import { usePlayerData } from '@/hooks/usePlayerData'
 import PlayerList from '@/components/shared/PlayerList'
-import { VALIDATION } from '@/lib/constants'
+import { VALIDATION, API_ENDPOINTS } from '@/lib/constants'
 import { player_info } from '@/types'
 import { FiUpload as Upload, FiDownload as Download } from 'react-icons/fi'
 import { useLanguage } from '@/lib/i18n'
+import DuprFilterModal, { DuprFilter } from '@/components/shared/DuprFilterModal'
 
 interface AdminPlayerPageProps {
   username: string
+  duprRatings: {[duprId: string]: any}
+  setDuprRatings: (ratings: {[duprId: string]: any}) => void
+  duprFilter: DuprFilter | null
+  setDuprFilter: (filter: DuprFilter | null) => void
 }
 
-export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
+export default function AdminPlayerPage({ username, duprRatings, setDuprRatings, duprFilter, setDuprFilter }: AdminPlayerPageProps) {
   const {
     userList,
     partnerNumbers,
@@ -33,8 +38,97 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
   const [deleteMessage, setDeleteMessage] = useState('')
   const [selectedPlayers, setSelectedPlayers] = useState<Set<number>>(new Set())
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false)
+  const [isFetchingDupr, setIsFetchingDupr] = useState(false)
+  const [showDuprLogin, setShowDuprLogin] = useState(false)
+  const [showDuprFilter, setShowDuprFilter] = useState(false)
+  const [duprEmail, setDuprEmail] = useState('')
+  const [duprPassword, setDuprPassword] = useState('')
+  const [duprLoginError, setDuprLoginError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const suffix = `_${username}`
+
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+
+  const ratingDisplayType = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
+
+  const fetchRatingsWithToken = async (token: string, filter?: DuprFilter): Promise<boolean> => {
+    const res = await fetch(API_ENDPOINTS.DUPR_RATINGS(username), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, filter })
+    })
+    const data = await res.json()
+    if (isDev) {
+      console.log('[DUPR] response:', JSON.stringify(data, null, 2))
+    }
+    if (!res.ok) return false
+    const ratingsMap: {[duprId: string]: any} = {}
+    data.ratings?.forEach((r: any) => {
+      ratingsMap[r.duprId.toUpperCase()] = r
+    })
+    setDuprRatings(ratingsMap)
+    return true
+  }
+
+  const handleDuprFetch = () => {
+    setShowDuprFilter(true)
+  }
+
+  const handleFilterConfirm = async (filter: DuprFilter) => {
+    setDuprFilter(filter)
+    setShowDuprFilter(false)
+    setIsFetchingDupr(true)
+    try {
+      const savedToken = localStorage.getItem('dupr_token')
+      if (savedToken) {
+        const success = await fetchRatingsWithToken(savedToken, filter)
+        if (success) {
+          setIsFetchingDupr(false)
+          return
+        }
+        localStorage.removeItem('dupr_token')
+      }
+      setShowDuprLogin(true)
+    } catch {
+      setShowDuprLogin(true)
+    } finally {
+      setIsFetchingDupr(false)
+    }
+  }
+
+  const handleDuprLogin = async () => {
+    if (!duprEmail || !duprPassword) return
+    setIsFetchingDupr(true)
+    setDuprLoginError('')
+    try {
+      const loginRes = await fetch('/api/read/dupr-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: duprEmail, password: duprPassword })
+      })
+      const loginData = await loginRes.json()
+      if (!loginRes.ok || !loginData.accessToken) {
+        setDuprLoginError(t('duprLoginFailed'))
+        setIsFetchingDupr(false)
+        return
+      }
+
+      localStorage.setItem('dupr_token', loginData.accessToken)
+
+      const success = await fetchRatingsWithToken(loginData.accessToken, duprFilter || undefined)
+      if (!success) {
+        setDuprLoginError(t('duprLoginFailed'))
+        setIsFetchingDupr(false)
+        return
+      }
+      setShowDuprLogin(false)
+      setDuprPassword('')
+    } catch {
+      setDuprLoginError(t('duprLoginFailed'))
+    } finally {
+      setIsFetchingDupr(false)
+    }
+  }
 
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
@@ -58,7 +152,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       })
       setPartnerNumbers(updatedPartners)
     } catch (error: any) {
-      console.error('Save error:', error.message)
     }
   }
 
@@ -121,7 +214,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     })
 
     if (!response.ok) {
-      console.error('Delete error:', await response.text())
     }
   }
 
@@ -255,7 +347,6 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       
       setSelectedPlayers(new Set())
     } catch (error) {
-      console.error('Partner action error:', error)
     } finally {
       setIsUpdatingPartner(false)
     }
@@ -317,7 +408,7 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
     reader.onload = async (event) => {
       let text = event.target?.result as string
       
-      if (text.includes('�') || /[\u00C0-\u00FF]/.test(text)) {
+      if (text.includes('') || /[\u00C0-\u00FF]/.test(text)) {
         const reader2 = new FileReader()
         reader2.onload = async (event2) => {
           const text2 = event2.target?.result as string
@@ -488,6 +579,9 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
         loadingLockedNames={loadingLockedNames}
         selectedPlayers={selectedPlayers}
         readonly={false}
+        duprRatings={duprRatings}
+        ratingDisplayType={ratingDisplayType as any}
+        minRS={duprFilter?.minRS ?? 0}
         onEdit={editUser}
         onDelete={deleteUser}
         onToggleSelection={togglePlayerSelection}
@@ -509,6 +603,19 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
           onChange={(e) => setDeletePassword(e.target.value)}
           className="border px-3 py-2 rounded w-28 text-sm h-10"
         />
+        {deletePassword === storedPassword && (
+          <button
+            onClick={handleDuprFetch}
+            disabled={isFetchingDupr || userList.length === 0}
+            className={`px-3 py-2 rounded text-white text-sm h-10 ${
+              isFetchingDupr || userList.length === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-700'
+            }`}
+          >
+            {isFetchingDupr ? t('fetchingDupr') : t('fetchDuprRatings')}
+          </button>
+        )}
         <button
           onClick={handleDeleteAll}
           disabled={storedPassword === null || deletePassword !== storedPassword}
@@ -523,6 +630,62 @@ export default function AdminPlayerPage({ username }: AdminPlayerPageProps) {
       </div>
 
       {deleteMessage && <div className="text-center text-red-600 mt-1">{deleteMessage}</div>}
+
+      <DuprFilterModal
+        open={showDuprFilter}
+        onClose={() => setShowDuprFilter(false)}
+        onConfirm={handleFilterConfirm}
+        isFetching={isFetchingDupr}
+      />
+
+      {/* DUPR 登入彈窗 */}
+      {showDuprLogin && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => !isFetchingDupr && setShowDuprLogin(false)}>
+          <div className="bg-white rounded-lg p-6 w-80 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-4 text-center">{t('duprLogin')}</h3>
+            <input
+              type="email"
+              placeholder={t('duprEmail')}
+              value={duprEmail}
+              onChange={e => setDuprEmail(e.target.value)}
+              className="w-full border rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isFetchingDupr}
+            />
+            <input
+              type="password"
+              placeholder={t('duprPassword')}
+              value={duprPassword}
+              onChange={e => setDuprPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleDuprLogin()}
+              className="w-full border rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              disabled={isFetchingDupr}
+            />
+            {duprLoginError && (
+              <p className="text-red-500 text-sm mb-3 text-center">{duprLoginError}</p>
+            )}
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDuprLogin(false); setDuprLoginError('') }}
+                disabled={isFetchingDupr}
+                className="flex-1 px-4 py-2 border rounded-md text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {t('duprClose')}
+              </button>
+              <button
+                onClick={handleDuprLogin}
+                disabled={isFetchingDupr || !duprEmail || !duprPassword}
+                className={`flex-1 px-4 py-2 rounded-md text-white ${
+                  isFetchingDupr || !duprEmail || !duprPassword
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                {isFetchingDupr ? t('duprLoggingIn') : t('duprLoginBtn')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

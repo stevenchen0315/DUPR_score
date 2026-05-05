@@ -2,6 +2,20 @@
 
 import { player_info } from '@/types'
 import { FiEdit as Pencil, FiTrash2 as Trash2 } from 'react-icons/fi'
+import { useLanguage } from '@/lib/i18n'
+
+export interface DuprRating {
+  duprId: string
+  name: string
+  doubles: string
+  doublesRS: number
+  singles: string
+  singlesRS: number
+  gender?: string | null
+  status?: string
+}
+
+type RatingDisplayType = 'doubles' | 'singles' | 'both'
 
 interface PlayerListProps {
   userList: player_info[]
@@ -10,6 +24,9 @@ interface PlayerListProps {
   loadingLockedNames: boolean
   selectedPlayers: Set<number>
   readonly?: boolean
+  duprRatings?: {[duprId: string]: DuprRating}
+  ratingDisplayType?: RatingDisplayType
+  minRS?: number
   onEdit?: (index: number) => void
   onDelete?: (index: number) => void
   onToggleSelection?: (index: number) => void
@@ -22,16 +39,71 @@ export default function PlayerList({
   loadingLockedNames,
   selectedPlayers,
   readonly = false,
+  duprRatings = {},
+  ratingDisplayType = 'doubles',
+  minRS = 0,
   onEdit,
   onDelete,
   onToggleSelection
 }: PlayerListProps) {
+  const { t } = useLanguage()
+
   if (loadingLockedNames) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     )
+  }
+
+  const RatingBadge = ({ duprId }: { duprId: string }) => {
+    const rating = duprRatings[duprId.toUpperCase()]
+    if (!rating) return null
+
+    if (rating.doubles === 'NOT_FOUND' || rating.status === 'NOT_FOUND') {
+      return (
+        <span className="inline-flex items-center gap-1 ml-2 text-xs px-2 py-0.5 rounded-full font-medium bg-orange-100 text-orange-700 border border-orange-300">
+          ⚠️ {t('duprInvalidId')}
+        </span>
+      )
+    }
+
+    const badges: React.ReactElement[] = []
+    const types: ('doubles' | 'singles')[] =
+      ratingDisplayType === 'both' ? ['doubles', 'singles'] : [ratingDisplayType]
+
+    types.forEach(type => {
+      const val = type === 'doubles' ? rating.doubles : rating.singles
+      const rs = type === 'doubles' ? rating.doublesRS : rating.singlesRS
+      const label = type === 'doubles' ? 'D' : 'S'
+      const isFemale = rating.gender === 'FEMALE'
+
+      if (val === 'NR') {
+        badges.push(
+          <span key={type} className="inline-flex items-center ml-1 text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-500">
+            {label}:NR
+          </span>
+        )
+      } else {
+        const isBelowRS = rs < minRS
+        const colorClass = isBelowRS
+          ? 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+          : isFemale
+            ? 'bg-pink-100 text-pink-800'
+            : 'bg-blue-100 text-blue-800'
+        const rsColorClass = isBelowRS
+          ? 'text-yellow-600'
+          : isFemale ? 'text-pink-500' : 'text-blue-500'
+        badges.push(
+          <span key={type} className={`inline-flex items-center gap-1 ml-1 text-xs px-2 py-0.5 rounded-full font-medium ${colorClass}`}>
+            {isBelowRS && '⚠️ '}{label}:{val}
+            <span className={rsColorClass}>RS:{rs}</span>
+          </span>
+        )
+      }
+    })
+
+    return <>{badges}</>
   }
 
   const partneredGroups: { [key: number]: any[] } = {}
@@ -83,6 +155,7 @@ export default function PlayerList({
           >
             <div className="text-base font-medium text-gray-800">
               {player1.name} <span className="text-sm text-gray-500">({player1.dupr_id})</span>
+              <RatingBadge duprId={player1.dupr_id} />
             </div>
             {!readonly && (
               <div className="flex gap-3">
@@ -118,6 +191,7 @@ export default function PlayerList({
           >
             <div className="text-base font-medium text-gray-800">
               {player2.name} <span className="text-sm text-gray-500">({player2.dupr_id})</span>
+              <RatingBadge duprId={player2.dupr_id} />
             </div>
             {!readonly && (
               <div className="flex gap-3">
@@ -176,6 +250,7 @@ export default function PlayerList({
       >
         <div className="text-base font-medium text-gray-800">
           {user.name} <span className="text-sm text-gray-500">({user.dupr_id})</span>
+          <RatingBadge duprId={user.dupr_id} />
         </div>
         {!readonly && (
           <div className="flex gap-3">

@@ -14,9 +14,8 @@ export default function ReadonlyPlayerPage({ username }: ReadonlyPlayerPageProps
     isLoading,
     lockedNames,
     loadingLockedNames,
-    realtimeConnected
   } = usePlayerData(username)
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -30,7 +29,7 @@ export default function ReadonlyPlayerPage({ username }: ReadonlyPlayerPageProps
   
   return (
     <div className="max-w-md mx-auto px-4 pt-4">
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+      <div className="text-sm text-gray-500 mb-6">
         {userList.length} players
       </div>
 
