@@ -79,6 +79,7 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
     setShowDuprFilter(false)
     setIsFetchingDupr(true)
     try {
+      // 1. 先嘗試 localStorage 中的 token
       const savedToken = localStorage.getItem('dupr_token')
       if (savedToken) {
         const success = await fetchRatingsWithToken(savedToken, filter)
@@ -88,6 +89,28 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
         }
         localStorage.removeItem('dupr_token')
       }
+
+      // 2. 嘗試預設帳密登入
+      const defaultEmail = 'f0932945519@gmail.com'
+      const defaultPassword = 'f0932945519'
+      const loginRes = await fetch('/api/read/dupr-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: defaultEmail, password: defaultPassword })
+      })
+      const loginData = await loginRes.json()
+
+      if (loginRes.ok && loginData.accessToken) {
+        localStorage.setItem('dupr_token', loginData.accessToken)
+        const success = await fetchRatingsWithToken(loginData.accessToken, filter)
+        if (success) {
+          setIsFetchingDupr(false)
+          return
+        }
+        localStorage.removeItem('dupr_token')
+      }
+
+      // 3. 預設帳密失敗，彈出登入視窗
       setShowDuprLogin(true)
     } catch {
       setShowDuprLogin(true)
