@@ -18,6 +18,7 @@ interface AdminPlayerPageProps {
 }
 
 export default function AdminPlayerPage({ username, duprRatings, setDuprRatings, duprFilter, setDuprFilter }: AdminPlayerPageProps) {
+  const skipRefetchRef = useRef(false)
   const {
     userList,
     partnerNumbers,
@@ -29,7 +30,7 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
     realtimeConnected,
     setUserList,
     setPartnerNumbers
-  } = usePlayerData(username)
+  } = usePlayerData(username, skipRefetchRef)
 
   const { t } = useLanguage()
   const [userInfo, setUserInfo] = useState<player_info>({ dupr_id: '', name: '' })
@@ -132,26 +133,39 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
 
   const saveUserToSupabase = async (list: (player_info & { partner_number?: number | null })[]) => {
     try {
-      const response = await fetch(`/api/write/players/${username}?mode=admin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(list.map(user => ({
-          dupr_id: user.dupr_id.toUpperCase(),
-          name: user.name,
-          partner_number: user.partner_number || null
-        })))
-      })
+      // 去重：同 dupr_id 只保留最後一筆（避免 upsert 衝突）
+      const deduped = Array.from(
+        new Map(list.map(user => [user.dupr_id.toUpperCase(), user])).values()
+      )
       
-      if (!response.ok) {
-        throw new Error('Failed to save players')
+      // 分批寫入，每批最多 20 筆
+      const batchSize = 20
+      for (let i = 0; i < deduped.length; i += batchSize) {
+        const batch = deduped.slice(i, i + batchSize)
+        const response = await fetch(`/api/write/players/${username}?mode=admin`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(batch.map(user => ({
+            dupr_id: user.dupr_id.toUpperCase(),
+            name: user.name,
+            partner_number: user.partner_number || null
+          })))
+        })
+        
+        if (!response.ok) {
+          const errBody = await response.text()
+          console.error('Save players failed:', response.status, errBody)
+          throw new Error('Failed to save players')
+        }
       }
       
       const updatedPartners = { ...partnerNumbers }
-      list.forEach(user => {
+      deduped.forEach(user => {
         updatedPartners[user.name] = user.partner_number || null
       })
       setPartnerNumbers(updatedPartners)
     } catch (error: any) {
+      console.error('saveUserToSupabase error:', error)
     }
   }
 
@@ -408,7 +422,17 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
     reader.onload = async (event) => {
       let text = event.target?.result as string
       
-      if (text.includes('') || /[\u00C0-\u00FF]/.test(text)) {
+      // 移除 BOM
+      if (text.charCodeAt(0) === 0xFEFF) {
+        text = text.slice(1)
+      }
+      
+      // 偵測是否有亂碼（UTF-8 讀 Big5 檔案會出現替換字元或連續高位元組）
+      const hasReplacementChar = text.includes('\uFFFD')
+      const hasBig5Pattern = /[\x80-\xFF]{2,}/.test(text)
+      const hasNoValidCJK = !/[\u4E00-\u9FFF]/.test(text) && file.name.match(/[\u4E00-\u9FFF]|player/i)
+      
+      if (hasReplacementChar || (hasBig5Pattern && !(/[\u4E00-\u9FFF]/.test(text)))) {
         const reader2 = new FileReader()
         reader2.onload = async (event2) => {
           const text2 = event2.target?.result as string
@@ -433,8 +457,8 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
           const partnerNum = parseInt(partner_number)
           
           imported.push(
-            { dupr_id: dupr_id1, name: name1, partner_number: partnerNum },
-            { dupr_id: dupr_id2, name: name2, partner_number: partnerNum }
+            { dupr_id: dupr_id1.toUpperCase(), name: name1, partner_number: partnerNum },
+            { dupr_id: dupr_id2.toUpperCase(), name: name2, partner_number: partnerNum }
           )
         } else {
           const [dupr_id, name] = parts
@@ -447,18 +471,46 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
             }
           }
           
-          imported.push({ dupr_id, name, partner_number })
+          imported.push({ dupr_id: dupr_id.toUpperCase(), name, partner_number })
         }
       })
+
+      // 檢查重複 DUPR ID
+      const idMap = new Map<string, string[]>()
+      imported.forEach(p => {
+        const id = p.dupr_id
+        if (!idMap.has(id)) {
+          idMap.set(id, [])
+        }
+        idMap.get(id)!.push(p.name)
+      })
+      const duplicates = Array.from(idMap.entries()).filter(([, names]) => names.length > 1)
+      if (duplicates.length > 0) {
+        const msg = duplicates
+          .map(([id, names]) => `${id}: ${names.join(' / ')}`)
+          .join('\n')
+        alert(`${t('duplicateDuprId')}\n\n${msg}`)
+        e.target.value = ''
+        return
+      }
+
+      skipRefetchRef.current = true
 
       await fetch(`/api/write/players/${username}?delete_all=true&mode=admin`, {
         method: 'DELETE'
       })
       
-      setUserList([])
-      setPartnerNumbers({})
-      
       await saveUserToSupabase(imported)
+
+      setUserList(imported.map(p => ({ dupr_id: p.dupr_id, name: p.name })))
+      const newPartners: { [name: string]: number | null } = {}
+      imported.forEach(p => {
+        newPartners[p.name] = p.partner_number || null
+      })
+      setPartnerNumbers(newPartners)
+
+      // 延遲解除匯入鎖定，避免 realtime 事件覆蓋
+      setTimeout(() => { skipRefetchRef.current = false }, 2000)
 
       e.target.value = ''
     }
