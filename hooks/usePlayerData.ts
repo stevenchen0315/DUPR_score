@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type RefObject } from 'react'
 import { useRealtimeSubscription } from './useRealtimeSubscription'
 import { useCommonData } from './useCommonData'
 import { API_ENDPOINTS } from '@/lib/constants'
 
-export const usePlayerData = (username: string) => {
+export const usePlayerData = (username: string, skipRefetch?: RefObject<boolean>) => {
   const {
     userList,
     partnerNumbers,
@@ -51,6 +51,7 @@ export const usePlayerData = (username: string) => {
     username,
     'player_info',
     async (payload: any) => {
+      if (skipRefetch?.current) return
       const duprId = payload.new?.dupr_id || payload.old?.dupr_id
       if (duprId && typeof duprId === 'string' && duprId.includes(`_${username}`)) {
         await refetchPlayers()

@@ -100,6 +100,9 @@ const dict = {
   filter: { zh: '篩選：', en: 'Filter:' },
   clearFilter: { zh: '清除', en: 'Clear' },
 
+  // CSV Import
+  duplicateDuprId: { zh: '⚠️ 發現重複的 DUPR ID，請修正後重新匯入：', en: '⚠️ Duplicate DUPR IDs found, please fix and re-import:' },
+
   // ScrollToTopButton
   scrollToTop: { zh: '回到頂部', en: 'Back to top' },
 } as const
