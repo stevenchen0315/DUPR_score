@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useMemo, useEffect } from 'react'
 import { useScoreData } from '@/hooks/useScoreData'
@@ -62,6 +62,23 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
   const filteredRows = useMemo(() => createFilteredRows(rows, selectedPlayerFilter), [rows, selectedPlayerFilter])
 
   const playerMatchCounts = useMemo(() => getPlayerMatchCounts(rows), [rows])
+
+  const sortedUserListByRating = useMemo(() => {
+    const ratingType = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
+    return [...userList].sort((a, b) => {
+      const getRatingValue = (user: any): number => {
+        const duprId = user.dupr_id
+        const rating = duprRatings[duprId?.toUpperCase()]
+        if (!rating || rating[ratingType] === 'NOT_FOUND' || rating.status === 'NOT_FOUND' || rating[ratingType] === 'NR' || !rating[ratingType]) {
+          return -1
+        }
+        return parseFloat(rating[ratingType])
+      }
+      const ratingA = getRatingValue(a)
+      const ratingB = getRatingValue(b)
+      return ratingB - ratingA
+    })
+  }, [userList, duprRatings, duprFilter])
 
   const rankings = useMemo(() => {
     // ?寞???蝭拚璇辣瘙箏?閬蝙?函?瘥魚鞈?
@@ -1123,9 +1140,17 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
                   <label htmlFor="select-all-checkbox" className="text-sm font-medium text-gray-700 cursor-pointer">{t('selectAll')}</label>
                 </div>
                 <div className="max-h-48 overflow-y-auto border rounded p-3">
-                  {userList.map((user, index) => {
+                  {sortedUserListByRating.map((user, index) => {
                     const isChecked = tournamentConfig.selectedPlayers.includes(user.name)
                     const checkboxId = `player-checkbox-${index}`
+                    const rating = duprRatings[user.dupr_id?.toUpperCase()]
+                    const ratingField = duprFilter?.type === 'SINGLES' ? 'singles' : 'doubles'
+                    const isInvalidId = rating && (rating.doubles === 'NOT_FOUND' || rating.status === 'NOT_FOUND')
+                    const ratingDisplay = isInvalidId
+                      ? t('duprInvalidId')
+                      : rating && rating[ratingField] && rating[ratingField] !== 'NR'
+                        ? rating[ratingField]
+                        : 'NR'
                     return (
                       <div key={user.name} className="flex items-center space-x-3 py-2 hover:bg-gray-50 rounded px-2 -mx-2">
                         <div className="relative">
@@ -1135,7 +1160,7 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
                           </label>
                         </div>
                         <label htmlFor={checkboxId} className="text-sm cursor-pointer flex-1 py-1 flex justify-between">
-                          <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name}</span>
+                          <span>{partnerNumbers[user.name] ? `(${partnerNumbers[user.name]}) ` : ''}{user.name} <span className={`text-xs font-medium ${isInvalidId ? 'text-red-600' : 'text-blue-600'}`}>[{ratingDisplay}]</span></span>
                           <span className="text-gray-500">{playerMatchCounts[user.name] || 0} matches</span>
                         </label>
                       </div>

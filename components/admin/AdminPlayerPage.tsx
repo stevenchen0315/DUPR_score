@@ -80,6 +80,7 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
     setShowDuprFilter(false)
     setIsFetchingDupr(true)
     try {
+      // 1. 先嘗試 localStorage 中的 token
       const savedToken = localStorage.getItem('dupr_token')
       if (savedToken) {
         const success = await fetchRatingsWithToken(savedToken, filter)
@@ -89,6 +90,28 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
         }
         localStorage.removeItem('dupr_token')
       }
+
+      // 2. 嘗試預設帳密登入
+      const defaultEmail = 'f0932945519@gmail.com'
+      const defaultPassword = 'f0932945519'
+      const loginRes = await fetch('/api/read/dupr-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: defaultEmail, password: defaultPassword })
+      })
+      const loginData = await loginRes.json()
+
+      if (loginRes.ok && loginData.accessToken) {
+        localStorage.setItem('dupr_token', loginData.accessToken)
+        const success = await fetchRatingsWithToken(loginData.accessToken, filter)
+        if (success) {
+          setIsFetchingDupr(false)
+          return
+        }
+        localStorage.removeItem('dupr_token')
+      }
+
+      // 3. 預設帳密失敗，彈出登入視窗
       setShowDuprLogin(true)
     } catch {
       setShowDuprLogin(true)
@@ -593,17 +616,6 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
           >
             <Upload size={18} />
           </button>
-          <button
-            onClick={handleDuprFetch}
-            disabled={isFetchingDupr || userList.length === 0}
-            className={`ml-1 px-3 py-1 rounded text-xs font-medium ${
-              isFetchingDupr || userList.length === 0
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700'
-            }`}
-          >
-            {isFetchingDupr ? t('fetchingDupr') : t('fetchDuprRatings')}
-          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -666,6 +678,19 @@ export default function AdminPlayerPage({ username, duprRatings, setDuprRatings,
           onChange={(e) => setDeletePassword(e.target.value)}
           className="border px-3 py-2 rounded w-28 text-sm h-10"
         />
+        {deletePassword === storedPassword && (
+          <button
+            onClick={handleDuprFetch}
+            disabled={isFetchingDupr || userList.length === 0}
+            className={`px-3 py-2 rounded text-white text-sm h-10 ${
+              isFetchingDupr || userList.length === 0
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-700'
+            }`}
+          >
+            {isFetchingDupr ? t('fetchingDupr') : t('fetchDuprRatings')}
+          </button>
+        )}
         <button
           onClick={handleDeleteAll}
           disabled={storedPassword === null || deletePassword !== storedPassword}
