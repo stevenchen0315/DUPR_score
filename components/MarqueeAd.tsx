@@ -8,7 +8,7 @@ const ads = [
     url: 'https://booking.owlting.com/goldhome?lang=zh_TW&adult=1&child=0&infant=0',
   },
   {
-    image: '/purosopyh.jpg',
+    image: '/purosopyh.png',
     url: 'https://purosophy.com/',
   },
 ]
