@@ -614,17 +614,19 @@ export default function AdminScorePage({ username, defaultMode = 'dupr', duprRat
         const b1User = findUser(b1), b2User = findUser(b2)
 
         return [
-          row.sd, row.scoretype || 'SIDEOUT', eventName, today,
-          a1User.name, a1User.dupr_id,
-          a2User.name, a2User.dupr_id,
-          b1User.name, b1User.dupr_id,
-          b2User.name, b2User.dupr_id,
-          row.h, row.i
+          row.sd, eventName, today,
+          a1User.name, a1User.dupr_id, '',
+          a2User.name, a2User.dupr_id, '',
+          b1User.name, b1User.dupr_id, '',
+          b2User.name, b2User.dupr_id, '',
+          row.h, row.i,
+          '', '', '', '', '', '', '', '',
+          '', row.scoretype || 'SIDEOUT'
         ]
       })
 
-    const header = 'matchType,scoreType,event,date,playerA1,playerA1DuprId,playerA2,playerA2DuprId,playerB1,playerB1DuprId,playerB2,playerB2DuprId,teamAGame1,teamBGame1,teamAGame2,teamBGame2,teamAGame3,teamBGame3,teamAGame4,teamBGame4,teamAGame5,teamBGame5'
-    const csvContent = header + '\n' + csvRows.map((r) => r.map((v) => `"${v}"`).join(',') + ',,,,,,,,').join('\n')
+    const header = 'matchType,event,date,playerA1,playerA1DuprId,playerA1ExternalId,playerA2,playerA2DuprId,playerA2ExternalId,playerB1,playerB1DuprId,playerB1ExternalId,playerB2,playerB2DuprId,playerB2ExternalId,teamAGame1,teamBGame1,teamAGame2,teamBGame2,teamAGame3,teamBGame3,teamAGame4,teamBGame4,teamAGame5,teamBGame5,location,scoreType'
+    const csvContent = header + '\n' + csvRows.map((r) => r.map((v) => `"${v}"`).join(',')).join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
